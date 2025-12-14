@@ -1,0 +1,415 @@
+{
+  "name": "Tool - Remake Question",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "PAYLOAD DE ENTRADA:\n- id_teste\n- prompt_usuario = \"crie uma pergunta que ...\"\n- quantidade_opcoes\n- id_questao_reformulada\n- dificuldade\n- tipo = 'fechada' ou 'aberta'\n\nFECHADA = exclusivamente no conteúdo\nABERTA = pergunta que pode ir além do conteúdo",
+        "height": 232,
+        "width": 496,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        928,
+        1728
+      ],
+      "id": "345d85e8-4093-403d-9126-3c894b4284f9",
+      "name": "Especificações de Entrada"
+    },
+    {
+      "parameters": {
+        "content": "FLUXO MELHORADO:\n\n1. Webhook recebe payload estruturado\n2. Busca dados do teste + questão atual + transcript do vídeo\n3. Chama OpenAI responses com contexto completo\n4. Processa resposta da IA\n5. Atualiza questão e opções no BD (transaction)\n6. Retorna resposta estruturada\n\nUsa connection Supabase via Postgres",
+        "height": 240,
+        "width": 496,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        928,
+        2016
+      ],
+      "id": "8a304867-4fb9-4291-a05f-533ca3f05415",
+      "name": "Fluxo Explicação"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "regenerar/questao/especifica/v4",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        1904
+      ],
+      "id": "87d1d621-993b-456e-af2e-190369e2b3e0",
+      "name": "Webhook - Regenerar Questão",
+      "webhookId": "regenerar-questao-v4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "test-id",
+              "name": "test_id",
+              "value": "={{ $json.body.test.id }}",
+              "type": "number"
+            },
+            {
+              "id": "question-id",
+              "name": "question_id",
+              "value": "={{ $json.body.question.id }}",
+              "type": "number"
+            },
+            {
+              "id": "prompt-byuser",
+              "name": "prompt_byuser",
+              "value": "={{ $json.body.question.prompt_byuser }}",
+              "type": "string"
+            },
+            {
+              "id": "question-type",
+              "name": "question_type",
+              "value": "={{ $json.body.question.type }}",
+              "type": "string"
+            },
+            {
+              "id": "difficulty",
+              "name": "difficulty",
+              "value": "={{ $json.body.question.difficulty || 'medium' }}",
+              "type": "string"
+            },
+            {
+              "id": "total-options",
+              "name": "total_options",
+              "value": "={{ $json.body.question.total_options || 4 }}",
+              "type": "number"
+            },
+            {
+              "id": "required",
+              "name": "required",
+              "value": "={{ $json.body.question.required !== undefined ? $json.body.question.required : true }}",
+              "type": "boolean"
+            },
+            {
+              "id": "data-lake-only",
+              "name": "data_lake_only",
+              "value": "={{ $json.body.question.data_lake_only !== undefined ? $json.body.question.data_lake_only : false }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1792,
+        1904
+      ],
+      "id": "5e588eae-b54e-4d49-94ef-d2b654284432",
+      "name": "1. Preparar Dados Entrada"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    json_build_object(\n        'test', json_build_object(\n            'id', t.id,\n            'title_byuser', t.title_byuser,\n            'questions_jsonb', t.questions\n        ),\n        'video', json_build_object(\n            'transcript', cv.transcript,\n            'title', cv.title,\n            'url', cv.url\n        ),\n        'question_atual', json_build_object(\n            'id', q.id,\n            'sequence', q.sequence,\n            'question', q.question,\n            'type', q.type,\n            'required', q.required,\n            'data_lake_only', q.data_lake_only,\n            'options', COALESCE(\n                (\n                    SELECT json_agg(\n                        json_build_object(\n                            'id', o.id,\n                            'sequence', o.sequence,\n                            'option', o.option,\n                            'text', o.text\n                        ) ORDER BY o.sequence\n                    )\n                    FROM options o \n                    WHERE o.questions_id = q.id AND o.active = true\n                ),\n                '[]'::json\n            )\n        )\n    ) as resultado\nFROM tests t\nLEFT JOIN content_video cv ON t.content_video_id = cv.id\nINNER JOIN questions q ON q.test_id = t.id\nWHERE t.id = $1 \n    AND q.id = $2\n    AND q.active = true;",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.test_id,\n  $json.question_id\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2016,
+        1904
+      ],
+      "id": "41a5896e-1ada-44bb-a813-b84d5ab362a6",
+      "name": "2. Buscar Dados Completos",
+      "credentials": {
+        "postgres": {
+          "id": "SRbBuiGN9bR0qhkI",
+          "name": "Postgres - manytest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "gpt-4.1-mini"
+            },
+            {
+              "name": "instructions",
+              "value": "Você é um especialista em criação e regeneração de questões educacionais baseadas em conteúdo de vídeo.\n\n## SUA MISSÃO:\nRecriar/regenerar uma questão específica seguindo exatamente as instruções do usuário.\n\n## TIPOS DE QUESTÃO:\n- **CSS_closed_multiple_choice_single_selection**: Questão de múltipla escolha com uma única resposta correta\n- **OST_open_short_text**: Questão dissertativa aberta\n\n## REGRAS CRÍTICAS:\n1. A resposta correta DEVE estar em posição ALEATÓRIA (nunca sempre na primeira ou última posição)\n2. O índice correct_answer deve refletir a posição real da resposta correta após aleatorização\n3. Para questões fechadas: usar índice 1, 2, 3, 4 (base 1, NÃO base 0)\n4. Para questões abertas: correct_answer = null\n5. Respeite EXATAMENTE o total de opções solicitado\n6. Mantenha o ID e sequence originais da questão\n\n## FORMATO DE SAÍDA:\n```json\n{\n  \"questao_regenerada\": {\n    \"id\": [ID_ORIGINAL],\n    \"sequence\": [SEQUENCE_ORIGINAL],\n    \"question\": \"Pergunta reformulada\",\n    \"type\": \"CSS_closed_multiple_choice_single_selection\",\n    \"active\": true,\n    \"required\": true,\n    \"points\": 5,\n    \"difficulty\": \"medium\",\n    \"options\": [\n      {\"value\": \"Texto da opção A\", \"sequence\": 1},\n      {\"value\": \"Texto da opção B (correta)\", \"sequence\": 2},\n      {\"value\": \"Texto da opção C\", \"sequence\": 3},\n      {\"value\": \"Texto da opção D\", \"sequence\": 4}\n    ],\n    \"correct_answer\": 2,\n    \"explanation\": \"Explicação detalhada\"\n  }\n}\n```\n\n## IMPORTANTE:\n- A posição da resposta correta deve ser ALEATÓRIA\n- correct_answer indica qual sequence contém a resposta correta\n- Para questões abertas, options = [] e correct_answer = null"
+            },
+            {
+              "name": "input",
+              "value": "=## DADOS DO TESTE:\nTítulo: {{ $('2. Buscar Dados Completos').first().json.resultado.test.title_byuser }}\n\n## CONTEÚDO DO VÍDEO (TRANSCRIPT):\n{{ $('2. Buscar Dados Completos').first().json.resultado.video.transcript || 'Transcript não disponível' }}\n\n## QUESTÃO ATUAL A SER REFORMULADA (obs: aleatorize a posição da correct_answer):\n{{ JSON.stringify($('2. Buscar Dados Completos').first().json.resultado.question_atual, null, 2) }}\n\n\n## INSTRUÇÕES DO USUÁRIO:\n**Prompt:** {{ $('1. Preparar Dados Entrada').first().json.prompt_byuser }}\n**Tipo:** {{ $('1. Preparar Dados Entrada').first().json.question_type }}\n**Quantidade de opções:** {{ $('1. Preparar Dados Entrada').first().json.total_options }}\n**Dificuldade:** {{ $('1. Preparar Dados Entrada').first().json.difficulty }}\n**Required:** {{ $('1. Preparar Dados Entrada').first().json.required }}\n\n## TAREFA:\nReformule a questão seguindo EXATAMENTE o prompt do usuário.\n\n**CRÍTICO:** Aleatorize a posição da resposta correta! Não coloque sempre na mesma posição.\n{{ $('1. Preparar Dados Entrada').first().json.data_lake_only ? '### use apenas o conteudo da transcrição do video para a formação da nova pergunta' : '### você pode usar criar a pergunta em cima de conteudos abertos, fora da transcrição, já que o usuário informou que o Data Lake Only: é false'}}\n\n\nMantenha:\n- ID original: {{ $('2. Buscar Dados Completos').first().json.resultado.question_atual.id }}\n- Sequence original: {{ $('2. Buscar Dados Completos').first().json.resultado.question_atual.sequence }}\n- Required: {{ $('1. Preparar Dados Entrada').first().json.required }}\n- Data Lake Only: {{ $('1. Preparar Dados Entrada').first().json.data_lake_only }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ {\n  \"format\": {\n    \"type\": \"json_schema\",\n    \"name\": \"questao_regenerada_schema\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"questao_regenerada\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"id\": {\n              \"type\": \"number\",\n              \"description\": \"ID original da questão\"\n            },\n            \"sequence\": {\n              \"type\": \"number\",\n              \"description\": \"Sequência original da questão\"\n            },\n            \"question\": {\n              \"type\": \"string\",\n              \"description\": \"Pergunta reformulada\"\n            },\n            \"type\": {\n              \"type\": \"string\",\n              \"enum\": [\"CSS_closed_multiple_choice_single_selection\", \"OST_open_short_text\"],\n              \"description\": \"Tipo da questão\"\n            },\n            \"active\": {\n              \"type\": \"boolean\",\n              \"description\": \"Se a questão está ativa\"\n            },\n            \"required\": {\n              \"type\": \"boolean\",\n              \"description\": \"Se a questão é obrigatória\"\n            },\n            \"points\": {\n              \"type\": \"number\",\n              \"description\": \"Pontos da questão (pode variar, sugestão da IA)\"\n            },\n            \"difficulty\": {\n              \"type\": \"string\",\n              \"enum\": [\"easy\", \"medium\", \"hard\"],\n              \"description\": \"Dificuldade da questão\"\n            },\n            \"correct_answer\": {\n              \"type\": [\"number\", \"null\"],\n              \"description\": \"Índice da opção correta ou null para questões abertas. DEVE SER ALEATÓRIO entre as opções e diferente do correct_answer da question antiga (escolha aleatoriamente um correct_answer) entre as opções.\"\n            },\n            \"options\": {\n              \"type\": \"array\",\n              \"description\": \"Opções da questão (vazio para questões abertas)\",\n              \"items\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"value\": {\n                    \"type\": \"string\",\n                    \"description\": \"Texto da opção\"\n                  },\n                  \"sequence\": {\n                    \"type\": \"number\",\n                    \"description\": \"Sequência da opção (1, 2, 3, 4...)\"\n                  }\n                },\n                \"required\": [\"value\", \"sequence\"],\n                \"additionalProperties\": false\n              }\n            },\n            \"explanation\": {\n              \"type\": \"string\",\n              \"description\": \"Explicação da resposta correta\"\n            }\n          },\n          \"required\": [\"id\", \"sequence\", \"question\", \"type\", \"active\", \"required\", \"points\", \"difficulty\", \"options\", \"correct_answer\", \"explanation\"],\n          \"additionalProperties\": false\n        }\n      },\n      \"required\": [\"questao_regenerada\"],\n      \"additionalProperties\": false\n    },\n    \"strict\": true\n  }\n} }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        1904
+      ],
+      "id": "41913398-f316-4e10-a5ed-5b62aba417e2",
+      "name": "3. Regenerar com IA",
+      "retryOnFail": true,
+      "credentials": {
+        "openAiApi": {
+          "id": "Er8fjgP28B3h16av",
+          "name": "OpenAi - Manytest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar resposta da IA\nconst dadosEntrada = $('1. Preparar Dados Entrada').first().json;\nconst dadosBusca = $('2. Buscar Dados Completos').first().json.resultado;\n\n// Extrair resposta da IA\nlet iaResponse;\ntry {\n  const responseText = $json.output[0].content[0].text;\n  iaResponse = JSON.parse(responseText);\n} catch (error) {\n  throw new Error(`Erro ao processar resposta da IA: ${error.message}`);\n}\n\nif (!iaResponse.questao_regenerada) {\n  throw new Error('Resposta da IA não contém questao_regenerada');\n}\n\nconst questaoNova = iaResponse.questao_regenerada;\n\n// Validar aleatorização do correct_answer\nif (questaoNova.type === 'CSS_closed_multiple_choice_single_selection') {\n  if (!questaoNova.correct_answer || questaoNova.correct_answer < 1 || questaoNova.correct_answer > questaoNova.options.length) {\n    throw new Error('correct_answer inválido ou não aleatorizado corretamente');\n  }\n}\n\n// Preparar dados para atualização do BD\nreturn {\n  test_id: dadosEntrada.test_id,\n  question_id_antiga: dadosEntrada.question_id,\n  question_antiga: dadosBusca.question_atual,\n  questao_nova: questaoNova,\n  questions_jsonb_atual: dadosBusca.test.questions_jsonb,\n  test_title: dadosBusca.test.title_byuser,\n  data_lake_only: dadosEntrada.data_lake_only\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2448,
+        1904
+      ],
+      "id": "6087be38-a2a6-4481-9391-c9f9fff1f89b",
+      "name": "4. Processar Resposta IA"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- TRANSACTION 1: Desativar questão antiga e criar nova\nBEGIN;\n\n-- 1. Desativar questão anterior\nUPDATE questions \nSET active = false \nWHERE id = $1 AND active = true;\n\n-- 2. Desativar opções da questão anterior\nUPDATE options \nSET active = false \nWHERE questions_id = $1 AND active = true;\n\n-- 3. Criar nova questão\nWITH nova_questao AS (\n  INSERT INTO questions (\n    test_id, \n    sequence, \n    question, \n    type, \n    active, \n    required,\n    data_lake_only,\n    remake_json\n  )\n  SELECT \n    test_id,\n    sequence,\n    $2, -- nova pergunta\n    $3, -- tipo\n    true,\n    $4::boolean, -- required\n    $5::boolean, -- data_lake_only\n    $6::json -- remake_json com histórico\n  FROM questions \n  WHERE id = $1\n  RETURNING id, sequence, test_id\n)\nSELECT \n  nq.id as nova_questao_id,\n  nq.sequence,\n  nq.test_id\nFROM nova_questao nq;\n\nCOMMIT;",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.question_id_antiga,\n  $json.questao_nova.question,\n  $json.questao_nova.type,\n  $json.questao_nova.required,\n  $json.data_lake_only,\n  JSON.stringify({\n    test: {\n      id: $json.test_id,\n      title_byuser: $json.test_title\n    },\n    question: $json.questao_nova\n  })\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2672,
+        1904
+      ],
+      "id": "8e620678-7c58-4f2d-9ea2-1f33ef2562fa",
+      "name": "5. Criar Nova Questão BD",
+      "credentials": {
+        "postgres": {
+          "id": "SRbBuiGN9bR0qhkI",
+          "name": "Postgres - manytest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- TRANSACTION 2: Inserir opções da nova questão\nBEGIN;\n\nINSERT INTO options (questions_id, sequence, option, text, correct, active)\nSELECT \n    $1::bigint as questions_id,\n    (opcao->>'sequence')::integer as sequence,\n    chr((64 + (opcao->>'sequence')::integer)::integer) as option, -- A, B, C, D...\n    opcao->>'value' as text,\n    CASE \n      WHEN (opcao->>'sequence')::integer = $2::integer THEN true \n      ELSE false \n    END as correct,\n    true as active\nFROM json_array_elements($3::json) as opcao;\n\nCOMMIT;\n\n-- Retornar opções criadas\nSELECT \n  json_build_object(\n    'status', 'success',\n    'nova_questao_id', $1,\n    'opcoes_criadas', (\n      SELECT json_agg(\n        json_build_object(\n          'id', o.id,\n          'sequence', o.sequence,\n          'option', o.option,\n          'text', o.text,\n          'correct', o.correct\n        ) ORDER BY o.sequence\n      )\n      FROM options o \n      WHERE o.questions_id = $1 AND o.active = true\n    )\n  ) as resultado;",
+        "options": {
+          "queryReplacement": "={{ [\n  $('5. Criar Nova Questão BD').first().json.nova_questao_id,\n  $('4. Processar Resposta IA').first().json.questao_nova.correct_answer,\n  JSON.stringify($('4. Processar Resposta IA').first().json.questao_nova.options)\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2896,
+        1904
+      ],
+      "id": "802596f3-dedc-4d8f-95cd-a4f73f2ab3aa",
+      "name": "6. Inserir Opções BD",
+      "credentials": {
+        "postgres": {
+          "id": "SRbBuiGN9bR0qhkI",
+          "name": "Postgres - manytest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Atualizar o JSONB questions em tests\nconst dadosProcessados = $('4. Processar Resposta IA').first().json;\nconst novaQuestaoId = $('5. Criar Nova Questão BD').first().json.nova_questao_id;\nconst opcoesResultado = $('6. Inserir Opções BD').first().json.resultado;\n\n// Pegar JSONB atual\nlet questionsJsonb = dadosProcessados.questions_jsonb_atual;\n\n// Encontrar índice da questão antiga no array\nconst questionIndex = questionsJsonb.questions.findIndex(\n  q => q.id === dadosProcessados.question_id_antiga\n);\n\nif (questionIndex === -1) {\n  throw new Error(`Questão ID ${dadosProcessados.question_id_antiga} não encontrada no JSONB`);\n}\n\n// Preparar nova questão para o JSONB\nconst questaoNovaJsonb = {\n  id: novaQuestaoId,\n  type: dadosProcessados.questao_nova.type,\n  active: true,\n  points: dadosProcessados.questao_nova.points,\n  options: dadosProcessados.questao_nova.options,\n  question: dadosProcessados.questao_nova.question,\n  required: dadosProcessados.questao_nova.required,\n  sequence: dadosProcessados.questao_nova.sequence,\n  difficulty: dadosProcessados.questao_nova.difficulty,\n  explanation: dadosProcessados.questao_nova.explanation,\n  correct_answer: dadosProcessados.questao_nova.correct_answer\n};\n\n// Substituir questão antiga pela nova\nquestionsJsonb.questions[questionIndex] = questaoNovaJsonb;\n\nreturn {\n  test_id: dadosProcessados.test_id,\n  questions_jsonb_atualizado: questionsJsonb,\n  nova_questao_id: novaQuestaoId,\n  questao_substituida_index: questionIndex\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        1904
+      ],
+      "id": "f8c3e58c-6390-4ffc-be8b-cc277f6e3769",
+      "name": "7. Preparar JSONB Atualizado"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- TRANSACTION 3: Atualizar JSONB em tests.questions\nBEGIN;\n\nUPDATE tests \nSET questions = $2::jsonb\nWHERE id = $1;\n\nCOMMIT;\n\n-- Retornar confirmação\nSELECT \n  json_build_object(\n    'status', 'success',\n    'test_id', $1,\n    'jsonb_atualizado', true,\n    'timestamp', NOW()\n  ) as resultado;",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.test_id,\n  JSON.stringify($json.questions_jsonb_atualizado)\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3328,
+        1904
+      ],
+      "id": "43e4ebd9-937b-4118-bcf7-f37a3088a3fd",
+      "name": "8. Atualizar JSONB Tests",
+      "credentials": {
+        "postgres": {
+          "id": "SRbBuiGN9bR0qhkI",
+          "name": "Postgres - manytest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Montar resposta final para o front\nconst dadosProcessados = $('4. Processar Resposta IA').first().json;\nconst novaQuestaoId = $('7. Preparar JSONB Atualizado').first().json.nova_questao_id;\nconst questaoNova = dadosProcessados.questao_nova;\n\n// Resposta final no formato esperado\nreturn {\n  test: {\n    id: dadosProcessados.test_id,\n    title_byuser: dadosProcessados.test_title\n  },\n  question: {\n    id: novaQuestaoId,\n    type: questaoNova.type,\n    active: questaoNova.active,\n    points: questaoNova.points,\n    options: questaoNova.options,\n    question: questaoNova.question,\n    required: questaoNova.required,\n    sequence: questaoNova.sequence,\n    difficulty: questaoNova.difficulty,\n    explanation: questaoNova.explanation,\n    correct_answer: questaoNova.correct_answer\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3552,
+        1904
+      ],
+      "id": "8735e1c1-f9d2-471a-879d-bc049fdbc822",
+      "name": "9. Montar Resposta Final"
+    }
+  ],
+  "connections": {
+    "Webhook - Regenerar Questão": {
+      "main": [
+        [
+          {
+            "node": "1. Preparar Dados Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Preparar Dados Entrada": {
+      "main": [
+        [
+          {
+            "node": "2. Buscar Dados Completos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Buscar Dados Completos": {
+      "main": [
+        [
+          {
+            "node": "3. Regenerar com IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Regenerar com IA": {
+      "main": [
+        [
+          {
+            "node": "4. Processar Resposta IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Processar Resposta IA": {
+      "main": [
+        [
+          {
+            "node": "5. Criar Nova Questão BD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Criar Nova Questão BD": {
+      "main": [
+        [
+          {
+            "node": "6. Inserir Opções BD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Inserir Opções BD": {
+      "main": [
+        [
+          {
+            "node": "7. Preparar JSONB Atualizado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. Preparar JSONB Atualizado": {
+      "main": [
+        [
+          {
+            "node": "8. Atualizar JSONB Tests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. Atualizar JSONB Tests": {
+      "main": [
+        [
+          {
+            "node": "9. Montar Resposta Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "598c4b69-4103-45d1-bdc3-0e8454a785cd",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "b8Cn1aXH02kC4tEe",
+  "tags": []
+}

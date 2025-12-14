@@ -1,0 +1,1126 @@
+{
+  "name": "[Tolls] !acesso",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/acesso_mostrar",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        864,
+        -208
+      ],
+      "id": "b3ec17d5-71bb-4a55-a636-1824701ec583",
+      "name": "webhook - !acesso_mostrar",
+      "webhookId": "2fbcfd2d-5bfe-4576-bdda-28d6108e2740"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT json_build_object(\n  'users', json_agg(resultados)\n)\nFROM (\n  SELECT\n    whatsapp,\n    name,\n    role,\n    is_active,\n    created_at,\n    CASE \n      WHEN last_login IS NOT NULL THEN to_char(last_login, 'DD/MM/YYYY HH24:MI')\n      ELSE 'Nunca logou'\n    END AS ultimo_login\n  FROM users\n  WHERE hidden = false\n  ORDER BY\n    CASE role\n      WHEN 'admin' THEN 1\n      WHEN 'moderator' THEN 2\n      WHEN 'user' THEN 3\n    END,\n    created_at DESC\n) AS resultados;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1088,
+        -208
+      ],
+      "id": "acca2c4f-f139-4adb-9004-19a384237fb4",
+      "name": "Postgres1",
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dc8a9b19-85b0-41ad-9a03-fac4c38c5b25",
+              "name": "message",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1520,
+        -208
+      ],
+      "id": "210e509f-bfa1-40bd-a3f9-15d2726b7258",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrair dados dos usuários\nconst inputData = $input.all()[0].json.json_build_object;\nconst users = inputData.users || [];\n\nif (users.length === 0) {\n  return [{\n    json: {\n      message: \"📋 *USUÁRIOS COM ACESSO*\\n\\n❌ Nenhum usuário encontrado.\",\n      total_users: 0\n    }\n  }];\n}\n\n// Agrupar por role\nconst usersByRole = {\n  admin: [],\n  moderator: [],\n  user: []\n};\n\nusers.forEach(user => {\n  if (usersByRole[user.role]) {\n    usersByRole[user.role].push(user);\n  }\n});\n\n// Construir mensagem compacta\nlet message = \"📋 *USUÁRIOS COM ACESSO*\\n\\n\";\n\n// Função para formatar cada usuário (linha única)\nfunction formatUser(user) {\n  const status = user.is_active ? \"🟢\" : \"🔴\";\n  const name = user.name || \"Sem nome\";\n  const phone = user.whatsapp;\n  \n  return `${status} ${phone} (${name})\\n`;\n}\n\n// Admins\nif (usersByRole.admin.length > 0) {\n  message += \"👑 *ADMINS*\\n\";\n  usersByRole.admin.forEach(user => {\n    message += formatUser(user);\n  });\n  message += \"\\n\";\n}\n\n// Moderators\nif (usersByRole.moderator.length > 0) {\n  message += \"🛡️ *MODERADORES*\\n\";\n  usersByRole.moderator.forEach(user => {\n    message += formatUser(user);\n  });\n  message += \"\\n\";\n}\n\n// Users\nif (usersByRole.user.length > 0) {\n  message += \"👤 *USUÁRIOS*\\n\";\n  usersByRole.user.forEach(user => {\n    message += formatUser(user);\n  });\n  message += \"\\n\";\n}\n\n// Resumo compacto\nmessage += `📊 Total: ${users.length} usuários`;\nmessage += ` (👑${usersByRole.admin.length} 🛡️${usersByRole.moderator.length} 👤${usersByRole.user.length})`;\n\nreturn [{\n  json: {\n    message: message,\n    total_users: users.length,\n    breakdown: {\n      admin: usersByRole.admin.length,\n      moderator: usersByRole.moderator.length,\n      user: usersByRole.user.length\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        -208
+      ],
+      "id": "73e272ef-2f89-4b48-a135-36d7e7cf8b4d",
+      "name": "Formatar Lista Usuários"
+    },
+    {
+      "parameters": {
+        "content": "## Comando !acesso_mostrar\n\n**Funcionalidade:** Lista usuários com acesso liberado ao sistema\n\n**Fluxo:**\n1. Recebe webhook com comando !acesso_mostrar\n2. Consulta PostgreSQL para buscar todos os usuários ativos\n3. Agrupa usuários por role (admin, moderator, user)\n4. Formata mensagem compacta com status e informações\n5. Inclui resumo com contagem total por categoria\n\n**Saída inclui:**\n- Lista por hierarquia: 👑 Admins → 🛡️ Moderadores → 👤 Usuários\n- Status ativo/inativo (🟢/🔴)\n- WhatsApp + Nome de cada usuário\n- Resumo: Total geral e breakdown por role\n\n**Casos de uso:**\n- Auditoria de usuários com acesso\n- Verificar hierarquia de permissões\n- Controle administrativo de usuários",
+        "height": 100,
+        "width": 580,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -208
+      ],
+      "id": "21ebb42a-8711-4cb8-9ae1-b7738432cd20",
+      "name": "Sticky - Acesso Mostrar"
+    },
+    {
+      "parameters": {
+        "content": "## Comando !acesso_add / !acesso_adicionar\n\n**Funcionalidade:** Adicionar novo usuário ao sistema\n\n**Fluxo:**\n1. Recebe webhook com parâmetros: WhatsApp [Nome] [Role]\n2. Valida formato do WhatsApp (55 + DDD + número)\n3. Valida role (user, moderator, admin)\n4. Executa UPSERT no PostgreSQL (INSERT ou UPDATE)\n5. Formata resposta de confirmação\n\n**Parâmetros aceitos:**\n- `!acesso_add 5519996665555` (role padrão: user)\n- `!acesso_add 5519996665555 João` (nome + role padrão)\n- `!acesso_add 5519996665555 admin` (role específica)\n- `!acesso_add 5519996665555 João admin` (completo)\n\n**Validações:**\n- WhatsApp: formato brasileiro obrigatório\n- Role: apenas user/moderator/admin\n- Conflict handling: atualiza dados existentes\n\n**Casos de uso:**\n- Onboarding de novos usuários\n- Atualização de permissões\n- Correção de dados cadastrais",
+        "height": 100,
+        "width": 580,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        192,
+        128
+      ],
+      "id": "c05bf38a-396f-4fc0-932f-18ca070f38bd",
+      "name": "Sticky - Acesso Add"
+    },
+    {
+      "parameters": {
+        "content": "## Comando !acesso_remove\n\n**Funcionalidade:** Remover acesso de usuário do sistema\n\n**Fluxo:**\n1. Recebe webhook com WhatsApp do usuário a remover\n2. Valida formato do WhatsApp\n3. Verifica se não está removendo a si mesmo\n4. Executa UPDATE no PostgreSQL (hidden=true, is_active=false)\n5. Confirma remoção ou informa se usuário não foi encontrado\n\n**Parâmetros:**\n- `!acesso_remove 5519996665555`\n\n**Validações:**\n- WhatsApp: formato brasileiro obrigatório\n- Proteção: usuário não pode remover próprio acesso\n- Verificação: confirma se usuário existe antes da remoção\n\n**Comportamento:**\n- Soft delete: usuário fica hidden, mas mantém histórico\n- Resposta diferenciada: sucesso vs usuário não encontrado\n\n**Casos de uso:**\n- Remoção de acesso por segurança\n- Offboarding de usuários\n- Controle administrativo de permissões",
+        "height": 100,
+        "width": 580,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        192,
+        848
+      ],
+      "id": "82b4da62-c8f5-4e22-835d-f5eea5306433",
+      "name": "Sticky - Acesso Remove"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "access/add",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "3596a64a-5152-46ba-bc38-b70ccf93816e",
+      "name": "REST API - access add",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        -1040
+      ],
+      "webhookId": "GENERATE_NEW_UUID_HERE"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "access/show",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "b864166d-1a6c-457a-9d33-29988bad9fa3",
+      "name": "REST API - access show",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        -864
+      ],
+      "webhookId": "GENERATE_NEW_UUID_HERE"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "access/change-role",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "991a0b85-57e4-403e-8083-f8da033c7382",
+      "name": "REST API - access change role",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        -688
+      ],
+      "webhookId": "GENERATE_NEW_UUID_HERE"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "access/remove",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "53aa1e7b-3bc3-43bd-a6a9-f4324a4e8372",
+      "name": "REST API - access remove",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        -480
+      ],
+      "webhookId": "GENERATE_NEW_UUID_HERE"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/functions/v1/access-show",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -640,
+        -864
+      ],
+      "id": "e7af101e-0ae5-4145-a55e-06e625223c62",
+      "name": "Edge Funcion - access-show"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/functions/v1/access-add",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "whatsapp",
+              "value": "={{ $json.body.whatsapp }}"
+            },
+            {
+              "name": "name",
+              "value": "={{ $json.body.name }}"
+            },
+            {
+              "name": "role",
+              "value": "={{ $json.body.role }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -640,
+        -1040
+      ],
+      "id": "63df1860-f668-4289-8d74-ab961fb08bc8",
+      "name": "edge function - access-add"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/functions/v1/access-change-role",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "whatsapp",
+              "value": "={{ $json.body.whatsapp }}"
+            },
+            {
+              "name": "role",
+              "value": "={{ $json.body.role }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -640,
+        -688
+      ],
+      "id": "e03947df-74a0-41fd-b87d-e58c7c756862",
+      "name": "edge function - access-change-role"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/functions/v1/access-remove",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "whatsapp",
+              "value": "={{ $json.body.whatsapp }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -640,
+        -480
+      ],
+      "id": "f13b5d57-29e5-4dd4-8d75-1960dd259777",
+      "name": "edge function - acces-remove"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('webhook - !acesso_mostrar').first().json.body.instance_info.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "number",
+              "value": "={{ $('webhook - !acesso_mostrar').first().json.body.user.whatsapp }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e7057d68-d8d9-428a-ac29-76ebf8caf2bb",
+      "name": "Enviar Resposta2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1728,
+        -208
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/acesso_add",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "3a63ae3c-b2eb-4802-81d4-3adb80b6ea67",
+      "name": "Webhook - Acesso Add",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        816,
+        128
+      ],
+      "webhookId": "650e8400-e29b-41d4-a716-446655440002"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/acesso_adicionar",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "2ec56c08-7c09-4286-b5fa-b83d5d93ae07",
+      "name": "Webhook - Acesso Adicionar",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        816,
+        336
+      ],
+      "webhookId": "650e8400-e29b-41d4-a716-446655440011"
+    },
+    {
+      "parameters": {},
+      "id": "818183ec-ec2b-4d97-95f3-af9a0e4ca06c",
+      "name": "Merge Webhooks",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1056,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Extrair dados do webhook\nconst body = $json.body || {};\n\n// CORREÇÃO: Buscar texto em múltiplos campos possíveis\nconst textContent = body.execution_data?.message_text || \n                   body.messag?.text || \n                   body.message?.text || \n                   '';\n\n// Debug para verificar de onde veio o texto\nconsole.log('Debug - Fonte do texto:');\nconsole.log('- execution_data.message_text:', body.execution_data?.message_text);\nconsole.log('- messag.text:', body.messag?.text);\nconsole.log('- message.text:', body.message?.text);\nconsole.log('- Texto final usado:', textContent);\n\nconst userWho = body.user?.whatsapp || '';\nconst webhookUrl = $json.webhookUrl || '';\nconst instanceInfo = body.instance_info || body.instance || {};\n\n// Função para validar WhatsApp\nfunction isValidWhatsApp(number) {\n  return /^55\\d{10,11}$/.test(number);\n}\n\n// Função para validar role\nfunction isValidRole(role) {\n  return ['user', 'moderator', 'admin'].includes(role.toLowerCase());\n}\n\n// Split dos parâmetros (já vem sem o comando)\nconst parts = textContent.trim().split(/\\s+/);\n\nif (parts.length === 0 || !parts[0]) {\n  return {\n    json: {\n      error: true,\n      message: \"❌ *ERRO DE PARÂMETROS*\\n\\nUso correto:\\n• `!acesso_add 5519996665555`\\n• `!acesso_add 5519996665555 João`\\n• `!acesso_add 5519996665555 admin`\\n• `!acesso_add 5519996665555 João admin`\\n\\nTexto recebido: '\" + textContent + \"'\",\n      user_whatsapp: userWho,\n      webhook_url: webhookUrl,\n      instance_info: instanceInfo\n    }\n  };\n}\n\nconst whatsapp = parts[0];\nlet name = 'Nome Pendente';\nlet role = 'user';\n\n// Validar WhatsApp\nif (!isValidWhatsApp(whatsapp)) {\n  return {\n    json: {\n      error: true,\n      message: \"❌ *WHATSAPP INVÁLIDO*\\n\\nO número deve:\\n• Começar com 55 (Brasil)\\n• Ter 13 dígitos (55 + DDD + número)\\n\\nExemplo: `5519996665555`\\n\\nNúmero recebido: '\" + whatsapp + \"'\",\n      user_whatsapp: userWho,\n      webhook_url: webhookUrl,\n      instance_info: instanceInfo\n    }\n  };\n}\n\n// Analisar parâmetros adicionais\nif (parts.length >= 2) {\n  const param2 = parts[1];\n  \n  if (parts.length === 2) {\n    // 2 parâmetros: pode ser nome OU role\n    if (isValidRole(param2)) {\n      role = param2.toLowerCase();\n    } else {\n      name = param2;\n    }\n  } else if (parts.length >= 3) {\n    // 3+ parâmetros: nome + role\n    name = param2;\n    const param3 = parts[2];\n    \n    if (isValidRole(param3)) {\n      role = param3.toLowerCase();\n    } else {\n      return {\n        json: {\n          error: true,\n          message: `❌ *ROLE INVÁLIDA*\\n\\nRole '${param3}' não existe.\\n\\nRoles válidas:\\n• user (padrão)\\n• moderator\\n• admin`,\n          user_whatsapp: userWho,\n          webhook_url: webhookUrl,\n          instance_info: instanceInfo\n        }\n      };\n    }\n  }\n}\n\nreturn {\n  json: {\n    error: false,\n    whatsapp: whatsapp,\n    name: name,\n    role: role,\n    user_whatsapp: userWho,\n    webhook_url: webhookUrl,\n    original_text: textContent,\n    instance_info: instanceInfo\n  }\n};"
+      },
+      "id": "3a6e02f1-0998-41be-bd60-f7d03ebdfd6e",
+      "name": "Parse Parâmetros",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "650e8400-e29b-41d4-a716-446655440012",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d1cc20fa-b9a7-4093-9a1e-003fca0a9b10",
+      "name": "Tem Erro?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1536,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO users (whatsapp, name, role, is_active, hidden, created_by) \nVALUES ($1, $2, $3, true, false, \n    (SELECT id FROM users WHERE whatsapp = $4 LIMIT 1))\nON CONFLICT (whatsapp) DO UPDATE SET \n    name = CASE \n        WHEN EXCLUDED.name != 'Nome Pendente' THEN EXCLUDED.name\n        ELSE COALESCE(users.name, EXCLUDED.name)\n    END,\n    role = EXCLUDED.role,\n    hidden = false,\n    is_active = true,\n    created_by = COALESCE(users.created_by, EXCLUDED.created_by)\nRETURNING \n    whatsapp, \n    name, \n    role,\n    is_active,\n    CASE \n        WHEN xmax = 0 THEN 'inserted'\n        ELSE 'updated'\n    END as action;",
+        "options": {
+          "queryReplacement": "={{ $json.whatsapp }}, {{ $json.name }}, {{ $json.role }}, {{ $json.user_whatsapp }}"
+        }
+      },
+      "id": "6ec04cab-8d1a-43ed-95be-6aaf7c994366",
+      "name": "Inserir/Atualizar Usuário",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1776,
+        128
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "b47af30c-5f77-4418-86a1-0e3d9ca96a8f",
+      "name": "Merge Respostas",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        2016,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "cb0f0732-796f-4f77-8a67-db6b966b966e",
+      "name": "Resposta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2256,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const result = $json;\nconst params = $node[\"Parse Parâmetros\"].json;\n\nconst roleEmojis = {\n  'admin': '👑',\n  'moderator': '🛡️',\n  'user': '👤'\n};\n\nconst actionText = result.action === 'inserted' ? 'ADICIONADO' : 'ATUALIZADO';\nconst actionEmoji = result.action === 'inserted' ? '✅' : '🔄';\n\nlet message = `${actionEmoji} *USUÁRIO ${actionText}*\\n\\n`;\nmessage += `📱 WhatsApp: ${result.whatsapp}\\n`;\nmessage += `📝 Nome: ${result.name}\\n`;\nmessage += `${roleEmojis[result.role]} Role: ${result.role.toUpperCase()}\\n`;\nmessage += `🟢 Status: ATIVO\\n\\n`;\n\nif (result.action === 'updated') {\n  message += \"ℹ️ Usuário já existia e foi atualizado com as novas informações.\";\n} else {\n  message += \"🎉 Novo usuário adicionado ao sistema!\";\n}\n\nreturn {\n  json: {\n    message: message,\n    action: result.action,\n    whatsapp: result.whatsapp,\n    webhook_url: params.webhook_url,\n    user_whatsapp: params.user_whatsapp,\n    instance_info: params.instance_info\n  }\n};"
+      },
+      "id": "d6824a3c-e621-4271-aa39-e0199afc7954",
+      "name": "Formatar Resposta Sucesso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2496,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.instance_info.host || 'https://mgm.uazapi.com' }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "number",
+              "value": "={{ $json.user_whatsapp }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "beb07a32-87dc-400d-82de-56e8273645a7",
+      "name": "Enviar Resposta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2736,
+        240
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/acesso_remove",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "85aed04f-67ca-4655-8a33-55247c147e5a",
+      "name": "Webhook - Acesso Remove",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        928,
+        800
+      ],
+      "webhookId": "750e8400-e29b-41d4-a716-446655440002"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Extrair dados do webhook\nconst body = $json.body || {};\n\n// CORREÇÃO: Buscar texto em múltiplos campos possíveis\nconst textContent = body.execution_data?.message_text || \n                   body.messag?.text || \n                   body.message?.text || \n                   '';\n\n// Debug para verificar de onde veio o texto\nconsole.log('Debug - Fonte do texto:');\nconsole.log('- execution_data.message_text:', body.execution_data?.message_text);\nconsole.log('- messag.text:', body.messag?.text);\nconsole.log('- message.text:', body.message?.text);\nconsole.log('- Texto final usado:', textContent);\n\nconst userWho = body.user?.whatsapp || '';\nconst webhookUrl = $json.webhookUrl || '';\nconst instanceInfo = body.instance_info || body.instance || {};\n\n// Função para validar WhatsApp\nfunction isValidWhatsApp(number) {\n  return /^55\\d{10,11}$/.test(number);\n}\n\n// Split dos parâmetros (já vem sem o comando)\nconst parts = textContent.trim().split(/\\s+/);\n\nif (parts.length === 0 || !parts[0]) {\n  return {\n    json: {\n      error: true,\n      message: \"❌ *ERRO DE PARÂMETROS*\\n\\nUso correto:\\n• `!acesso_remove 5519996665555`\\n\\nTexto recebido: '\" + textContent + \"'\",\n      user_whatsapp: userWho,\n      webhook_url: webhookUrl,\n      instance_info: instanceInfo\n    }\n  };\n}\n\nconst whatsapp = parts[0];\n\n// Validar WhatsApp\nif (!isValidWhatsApp(whatsapp)) {\n  return {\n    json: {\n      error: true,\n      message: \"❌ *WHATSAPP INVÁLIDO*\\n\\nO número deve:\\n• Começar com 55 (Brasil)\\n• Ter 13 dígitos (55 + DDD + número)\\n\\nExemplo: `5519996665555`\\n\\nNúmero recebido: '\" + whatsapp + \"'\",\n      user_whatsapp: userWho,\n      webhook_url: webhookUrl,\n      instance_info: instanceInfo\n    }\n  };\n}\n\n// Verificar se não está tentando remover a si mesmo\nif (whatsapp === userWho) {\n  return {\n    json: {\n      error: true,\n      message: \"❌ *OPERAÇÃO NEGADA*\\n\\nVocê não pode remover seu próprio acesso!\\n\\nPeça para outro administrador fazer isso.\",\n      user_whatsapp: userWho,\n      webhook_url: webhookUrl,\n      instance_info: instanceInfo\n    }\n  };\n}\n\nreturn {\n  json: {\n    error: false,\n    whatsapp: whatsapp,\n    user_whatsapp: userWho,\n    webhook_url: webhookUrl,\n    original_text: textContent,\n    instance_info: instanceInfo\n  }\n};"
+      },
+      "id": "af2ae801-aa29-4035-8440-cba56089bee3",
+      "name": "Parse Parâmetros Remove",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE users \nSET hidden = true, is_active = false \nWHERE whatsapp = $1 AND hidden = false\nRETURNING whatsapp, name, role;",
+        "options": {
+          "queryReplacement": "={{ $json.whatsapp }}"
+        }
+      },
+      "id": "2bd92ab7-5d76-4cb0-a986-6ecbf1ca724a",
+      "name": "Remover Usuário",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1600,
+        720
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "35043b9d-12ef-4670-a845-ae672ba97170",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1824,
+        720
+      ],
+      "id": "98676419-430f-4813-8e73-8711b6ebcca9",
+      "name": "Usuário Encontrado?"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const params = $node[\"Parse Parâmetros Remove\"].json;\n\nlet message = `❌ *USUÁRIO NÃO ENCONTRADO*\\n\\n`;\nmessage += `📱 WhatsApp: ${params.whatsapp}\\n\\n`;\nmessage += `ℹ️ O usuário não foi encontrado ou já foi removido anteriormente.\\n\\n`;\nmessage += `💡 Use \\`!acesso_mostrar\\` para ver os usuários ativos.`;\n\nreturn {\n  json: {\n    message: message,\n    whatsapp: params.whatsapp,\n    webhook_url: params.webhook_url,\n    user_whatsapp: params.user_whatsapp,\n    instance_info: params.instance_info\n  }\n};"
+      },
+      "id": "494c3fcc-764f-4de9-859c-9d7771216576",
+      "name": "Formatar Resposta Erro Não Encontrado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2048,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "750e8400-e29b-41d4-a716-446655440012",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7c6f11a6-7ae0-45cb-99d9-5883cebf63af",
+      "name": "Tem Erro?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1376,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const result = $json;\nconst params = $node[\"Parse Parâmetros Remove\"].json;\n\nconst roleEmojis = {\n  'admin': '👑',\n  'moderator': '🛡️',\n  'user': '👤'\n};\n\nlet message = `🗑️ *USUÁRIO REMOVIDO*\\n\\n`;\nmessage += `📱 WhatsApp: ${result.whatsapp}\\n`;\nmessage += `📝 Nome: ${result.name || 'Nome não definido'}\\n`;\nmessage += `${roleEmojis[result.role] || '❓'} Role: ${result.role?.toUpperCase() || 'INDEFINIDA'}\\n`;\nmessage += `🔴 Status: REMOVIDO\\n\\n`;\nmessage += `⚠️ O usuário foi removido do sistema e não terá mais acesso aos comandos.`;\n\nreturn {\n  json: {\n    message: message,\n    whatsapp: result.whatsapp,\n    webhook_url: params.webhook_url,\n    user_whatsapp: params.user_whatsapp,\n    instance_info: params.instance_info\n  }\n};"
+      },
+      "id": "5576f48d-a9ec-415c-a3a9-ec2fe316e86e",
+      "name": "Formatar Resposta Sucesso1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2048,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "db2fb5f4-e918-4299-a7db-8a93cd139467",
+      "name": "Merge Respostas1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        2272,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.instance_info.host || 'https://mgm.uazapi.com' }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "number",
+              "value": "={{ $json.user_whatsapp }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "37e13b47-ec63-43a8-a2b2-db958d3d3ea9",
+      "name": "Enviar Resposta1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2496,
+        816
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "13221f9b-79d8-4f82-970a-89269e91a895",
+      "name": "Resposta Webhook1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2720,
+        816
+      ]
+    }
+  ],
+  "connections": {
+    "webhook - !acesso_mostrar": {
+      "main": [
+        [
+          {
+            "node": "Postgres1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres1": {
+      "main": [
+        [
+          {
+            "node": "Formatar Lista Usuários",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Lista Usuários": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "REST API - access add": {
+      "main": [
+        [
+          {
+            "node": "edge function - access-add",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "REST API - access show": {
+      "main": [
+        [
+          {
+            "node": "Edge Funcion - access-show",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "REST API - access change role": {
+      "main": [
+        [
+          {
+            "node": "edge function - access-change-role",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "REST API - access remove": {
+      "main": [
+        [
+          {
+            "node": "edge function - acces-remove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Enviar Resposta2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Acesso Add": {
+      "main": [
+        [
+          {
+            "node": "Merge Webhooks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Acesso Adicionar": {
+      "main": [
+        [
+          {
+            "node": "Merge Webhooks",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Webhooks": {
+      "main": [
+        [
+          {
+            "node": "Parse Parâmetros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Parâmetros": {
+      "main": [
+        [
+          {
+            "node": "Tem Erro?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem Erro?": {
+      "main": [
+        [
+          {
+            "node": "Inserir/Atualizar Usuário",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Respostas",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Inserir/Atualizar Usuário": {
+      "main": [
+        [
+          {
+            "node": "Merge Respostas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Respostas": {
+      "main": [
+        [
+          {
+            "node": "Resposta Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resposta Webhook": {
+      "main": [
+        [
+          {
+            "node": "Formatar Resposta Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Resposta Sucesso": {
+      "main": [
+        [
+          {
+            "node": "Enviar Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Acesso Remove": {
+      "main": [
+        [
+          {
+            "node": "Parse Parâmetros Remove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Parâmetros Remove": {
+      "main": [
+        [
+          {
+            "node": "Tem Erro?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remover Usuário": {
+      "main": [
+        [
+          {
+            "node": "Usuário Encontrado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Usuário Encontrado?": {
+      "main": [
+        [
+          {
+            "node": "Formatar Resposta Sucesso1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatar Resposta Erro Não Encontrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Resposta Erro Não Encontrado": {
+      "main": [
+        [
+          {
+            "node": "Merge Respostas1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Tem Erro?1": {
+      "main": [
+        [
+          {
+            "node": "Remover Usuário",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Respostas1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Formatar Resposta Sucesso1": {
+      "main": [
+        [
+          {
+            "node": "Merge Respostas1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Respostas1": {
+      "main": [
+        [
+          {
+            "node": "Enviar Resposta1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Resposta1": {
+      "main": [
+        [
+          {
+            "node": "Resposta Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "acf95507-98cf-469a-9565-39d638736aa4",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "piW5nxrjFGDfNzLm",
+  "tags": []
+}

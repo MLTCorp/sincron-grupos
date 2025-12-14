@@ -1,0 +1,396 @@
+{
+  "name": "2 - Manitest Agent (Conversação)",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -368,
+        80
+      ],
+      "id": "24dbe91b-a0eb-4dac-b7b6-a6c9ae5f9e83",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "Er8fjgP28B3h16av",
+          "name": "OpenAi - Manytest"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        80
+      ],
+      "id": "950669b2-4549-4994-a20e-5e7892abad1d",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Dados de entrada').item.json.sessionId }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "position": [
+        -208,
+        80
+      ],
+      "id": "802810f3-36b8-4b10-b9df-54179c2ac387",
+      "name": "Redis Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "RL94BpyzAwi3lFOJ",
+          "name": "Redis - railway"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=# Você é a ManyTest - Criadora de Testes de avaliação\n\nVocê é a *ManyTest*. Siga EXATAMENTE este script - NUNCA desvie:\n\n## FLUXO OBRIGATÓRIO - NOVA ORDEM OTIMIZADA:\n\n### 1. SAUDAÇÃO (primeiro contato)\nOlá, sou a *Manytest* e quero te dar Boas vindas 😆🎉.\n\nVou te ajudar a criar, aplicar e corrigir um teste a partir do conteúdo de um vídeo do Youtube.\n\nPodemos começar?\n\n### 2. RESPOSTA\n- SIM: \"Então vamos criar o seu teste juntos\"\n- NÃO: \"Tudo bem! Quando quiser criar me manda uma nova mensagem.\" (PARE)\n\n### 3. VÍDEO (junto da mensagem #2 - sim...)\nCole o link do vídeo do Youtube que você escolheu.\n\n### 4. VALIDAÇÃO E ANÁLISE IMEDIATA\n- CHAME IMEDIATAMENTE A TOOL analisar_video_youtube QUANDO RECEBER O LINK\n\nimportante: ao receber o link do youtube (detalhe: pode ser youtube.com ou youtu.be), chame imediatamente a tool analisar_video_youtube para fazer a analise do video e responda como o exemplo abaixo, dizendo que irá analisar mesmo ja tendo recebido a analise completa. \\\npassos: chamar a tool primeiro, pegar o nome do video, responder conforme abaixo\n\n- YouTube: \"Ótimo! Vou analisar o vídeo [nome do video vindo da tool analisar_video_youtube]. Enquanto analiso o vídeo, vamos configurar seu teste...\" diga o nome do video \n- Não YouTube: \"Ops... esse link não é do youtube. Cole o link de um vídeo do Youtube que você quer usar para criar o teste.\"\n\n\n### 5. CONFIGURAÇÃO DO TESTE (após disparar análise)\nAgora me diga, quantas perguntas você quer no teste: 3, 5 ou 10 perguntas?\n(ACEITE APENAS: 3, 5 ou 10)\n\n### 6. DISTRIBUIÇÃO (seja flexível mas mantenha a soma correta e use a tool de calculator para te auxiliar na soma para validar o total)\nex 1:\n3 perguntas: \n\n• 3 perguntas de multipla-escolha?\n• 2 perguntas de multipla-escolha e 1 pergunta aberta?\n\n----- ex 2:\n5 perguntas: \n\n• 5 perguntas de multipla-escolha?\n• 4 perguntas de multipla-escolha e 1 pergunta aberta?\n\n10 perguntas: \n• 10 perguntas de multipla-escolha\n• 8 perguntas de multipla-escolha e 2 perguntas abertas\n\n### 7. TÍTULO DO TESTE\n\"Por último, me diga qual será o título do seu teste. Como você quer chamá-lo?\" se o usuario não souber, use o titulo do video que veio na tool de analisar_video_youtube\n\n### 8. GERAÇÃO\n\"Ok, vou gerar um teste sobre *[TEMA]* com [X] perguntas sendo [DISTRIBUIÇÃO], baseado no vídeo que você me enviou.\n\nPosso gerar o teste?\"\"\n\napós a confirmação CHAME tool Gerar Questionário IMEDIATAMENTE\n\n### 9. RESULTADO\nForneça os links usando o test_id retornado:\n- Criador do teste: https://manytest.bubbleapps.io/version-test/?id=[test_id]&edit=true\n- Respondente: https://manytest.bubbleapps.io/version-test/aluno?id=[test_id]\n\n## REGRAS RÍGIDAS:\n❌ NUNCA: Pedir dados pessoais, pular etapas, aceitar somas incorretas, explicar pedagogia, múltiplas perguntas\n✅ SEMPRE: Seguir script, uma pergunta por vez, aguardar resposta, mostrar progresso\n✅ SEMPRE: Disparar análise do vídeo IMEDIATAMENTE após receber URL válida\n✅ SEMPRE: Continuar coletando informações enquanto análise roda em background\n\n## TOOLS:\n\n### \"Analisar Vídeo YouTube\"\nChamar: IMEDIATAMENTE após validar YouTube (etapa 4)\nParâmetros:\n- video_url: [URL completa]\n- video_id: [ID extraído da URL]\n\n### \"Gerar Questionário\"\nChamar: Durante confirmação final (etapa 8)\nParâmetros:\n- video_url: [URL do vídeo]\n- video_id: [ID do vídeo]\n- quiz_parameters: {\n    \"title\": \"[TÍTULO informado pelo usuário]\",\n    \"total_questions\": [número total],\n    \"multiple_choice_count\": [múltipla escolha],\n    \"essay_count\": [dissertativas],\n    \"difficulty\": \"medium\"\n  }\n\n## FLEXIBILIDADE:\n✅ ACEITE: Variações de distribuição que somem o total, diferentes formas de expressar escolhas\n✅ ACEITE: mudanças de escolhas\n✅ FALE SOBRE O VÍDEO após fazer a leitura (mencione brevemente o conteúdo)\n❌ REJEITE: Links não-YouTube, somas incorretas\n\n## OTIMIZAÇÃO DE TEMPO:\n- URL → Análise IMEDIATA (background)\n- Configuração do teste (quantidade + distribuição)\n- Título do teste\n- Geração com todos os dados prontos\n\nERROS:\n- Soma errada: \"A soma precisa ser [TOTAL]. Quantas múltipla escolha e quantas abertas?\"\n- Total inválido: \"Escolha entre 3, 5 ou 10 perguntas.\"\n- Total inválido: \"Por enquanto só consigo fazer até 10 questões\"\n\nTom: Casual, natural, focado no resultado, eficiente."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        -208
+      ],
+      "id": "ca03ee4a-6f6f-4500-bf02-e4a7b42593b6",
+      "name": "ManyTest Agent [Whatsapp]",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "chat-input",
+              "name": "chatInput",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "session-id",
+              "name": "sessionId",
+              "value": "={{ $json.sessionId || $json.user_info.mobile_e164 ||'default-session' }}",
+              "type": "string"
+            },
+            {
+              "id": "user-context",
+              "name": "userContext",
+              "value": "={{ $json.user_info || {} }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -336,
+        -208
+      ],
+      "id": "e8740a89-3a88-4390-a68d-44621bd82ea4",
+      "name": "Dados de entrada"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "user",
+              "value": "={{ $('Start').item.json.body_chatInput }}"
+            },
+            {
+              "key": "AI",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -208
+      ],
+      "id": "962fb6a1-8c72-433a-add0-5621664de514",
+      "name": "Execution Data"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "chatInput"
+            },
+            {
+              "name": "user_info",
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "id": "262e8684-028d-48dc-bb89-cb30450db459",
+      "typeVersion": 1.1,
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -576,
+        -208
+      ]
+    },
+    {
+      "parameters": {
+        "description": "# Ferramenta: Analisar Vídeo do YouTube\n\nEsta ferramenta analisa um vídeo do YouTube para extrair transcrição, resumo e tópicos principais. Chame essa tool IMEDIATAMENTE após receber um link de video do youtube\n\n## Quando usar:\n- SEMPRE QUE receber um link válido do YouTube\n\n## Retorna:\n- Transcrição completa do vídeo\n- Resumo estruturado\n- Tópicos principais com timestamps\n- Metadados do vídeo (título, duração, etc.)",
+        "workflowId": {
+          "__rl": true,
+          "value": "nJdEKFn4IUoFP6IW",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/nJdEKFn4IUoFP6IW",
+          "cachedResultName": "Tool - Análise de videos Youtube"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_info": "={{ $json.userContext }}",
+            "video_id": "={{ $fromAI('video_id', 'id do video extraido do link do youtube, exemplo https://www.youtube.com/watch?v=VIDEO_ID ou https://youtu.be/VIDEO_ID?si=V6emKxSJ8Oqyg51s se atente ao parse no ?', 'string') }}",
+            "video_url": "={{ $fromAI('video_id', 'URL completa do vídeo do YouTube fornecida pelo usuário. Exemplo: https://www.youtube.com/watch?v=VIDEO_ID ou https://youtu.be/VIDEO_ID?si=V6emKxSJ8Oqyg51', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "video_id",
+              "displayName": "video_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "video_url",
+              "displayName": "video_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_info",
+              "displayName": "user_info",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        160,
+        64
+      ],
+      "id": "cf4138c3-bbcc-4550-8ec2-40b8abb7b2e5",
+      "name": "analisar_video_youtube"
+    },
+    {
+      "parameters": {
+        "description": "# Ferramenta: Gerar Questionário Educacional\n\nEsta ferramenta cria questionários estruturados baseados em vídeos do YouTube. Use quando o usuário fornecer todas as informações necessárias e confirmar a criação.\n\n## Quando usar:\n- Após coletar link do YouTube válido\n- Depois de ter arâmetros do questionário definidos (título, quantidade, tipos)\n- Informações do usuário coletadas\n- Confirmação final recebida\n\n## Importante:\n- Valide se a soma de múltipla escolha + dissertativas = total\n- Use informações coletadas na conversa para preencher os campos",
+        "workflowId": {
+          "__rl": true,
+          "value": "xfoD8YboKOGl6JDF",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/xfoD8YboKOGl6JDF",
+          "cachedResultName": "Tool - Geração de testes"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_info": "={{ $json.userContext }}",
+            "video_url": "={{ $fromAI('video_url', 'URL completa do vídeo do YouTube fornecida pelo usuário. Exemplo: https://www.youtube.com/watch?v=VIDEO_ID', 'string') }}",
+            "video_id": "={{ $fromAI('video_id', 'id do video extraido do link do youtube, exemplo https://www.youtube.com/watch?v=VIDEO_ID ou https://youtu.be/VIDEO_ID?si=V6emKxSJ8Oqyg51s se atente ao parse no ?', 'string') }}",
+            "quiz_parameters": "={{ $fromAI('quiz_parameters', 'Objeto JSON com: {title: string, total_questions: number, multiple_choice_count: number, essay_count: number, difficulty: easy|medium|hard}', 'json') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "video_id",
+              "displayName": "video_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "video_url",
+              "displayName": "video_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "quiz_parameters",
+              "displayName": "quiz_parameters",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "user_info",
+              "displayName": "user_info",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        64
+      ],
+      "id": "8eeda92f-de53-4504-ac01-c6a47f66ba2f",
+      "name": "gerar_questionario"
+    }
+  ],
+  "connections": {
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "ManyTest Agent [Whatsapp]",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "ManyTest Agent [Whatsapp]",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "ManyTest Agent [Whatsapp]",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ManyTest Agent [Whatsapp]": {
+      "main": [
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados de entrada": {
+      "main": [
+        [
+          {
+            "node": "ManyTest Agent [Whatsapp]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Dados de entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "analisar_video_youtube": {
+      "ai_tool": [
+        [
+          {
+            "node": "ManyTest Agent [Whatsapp]",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gerar_questionario": {
+      "ai_tool": [
+        [
+          {
+            "node": "ManyTest Agent [Whatsapp]",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "17dc9ff6-0e85-4ac4-b4ec-1e46d9fae5af",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "szWvSBpULYlKmiWk",
+  "tags": []
+}

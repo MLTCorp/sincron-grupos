@@ -1,0 +1,1280 @@
+{
+  "name": "[Tools] !mass Commands",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/todos",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        928,
+        -1456
+      ],
+      "id": "7c03eb4f-f436-47cf-8363-10902466f7f4",
+      "name": "webhook - !todos",
+      "webhookId": "2fbcfd2d-5bfe-4576-bdda-28d6108e2740"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "032408d3-d1a4-4711-93d0-3922aaed763e",
+              "name": "texto_messageorigem",
+              "value": "={{ $('normalizacao da entrada').first().json.texto }}",
+              "type": "string"
+            },
+            {
+              "id": "bb016144-2332-431e-a308-f3545602e3b0",
+              "name": "media_url",
+              "value": "={{ $('normalizacao da entrada').first().json.media_url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "afa05cb7-0d4c-46fc-b0cc-de82aa678011",
+      "name": "!todos - Detalhes da mensagem1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        2048,
+        -1040
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('normalizacao da entrada').first().json.type }}",
+                    "rightValue": "=text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e8eac805-491b-49ef-9899-4e1f180ff68f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "9bd9891c-419b-4c19-8dcf-48f94442fa35",
+                    "leftValue": "={{ $('normalizacao da entrada').first().json.type }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "c1425004-64b0-4563-b9b7-96671590452b",
+                    "leftValue": "={{ $('normalizacao da entrada').first().json.type }}",
+                    "rightValue": "video",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "video"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none",
+          "ignoreCase": true
+        }
+      },
+      "id": "d99d6441-381f-40b2-99b7-266e48a372d5",
+      "name": "Switch9",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        2240,
+        -1056
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "e0c4f66f-e587-42f3-9ddd-abd63e564c2c",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1808,
+        -1056
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "id": "18b3a126-dda8-494e-88b1-a4e6570577a2",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3200,
+        -896
+      ],
+      "webhookId": "bab02ef3-0856-4b54-beab-23742ba6c1ec"
+    },
+    {
+      "parameters": {
+        "content": "## Successs",
+        "height": 220,
+        "width": 170,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3184,
+        -960
+      ],
+      "id": "bb8647c0-a8b6-441a-a34c-6f74645390af",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Loop Over Items').item.json.groups }}@g.us"
+            },
+            {
+              "name": "text",
+              "value": "={{ $('!todos - Detalhes da mensagem1').item.json.texto_messageorigem }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 5400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            },
+            {
+              "name": "mentions",
+              "value": "={{ $('normalizacao da entrada').first().json.mention_all }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2720,
+        -1408
+      ],
+      "id": "ecde59da-2660-427a-9741-f599fe922448",
+      "name": "uazapi - send text",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/send/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Loop Over Items').item.json.groups }}@g.us"
+            },
+            {
+              "name": "text",
+              "value": "={{ $('!todos - Detalhes da mensagem1').item.json.texto_messageorigem }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 5400 }}"
+            },
+            {
+              "name": "mentions",
+              "value": "={{ $('normalizacao da entrada').first().json.mention_all }}"
+            },
+            {
+              "name": "type",
+              "value": "={{ $('Switch').item.json.body.media_info.type.toLowerCase() }}"
+            },
+            {
+              "name": "file",
+              "value": "={{ $json.fileURL || $('normalizacao da entrada').first().json.media_url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2720,
+        -1184
+      ],
+      "id": "e1139068-bcad-4b67-81e4-7918e03326c7",
+      "name": "uazapi - send image",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/message/download",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"id\": \"{{ $('Switch').first().json.body.message_id || $('Switch').first().json.body.media_info.message_id }}\"\n}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "ff85a73f-4572-4172-a8f9-2006a2dab0dc",
+      "name": "uazapi - get file url",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2720,
+        -896
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Switch').item.json.body.instance_info.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Switch').item.json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "=✅ *Disparo concluído com sucesso!*\n\n📊 *Resumo:*\n- Total de grupos processados: {{ $('Loop Over Items').all().length }}\n- Comando executado: {{ $('normalizacao da entrada').first().json.mention_all == 'all' ? '!todos (@everyone)' : '!mass_msg (simples)' }}\n- Concluído em: {{ new Date().toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'}) }}\n\n🎉 *Todas as mensagens foram enviadas!*\n\n*Os grupos receberam a mensagem com intervalo de segurança.*"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        -1440
+      ],
+      "id": "bad247f8-c49e-446a-bca8-f2f93a3c1f53",
+      "name": "uazapi - send text - fim do disparo",
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.body.instance_info.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "=📢 *Disparo em massa iniciado*\n\n📋 *Detalhes:*\n- Grupos selecionados: {{ $json.body.groups_count }}\n- Comando: {{ $json.body.command_info.name == '!todos' ? '!todos (mencionando @everyone)' : '!mass_msg (mensagem simples)' }}\n- Tipo: {{ $json.body.type == 'text' ? 'Texto' : ($json.body.type == 'image' ? 'Imagem + Texto' : 'Vídeo + Texto') }}\n\n⏳ *Processando envios...*\nVocê receberá confirmação quando concluído."
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1568,
+        -1488
+      ],
+      "id": "4b1d6f2d-0935-4b27-bb86-806316100032",
+      "name": "uazapi - send text - inicio do disparo",
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.body.instance_info.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "=⚠️ *Tipo de mídia não suportado*\n\nÁudios não podem ser enviados em disparo em massa por limitações da plataforma.\n\n*Tipos permitidos:*\n- Texto simples\n- Imagem com descrição\n- Vídeo com descrição\n\nPor favor, refaça o comando com um dos tipos suportados."
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1568,
+        -1936
+      ],
+      "id": "7f44161b-e23a-4211-8fbf-9d8e58285f31",
+      "name": "uazapi - send text - não enviamos audio",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.type }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2a476b5a-b06f-4651-883d-bc680d1713c7"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "dd45f139-c027-405c-bda5-21912f9e0c62",
+                    "leftValue": "={{ $json.body.execution_data?.message_text || $json.body.messag.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "no text"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1152,
+        -1360
+      ],
+      "id": "7df7b343-5d33-4c6a-b403-47784f2d45e5",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "content": "## Comando !todos/ !mass_msg\n\n**Funcionalidade:** Envio em massa para grupos WhatsApp\n\n**Fluxo:**\n1. Recebe webhook com comando !todos + tags + mensagem\n2. Valida permissões do usuário (admin)\n3. Filtra grupos pelas tags especificadas\n4. Processa diferentes tipos de mídia (texto, imagem, vídeo)\n5. Envia mensagem para todos os grupos filtrados\n6. Aplica delays entre envios (5.4s)\n7. Notifica início/fim do processo\n\n**Restrições:**\n- Não envia áudio em massa\n- Requer texto na mensagem\n- Apenas usuários admin\n- Suporta menções (@all)\n\n**Tipos suportados:** Texto, Imagem com legenda, Vídeo com legenda",
+        "height": 100,
+        "width": 580,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        320,
+        -1328
+      ],
+      "id": "c357b906-dead-4fbc-9de3-182d443a6a33",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/todos/api_rest",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        -1056
+      ],
+      "id": "c0a0f5c5-357e-4d1e-99a2-afea1e4abcd4",
+      "name": "webhook - rest - messaging/mass",
+      "webhookId": "2fbcfd2d-5bfe-4576-bdda-28d6108e2740"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/mass_msg/api_rest",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        -864
+      ],
+      "id": "04ea3aba-b1da-44b2-b577-d3273c7dd8a8",
+      "name": "webhook - rest - messaging/all",
+      "webhookId": "2fbcfd2d-5bfe-4576-bdda-28d6108e2740"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "groups",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1584,
+        -1056
+      ],
+      "id": "1e507b46-c2ec-4ba0-8ee4-036b52c87f38",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "032408d3-d1a4-4711-93d0-3922aaed763e",
+              "name": "texto",
+              "value": "={{ $json.body.execution_data?.message_text || $json.body.message }}",
+              "type": "string"
+            },
+            {
+              "id": "bb016144-2332-431e-a308-f3545602e3b0",
+              "name": "media_url",
+              "value": "={{ $json.body.media || $json.body.media_info }}",
+              "type": "string"
+            },
+            {
+              "id": "369b61a0-f328-4c80-bebd-83baf8afd43d",
+              "name": "groups",
+              "value": "={{ $json.body.execution_data?.chat_ids || $json.body.chat_ids }}",
+              "type": "array"
+            },
+            {
+              "id": "101427f1-7287-465b-b3c9-3c8b4f1084c7",
+              "name": "type",
+              "value": "={{ $json.body.type || ($json.body.media_info ? 'image':'text') }}",
+              "type": "string"
+            },
+            {
+              "id": "8e51c976-2008-4061-85ce-cb54e83f5b43",
+              "name": "mention_all",
+              "value": "={{ $json.body.command_info.name == '!todos' ? 'all' : ($json.body.command.name == !todos ? 'all' : '') }}",
+              "type": "string"
+            },
+            {
+              "id": "1a61494e-0a60-4ea5-99b7-ded8c68acdab",
+              "name": "source",
+              "value": "={{ $json.body.source_type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "df46963d-3ad1-4dcb-b634-dfe1dc0dd12a",
+      "name": "normalizacao da entrada",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1360,
+        -1056
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.body.instance_info.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "=📝 *Texto obrigatório*\n\nPara realizar o disparo em massa, é necessário incluir uma mensagem de texto.\n\n*Formato correto:*\n`!todos #tag Sua mensagem aqui`\n\n*Exemplo:*\n`!todos #furia Olá pessoal! Como estão? 😊`\n\n*Dica:* O texto pode acompanhar imagens ou vídeos como descrição."
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1568,
+        -1696
+      ],
+      "id": "1a1b2995-f577-4ebc-bd4a-07002e90854e",
+      "name": "uazapi - send text - precisamos de texto",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ed277292-19bf-427f-bfb2-bf7fa37d8a9d",
+              "leftValue": "={{ $('normalizacao da entrada').first().json.source }}",
+              "rightValue": "api_rest",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2512,
+        -1040
+      ],
+      "id": "44150a66-f549-45f3-9b12-c2d7b21f95c4",
+      "name": "If - api rest"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ed277292-19bf-427f-bfb2-bf7fa37d8a9d",
+              "leftValue": "={{ $('normalizacao da entrada').item.json.source }}",
+              "rightValue": "api_rest",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2048,
+        -1248
+      ],
+      "id": "e8420712-d107-4ebd-82e8-8e3cde22af47",
+      "name": "If - whatsapp command",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440020",
+              "name": "total_messages",
+              "value": "={{ $input.all().length }}",
+              "type": "number"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440021",
+              "name": "success_messages",
+              "value": "={{ $input.all().filter(item => !item.json.error).length }}",
+              "type": "number"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440022",
+              "name": "error_messages",
+              "value": "={{ $input.all().filter(item => item.json.error).length }}",
+              "type": "number"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440023",
+              "name": "success_rate",
+              "value": "={{ Math.round(($input.all().filter(item => !item.json.error).length / $input.all().length) * 100) }}",
+              "type": "number"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440024",
+              "name": "overall_status",
+              "value": "={{ $input.all().filter(item => item.json.error).length === 0 ? 'success' : ($input.all().filter(item => !item.json.error).length === 0 ? 'failed' : 'partial_success') }}",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440025",
+              "name": "success_details",
+              "value": "={{ $input.all().filter(item => !item.json.error).map(item => ({ \n  chat_id: item.json.chatid?.replace('@g.us', '') || 'unknown',\n  message_id: item.json.messageid || item.json.id?.split(':')[1] || 'unknown',\n  status: item.json.status || 'sent',\n  timestamp: item.json.messageTimestamp || Date.now()\n})) }}",
+              "type": "array"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440026",
+              "name": "error_details",
+              "value": "={{ $input.all().filter(item => item.json.error).map(item => ({\n  original_message: item.json.texto_messageorigem || 'unknown',\n  error_type: item.json.error.code || 'unknown_error',\n  error_message: item.json.error.message?.includes('could not parse phone number') ? 'invalid_phone_number' : \n                 item.json.error.message?.includes('403') ? 'forbidden_access' :\n                 item.json.error.message?.includes('404') ? 'chat_not_found' :\n                 item.json.error.message?.includes('429') ? 'rate_limit_exceeded' :\n                 'unknown_error',\n  http_status: item.json.error.status || 500,\n  details: item.json.error.message || 'No details available'\n})) }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2a4692bc-536c-4a55-8e47-7965c024a3ce",
+      "name": "Parse Mass Send Results",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2240,
+        -1248
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/mass_msg",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        928,
+        -1232
+      ],
+      "id": "b7bf835b-75c9-4738-a3b3-479340687321",
+      "name": "webhook - !mass_msg",
+      "webhookId": "2fbcfd2d-5bfe-4576-bdda-28d6108e2740"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/auth/v1/token",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "password"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2ZmdpaHhqb25hb3d1YmxkdnltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAyMjk5MjUsImV4cCI6MjA0NTgwNTkyNX0.2ujO8rU0lvVV2TfvJJc9IzUSvJjm5cVdpTmUojMz1NA"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "contato.luizhms@gmail.com"
+            },
+            {
+              "name": "password",
+              "value": "152928Lu!"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        352,
+        -1664
+      ],
+      "id": "dd942a28-301c-479b-bc90-4de25c0e57db",
+      "name": "JWT create"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pantero-n8n-webhook.respondeaqui.com.br/webhook/groups/list",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Inptd1ZiMFJtcEJESWhYUzMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3Z2ZmdpaHhqb25hb3d1YmxkdnltLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJhMmNiMTJhZC0xNjNlLTQ4OWYtOWI2OS00OTJiMTRkYjZiYzMiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzU1MzE0MDM2LCJpYXQiOjE3NTUzMTA0MzYsImVtYWlsIjoiY29udGF0by5sdWl6aG1zQGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWxfdmVyaWZpZWQiOnRydWV9LCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDEiLCJhbXIiOlt7Im1ldGhvZCI6InBhc3N3b3JkIiwidGltZXN0YW1wIjoxNzU1MzEwNDM2fV0sInNlc3Npb25faWQiOiI2MGZhYmRlMy04NThkLTQ5NDktOGNjMC1iY2YwNjEzMzMxMWUiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.kzlo4jIPd3ARp-eGSiOK8GjJdweQIzYkMeON52W6byw"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        544,
+        -1664
+      ],
+      "id": "a0ae4efe-eb7a-40f6-b9c7-00c2d75e5423",
+      "name": "test rest"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "832408d3-d1a4-4711-93d0-3922aaed763e",
+              "name": "body.execution_data.message_text",
+              "value": "={{ $json.body.messag?.text || $json.body.message?.text || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "bb216144-2332-431e-a308-f3545602e3b0",
+              "name": "body.media",
+              "value": "={{ $json.body.media_info?.media_url || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "369761a0-f328-4c80-bebd-83baf8afd43d",
+              "name": "body.execution_data.chat_ids",
+              "value": "={{ $json.body.chat_ids || [] }}",
+              "type": "array"
+            },
+            {
+              "id": "101527f1-7287-465b-b3c9-3c8b4f1084c7",
+              "name": "body.type",
+              "value": "={{ $json.body.media_info?.type || ($json.body.media_info?.has_media ? 'image' : 'text') }}",
+              "type": "string"
+            },
+            {
+              "id": "8e61c976-2008-4061-85ce-cb54e83f5b43",
+              "name": "body.command_info",
+              "value": "={{ $json.body.command_info }}",
+              "type": "object"
+            },
+            {
+              "id": "1a71494e-0a60-4ea5-99b7-ded8c68acdab",
+              "name": "body.source_type",
+              "value": "={{ $json.body.source_type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9414459e-458c-4030-9659-1ad0473bbd0f",
+      "name": "normalização dos comandos whatsapp1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1360,
+        -1312
+      ]
+    }
+  ],
+  "connections": {
+    "!todos - Detalhes da mensagem1": {
+      "main": [
+        [
+          {
+            "node": "Switch9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch9": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If - api rest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If - api rest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "If - whatsapp command",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "!todos - Detalhes da mensagem1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "uazapi - send text": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "uazapi - send image": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "uazapi - get file url": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "uazapi - send image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "webhook - !todos": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text - não enviamos audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "uazapi - send text - precisamos de texto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "uazapi - send text - inicio do disparo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "normalização dos comandos whatsapp1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "webhook - rest - messaging/mass": {
+      "main": [
+        [
+          {
+            "node": "normalizacao da entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "webhook - rest - messaging/all": {
+      "main": [
+        [
+          {
+            "node": "normalizacao da entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "normalizacao da entrada": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - api rest": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "uazapi - get file url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - whatsapp command": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text - fim do disparo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse Mass Send Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "webhook - !mass_msg": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "normalização dos comandos whatsapp1": {
+      "main": [
+        [
+          {
+            "node": "normalizacao da entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "307e6fcb-8e3d-4456-8d63-8b1f17ee458e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "47vE6XNdRgZntABC",
+  "tags": []
+}

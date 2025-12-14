@@ -1,0 +1,1756 @@
+{
+  "name": "[MENSAGENS][ENTRADA] 2. Segmentação de mensagens",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "process-whatsapp-message",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "id": "afa62033-c66f-4d98-b8e9-522e0b1e82f7",
+      "name": "Webhook - Receber Dados",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -4544,
+        1424
+      ],
+      "webhookId": "whatsapp-processor-webhook"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "f5feff25-113c-43a9-8e3d-63e3cfe81059",
+                    "leftValue": "={{ $json.variaveis.message.edited }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "EDITION"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "c7d83084-a241-4a8e-adb1-bfcb118ac82b",
+                    "leftValue": "={{ $json.variaveis.message.vote }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "VOTE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.variaveis.message.type }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "4019c27f-406e-4a62-b8ee-51a4657b4ce0"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "TEXT"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.variaveis.message.type }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "66e69203-cea3-4d4c-9c3b-b296c486ea09"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "AUDIO"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.variaveis.message.type }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "1fc4db75-711e-4f8b-8252-6e0ddb661919"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "IMAGE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.variaveis.message.type }}",
+                    "rightValue": "video",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "fc134c31-553f-4b66-8e48-50dec81db03f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "VIDEO"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.variaveis.message.type }}",
+                    "rightValue": "document",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e1be0176-b29a-4d66-ac71-b20ca36db667"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DOCUMENT"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.variaveis.message.type }}",
+                    "rightValue": "sticker",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "87c65220-8c63-4882-b163-89798a7d5d7b"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "STICKER"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.variaveis.message.type }}",
+                    "rightValue": "location",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "082ee0e8-e7fd-4b8f-aac0-4dd8d8aa4c52"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "LOCATION"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "69c5f078-23a6-4da4-98a5-4c9ffe442272",
+                    "leftValue": "={{ $json.variaveis.message.type }}",
+                    "rightValue": "Reaction",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "REACTION"
+            }
+          ]
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "id": "b7e6ed79-2a40-4991-a6a5-970ef9a74a32",
+      "name": "Switch - Tipo de Mensagem",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -4112,
+        1312
+      ],
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$json.variaveis.instance.host}}/message/download",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $('Dados').first().json.variaveis.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $json.variaveis.message.id }}"
+            },
+            {
+              "name": "generate_mp3",
+              "value": "={{true}}"
+            },
+            {
+              "name": "return_link",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3520,
+        1216
+      ],
+      "id": "b57e8d61-74e4-4a0c-b2bf-6455f6a6d347",
+      "name": "Uazapi - get audio url"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -3152,
+        1216
+      ],
+      "id": "f6911e68-ed59-45bd-9b0e-ac9cf226f667",
+      "name": "Transcribe a recording",
+      "notesInFlow": true,
+      "credentials": {
+        "openAiApi": {
+          "id": "IZt4afoTx95lTMUn",
+          "name": "OpenAI - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4336,
+        1424
+      ],
+      "id": "2090a092-c89a-4b74-8e30-98db7248898b",
+      "name": "Dados",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.fileURL }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3344,
+        1216
+      ],
+      "id": "82505b26-99a1-4a4e-92cc-232f3db5fc09",
+      "name": "download - audio"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "fromMe",
+              "value": "={{ $json.variaveis.message.fromMe }}"
+            },
+            {
+              "key": "event",
+              "value": "={{ $json.variaveis.event.type }}"
+            },
+            {
+              "key": "whatsapp",
+              "value": "={{ $json.variaveis.user.whatsapp }}"
+            },
+            {
+              "key": "chatId",
+              "value": "={{ $json.variaveis.chat.chatId }}"
+            },
+            {
+              "key": "type",
+              "value": "={{ $json.variaveis.message.type.toLowerCase() }}"
+            },
+            {
+              "key": "group",
+              "value": "={{ $json.grupo.name }}"
+            },
+            {
+              "key": "user",
+              "value": "={{ $json.variaveis.user.name }}"
+            },
+            {
+              "key": "text",
+              "value": "={{ $json.variaveis.message.text }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -4112,
+        1008
+      ],
+      "id": "e2e2254b-0372-4b56-bcd9-bbf7304ea079",
+      "name": "Execution Data"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- PROCESSAMENTO COMPLETO DE MENSAGEM TEXTO COM MENSAGEM RESPONDIDA\nWITH dados AS (\n  SELECT \n    $1::jsonb->>'chat_id' as chat_id,\n    $1::jsonb->>'user_whatsapp' as user_whatsapp,\n    $1::jsonb->>'user_name' as user_name,\n    $1::jsonb->>'message_id' as message_id,\n    $1::jsonb->>'message_text' as message_text,\n    $1::jsonb->>'message_type' as message_type,\n    $1::jsonb->>'responded_id' as responded_id,\n    ($1::jsonb->>'timestamp')::bigint / 1000 as timestamp_unix\n),\ngrupo_info AS (\n  SELECT id as grupo_id\n  FROM grupos \n  WHERE chat_id_whatsapp = (SELECT chat_id FROM dados)\n  LIMIT 1\n),\nmensagem_respondida AS (\n  SELECT id as id_mensagem_respondida\n  FROM mensagens_whatsapp \n  WHERE whatsapp_message_id = (SELECT responded_id FROM dados)\n    AND (SELECT responded_id FROM dados) IS NOT NULL\n    AND (SELECT responded_id FROM dados) != ''\n  LIMIT 1\n),\nmembro_upsert AS (\n  INSERT INTO membros (nome, whatsapp, ativo)\n  SELECT \n    d.user_name,\n    d.user_whatsapp,\n    true\n  FROM dados d\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros m \n    WHERE m.whatsapp = d.user_whatsapp\n  )\n  RETURNING id, nome, whatsapp\n),\nmembro_final AS (\n  SELECT id, nome, whatsapp FROM membro_upsert\n  UNION ALL\n  SELECT id, nome, whatsapp FROM membros \n  WHERE whatsapp = (SELECT user_whatsapp FROM dados)\n    AND NOT EXISTS (SELECT 1 FROM membro_upsert)\n),\nassociacao_grupo AS (\n  INSERT INTO membros_grupos (id_grupo, id_membro, ativo)\n  SELECT gi.grupo_id, mf.id, true\n  FROM grupo_info gi\n  CROSS JOIN membro_final mf\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros_grupos mg \n    WHERE mg.id_grupo = gi.grupo_id \n      AND mg.id_membro = mf.id\n  )\n  ON CONFLICT DO NOTHING\n  RETURNING id\n),\nmensagem_insert AS (\n  INSERT INTO mensagens_whatsapp (\n    id_grupo, id_membro, conteudo_texto, tipo_mensagem, \n    whatsapp_message_id, id_mensagem_respondida, dt_create\n  )\n  SELECT \n    gi.grupo_id,\n    mf.id,\n    d.message_text,\n    d.message_type,\n    d.message_id,\n    mr.id_mensagem_respondida,\n    to_timestamp(d.timestamp_unix)\n  FROM dados d\n  CROSS JOIN grupo_info gi\n  CROSS JOIN membro_final mf\n  LEFT JOIN mensagem_respondida mr ON true\n  WHERE NOT EXISTS (\n    SELECT 1 FROM mensagens_whatsapp \n    WHERE whatsapp_message_id = d.message_id\n  )\n  RETURNING id, conteudo_texto, tipo_mensagem, id_mensagem_respondida\n)\nSELECT \n  json_build_object(\n    'status', CASE \n      WHEN mi.id IS NOT NULL THEN 'SUCESSO'\n      ELSE 'DUPLICADA' \n    END,\n    'membro_id', mf.id,\n    'grupo_id', gi.grupo_id,\n    'mensagem_id', mi.id,\n    'tipo', mi.tipo_mensagem,\n    'respondeu_a', mi.id_mensagem_respondida\n  ) as resultado\nFROM dados d\nCROSS JOIN grupo_info gi\nCROSS JOIN membro_final mf\nLEFT JOIN mensagem_insert mi ON true;",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify({ chat_id: $json.variaveis.chat.chatId, user_whatsapp: $json.variaveis.user.whatsapp, user_name: $json.variaveis.user.name || 'Usuário', message_id: $json.variaveis.message.id, message_text: $json.variaveis.message.text || '', message_type: $json.variaveis.message.type.toLowerCase() || 'text', responded_id: $json.variaveis.message.responded?.id || null, timestamp: $json.variaveis.message.timestamp }) }}"
+        }
+      },
+      "id": "2afa9fb0-9d81-48a7-b8c7-436d98f58c3f",
+      "name": "Salvar Mensagem Texto1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3520,
+        1024
+      ],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- PROCESSAMENTO COMPLETO DE MENSAGEM ÁUDIO COM MENSAGEM RESPONDIDA\nWITH dados AS (\n  SELECT \n    $1::jsonb->>'chat_id' as chat_id,\n    $1::jsonb->>'user_whatsapp' as user_whatsapp,\n    $1::jsonb->>'user_name' as user_name,\n    $1::jsonb->>'message_id' as message_id,\n    $1::jsonb->>'media_url' as media_url,\n    $1::jsonb->>'message_type' as message_type,\n    $1::jsonb->>'responded_id' as responded_id,\n    ($1::jsonb->>'audio_duration')::integer as audio_duration,\n    ($1::jsonb->>'timestamp')::bigint / 1000 as timestamp_unix,\n    $1::jsonb->>'transcribed_text' as transcribed_text\n),\ngrupo_info AS (\n  SELECT id as grupo_id\n  FROM grupos \n  WHERE chat_id_whatsapp = (SELECT chat_id FROM dados)\n  LIMIT 1\n),\nmensagem_respondida AS (\n  SELECT id as id_mensagem_respondida\n  FROM mensagens_whatsapp \n  WHERE whatsapp_message_id = (SELECT responded_id FROM dados)\n    AND (SELECT responded_id FROM dados) IS NOT NULL\n    AND (SELECT responded_id FROM dados) != ''\n  LIMIT 1\n),\nmembro_upsert AS (\n  INSERT INTO membros (nome, whatsapp, ativo)\n  SELECT d.user_name, d.user_whatsapp, true\n  FROM dados d\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros m WHERE m.whatsapp = d.user_whatsapp\n  )\n  RETURNING id, nome, whatsapp\n),\nmembro_final AS (\n  SELECT id, nome, whatsapp FROM membro_upsert\n  UNION ALL\n  SELECT id, nome, whatsapp FROM membros \n  WHERE whatsapp = (SELECT user_whatsapp FROM dados)\n    AND NOT EXISTS (SELECT 1 FROM membro_upsert)\n),\nassociacao_grupo AS (\n  INSERT INTO membros_grupos (id_grupo, id_membro, ativo)\n  SELECT gi.grupo_id, mf.id, true\n  FROM grupo_info gi\n  CROSS JOIN membro_final mf\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros_grupos mg \n    WHERE mg.id_grupo = gi.grupo_id AND mg.id_membro = mf.id\n  )\n  ON CONFLICT DO NOTHING\n  RETURNING id\n),\nmensagem_insert AS (\n  INSERT INTO mensagens_whatsapp (\n    id_grupo, id_membro, conteudo_texto, url_midia, \n    duracao_audio, tipo_mensagem, whatsapp_message_id, \n    id_mensagem_respondida, dt_create\n  )\n  SELECT \n    gi.grupo_id,\n    mf.id,\n    COALESCE(d.transcribed_text, '[Áudio]'),\n    d.media_url,\n    d.audio_duration,\n    d.message_type,\n    d.message_id,\n    mr.id_mensagem_respondida,\n    to_timestamp(d.timestamp_unix)\n  FROM dados d\n  CROSS JOIN grupo_info gi\n  CROSS JOIN membro_final mf\n  LEFT JOIN mensagem_respondida mr ON true\n  WHERE NOT EXISTS (\n    SELECT 1 FROM mensagens_whatsapp \n    WHERE whatsapp_message_id = d.message_id\n  )\n  RETURNING id, conteudo_texto, url_midia, duracao_audio, id_mensagem_respondida\n)\nSELECT \n  json_build_object(\n    'status', CASE WHEN mi.id IS NOT NULL THEN 'SUCESSO' ELSE 'DUPLICADA' END,\n    'membro_id', mf.id,\n    'grupo_id', gi.grupo_id,\n    'mensagem_id', mi.id,\n    'audio_url', mi.url_midia,\n    'duracao', mi.duracao_audio,\n    'transcricao', mi.conteudo_texto,\n    'respondeu_a', mi.id_mensagem_respondida\n  ) as resultado\nFROM dados d\nCROSS JOIN grupo_info gi\nCROSS JOIN membro_final mf\nLEFT JOIN mensagem_insert mi ON true;",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify({ \nchat_id: $('Dados').first().json.variaveis.chat.chatId,\nuser_whatsapp: $('Dados').first().json.variaveis.user.whatsapp, \nuser_name: $('Dados').first().json.variaveis.user.name || 'Usuário', \nmessage_id: $('Dados').first().json.variaveis.message.id, \nmedia_url: $('Uazapi - get audio url').first().json.fileURL || '', \nmessage_type: 'audio', \nresponded_id: $('Dados').first().json.variaveis.message.responded?.id || null,\naudio_duration: $json.usage.seconds , \ntimestamp: $('Dados').first().json.variaveis.message.timestamp, \ntranscribed_text: '(audio) ' + $json.text || '[Áudio]' }) }}"
+        }
+      },
+      "id": "6ac32542-daa7-494a-9df7-6e9a3d7d6095",
+      "name": "Salvar Mensagem Áudio1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2944,
+        1216
+      ],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- PROCESSAMENTO DE REAÇÃO COM MENSAGEM RESPONDIDA\nWITH dados AS (\n  SELECT \n    $1::jsonb->>'chat_id' as chat_id,\n    $1::jsonb->>'user_whatsapp' as user_whatsapp,\n    $1::jsonb->>'user_name' as user_name,\n    $1::jsonb->>'message_id' as message_id,\n    $1::jsonb->>'reaction_emoji' as reaction_emoji,\n    $1::jsonb->>'responded_id' as responded_id,\n    ($1::jsonb->>'timestamp')::bigint / 1000 as timestamp_unix\n),\ngrupo_info AS (\n  SELECT id as grupo_id\n  FROM grupos \n  WHERE chat_id_whatsapp = (SELECT chat_id FROM dados)\n  LIMIT 1\n),\nmensagem_respondida AS (\n  SELECT id as id_mensagem_respondida\n  FROM mensagens_whatsapp \n  WHERE whatsapp_message_id = (SELECT responded_id FROM dados)\n    AND (SELECT responded_id FROM dados) IS NOT NULL\n    AND (SELECT responded_id FROM dados) != ''\n  LIMIT 1\n),\nmembro_upsert AS (\n  INSERT INTO membros (nome, whatsapp, ativo)\n  SELECT d.user_name, d.user_whatsapp, true\n  FROM dados d\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros m WHERE m.whatsapp = d.user_whatsapp\n  )\n  RETURNING id, nome, whatsapp\n),\nmembro_final AS (\n  SELECT id, nome, whatsapp FROM membro_upsert\n  UNION ALL\n  SELECT id, nome, whatsapp FROM membros \n  WHERE whatsapp = (SELECT user_whatsapp FROM dados)\n    AND NOT EXISTS (SELECT 1 FROM membro_upsert)\n),\nassociacao_grupo AS (\n  INSERT INTO membros_grupos (id_grupo, id_membro, ativo)\n  SELECT gi.grupo_id, mf.id, true\n  FROM grupo_info gi\n  CROSS JOIN membro_final mf\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros_grupos mg \n    WHERE mg.id_grupo = gi.grupo_id AND mg.id_membro = mf.id\n  )\n  ON CONFLICT DO NOTHING\n  RETURNING id\n),\nmensagem_insert AS (\n  INSERT INTO mensagens_whatsapp (\n    id_grupo, id_membro, conteudo_texto, tipo_mensagem, \n    whatsapp_message_id, id_mensagem_respondida, dt_create\n  )\n  SELECT \n    gi.grupo_id,\n    mf.id,\n    d.reaction_emoji,\n    'reaction',\n    d.message_id,\n    mr.id_mensagem_respondida,\n    to_timestamp(d.timestamp_unix)\n  FROM dados d\n  CROSS JOIN grupo_info gi\n  CROSS JOIN membro_final mf\n  LEFT JOIN mensagem_respondida mr ON true\n  WHERE NOT EXISTS (\n    SELECT 1 FROM mensagens_whatsapp \n    WHERE whatsapp_message_id = d.message_id\n  )\n  RETURNING id, conteudo_texto, id_mensagem_respondida\n)\nSELECT \n  json_build_object(\n    'status', CASE WHEN mi.id IS NOT NULL THEN 'SUCESSO' ELSE 'DUPLICADA' END,\n    'membro_id', mf.id,\n    'grupo_id', gi.grupo_id,\n    'mensagem_id', mi.id,\n    'emoji', mi.conteudo_texto,\n    'respondeu_a', mi.id_mensagem_respondida\n  ) as resultado\nFROM dados d\nCROSS JOIN grupo_info gi\nCROSS JOIN membro_final mf\nLEFT JOIN mensagem_insert mi ON true;",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify({ chat_id: $json.variaveis.chat.chatId, user_whatsapp: $json.variaveis.user.whatsapp, user_name: $json.variaveis.user.name || 'Usuário', message_id: $json.variaveis.message.id, reaction_emoji: $json.variaveis.message.text || '👍', responded_id: $json.variaveis.message.responded?.id || null, timestamp: $json.variaveis.message.timestamp }) }}"
+        }
+      },
+      "id": "8988a6a2-243b-4e7b-b263-c80c00152b8b",
+      "name": "Salvar Reação1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3520,
+        1936
+      ],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "picture",
+        "key": "={{ $('Dados').first().json.variaveis.user.whatsapp }}_picture",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -3984,
+        2256
+      ],
+      "id": "9fba6674-15b0-4d15-9965-a294a05cc545",
+      "name": "Redis - get picture",
+      "credentials": {
+        "redis": {
+          "id": "WQsvP300ebTsy37s",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fb39ca71-1b0a-411a-9591-1a0af633b839",
+              "leftValue": "={{ $json.picture }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3776,
+        2256
+      ],
+      "id": "8a15ec75-64d1-4ac3-9b92-3c7459e89383",
+      "name": "If - not delay"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Dados').item.json.variaveis.instance.host }}/chat/details",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $('Dados').item.json.variaveis.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Dados').item.json.variaveis.user.whatsapp }}"
+            },
+            {
+              "name": "preview",
+              "value": "={{false}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3520,
+        2144
+      ],
+      "id": "ac221b39-0ffc-4f2b-a729-9db625289e46",
+      "name": "Uazapi - get profile picture"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "={{ $('Dados').first().json.variaveis.user.whatsapp }}_picture",
+        "value": "ok",
+        "expire": true,
+        "ttl": "={{ 60 * 20 }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -2816,
+        2240
+      ],
+      "id": "3a01b138-99b3-4890-b4cd-5e60b6e0aa18",
+      "name": "Redis - 20 min delay",
+      "credentials": {
+        "redis": {
+          "id": "WQsvP300ebTsy37s",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "membros",
+          "mode": "list",
+          "cachedResultName": "membros"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "url_imagem": "={{ $('Uazapi - get profile picture').item.json.image }}",
+            "whatsapp": "={{ $('Dados').first().json.variaveis.user.whatsapp }}"
+          },
+          "matchingColumns": [
+            "whatsapp"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "dt_create",
+              "displayName": "dt_create",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "dt_update",
+              "displayName": "dt_update",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "ativo",
+              "displayName": "ativo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "url_imagem",
+              "displayName": "url_imagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2592,
+        2240
+      ],
+      "id": "f6e63570-5646-4797-8046-56099a40ae10",
+      "name": "Update - profile picture",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- PROCESSAMENTO COMPLETO DE MENSAGEM TEXTO COM MENSAGEM RESPONDIDA\nWITH dados AS (\n  SELECT \n    $1::jsonb->>'chat_id' as chat_id,\n    $1::jsonb->>'user_whatsapp' as user_whatsapp,\n    $1::jsonb->>'user_name' as user_name,\n    $1::jsonb->>'message_id' as message_id,\n    $1::jsonb->>'message_text' as message_text,\n    $1::jsonb->>'message_type' as message_type,\n    $1::jsonb->>'responded_id' as responded_id,\n    ($1::jsonb->>'timestamp')::bigint / 1000 as timestamp_unix\n),\ngrupo_info AS (\n  SELECT id as grupo_id\n  FROM grupos \n  WHERE chat_id_whatsapp = (SELECT chat_id FROM dados)\n  LIMIT 1\n),\nmensagem_respondida AS (\n  SELECT id as id_mensagem_respondida\n  FROM mensagens_whatsapp \n  WHERE whatsapp_message_id = (SELECT responded_id FROM dados)\n    AND (SELECT responded_id FROM dados) IS NOT NULL\n    AND (SELECT responded_id FROM dados) != ''\n  LIMIT 1\n),\nmembro_upsert AS (\n  INSERT INTO membros (nome, whatsapp, ativo)\n  SELECT \n    d.user_name,\n    d.user_whatsapp,\n    true\n  FROM dados d\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros m \n    WHERE m.whatsapp = d.user_whatsapp\n  )\n  RETURNING id, nome, whatsapp\n),\nmembro_final AS (\n  SELECT id, nome, whatsapp FROM membro_upsert\n  UNION ALL\n  SELECT id, nome, whatsapp FROM membros \n  WHERE whatsapp = (SELECT user_whatsapp FROM dados)\n    AND NOT EXISTS (SELECT 1 FROM membro_upsert)\n),\nassociacao_grupo AS (\n  INSERT INTO membros_grupos (id_grupo, id_membro, ativo)\n  SELECT gi.grupo_id, mf.id, true\n  FROM grupo_info gi\n  CROSS JOIN membro_final mf\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros_grupos mg \n    WHERE mg.id_grupo = gi.grupo_id \n      AND mg.id_membro = mf.id\n  )\n  ON CONFLICT DO NOTHING\n  RETURNING id\n),\nmensagem_insert AS (\n  INSERT INTO mensagens_whatsapp (\n    id_grupo, id_membro, conteudo_texto, tipo_mensagem, \n    whatsapp_message_id, id_mensagem_respondida, dt_create\n  )\n  SELECT \n    gi.grupo_id,\n    mf.id,\n    d.message_text,\n    d.message_type,\n    d.message_id,\n    mr.id_mensagem_respondida,\n    to_timestamp(d.timestamp_unix)\n  FROM dados d\n  CROSS JOIN grupo_info gi\n  CROSS JOIN membro_final mf\n  LEFT JOIN mensagem_respondida mr ON true\n  WHERE NOT EXISTS (\n    SELECT 1 FROM mensagens_whatsapp \n    WHERE whatsapp_message_id = d.message_id\n  )\n  RETURNING id, conteudo_texto, tipo_mensagem, id_mensagem_respondida\n)\nSELECT \n  json_build_object(\n    'status', CASE \n      WHEN mi.id IS NOT NULL THEN 'SUCESSO'\n      ELSE 'DUPLICADA' \n    END,\n    'membro_id', mf.id,\n    'grupo_id', gi.grupo_id,\n    'mensagem_id', mi.id,\n    'tipo', mi.tipo_mensagem,\n    'respondeu_a', mi.id_mensagem_respondida\n  ) as resultado\nFROM dados d\nCROSS JOIN grupo_info gi\nCROSS JOIN membro_final mf\nLEFT JOIN mensagem_insert mi ON true;",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify({ chat_id: $json.variaveis.chat.chatId, user_whatsapp: $json.variaveis.user.whatsapp, user_name: $json.variaveis.user.name || 'Usuário', message_id: $json.variaveis.message.id, message_text: 'Usuário votou: ' + $json.variaveis.message.vote || '', message_type: $json.variaveis.message.type || 'text', responded_id: $json.variaveis.message.responded?.id || null, timestamp: $json.variaveis.message.timestamp }) }}"
+        }
+      },
+      "id": "6bf2e5bf-687b-427f-b3d4-5627c4f25a6a",
+      "name": "Salvar Mensagem Texto",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3520,
+        848
+      ],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- PROCESSAMENTO COMPLETO DE MENSAGEM ÁUDIO COM MENSAGEM RESPONDIDA\nWITH dados AS (\n  SELECT \n    $1::jsonb->>'chat_id' as chat_id,\n    $1::jsonb->>'user_whatsapp' as user_whatsapp,\n    $1::jsonb->>'user_name' as user_name,\n    $1::jsonb->>'message_id' as message_id,\n    $1::jsonb->>'media_url' as media_url,\n    $1::jsonb->>'message_type' as message_type,\n    $1::jsonb->>'responded_id' as responded_id,\n    ($1::jsonb->>'timestamp')::bigint / 1000 as timestamp_unix,\n    $1::jsonb->>'transcribed_text' as transcribed_text\n),\ngrupo_info AS (\n  SELECT id as grupo_id\n  FROM grupos \n  WHERE chat_id_whatsapp = (SELECT chat_id FROM dados)\n  LIMIT 1\n),\nmensagem_respondida AS (\n  SELECT id as id_mensagem_respondida\n  FROM mensagens_whatsapp \n  WHERE whatsapp_message_id = (SELECT responded_id FROM dados)\n    AND (SELECT responded_id FROM dados) IS NOT NULL\n    AND (SELECT responded_id FROM dados) != ''\n  LIMIT 1\n),\nmembro_upsert AS (\n  INSERT INTO membros (nome, whatsapp, ativo)\n  SELECT d.user_name, d.user_whatsapp, true\n  FROM dados d\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros m WHERE m.whatsapp = d.user_whatsapp\n  )\n  RETURNING id, nome, whatsapp\n),\nmembro_final AS (\n  SELECT id, nome, whatsapp FROM membro_upsert\n  UNION ALL\n  SELECT id, nome, whatsapp FROM membros \n  WHERE whatsapp = (SELECT user_whatsapp FROM dados)\n    AND NOT EXISTS (SELECT 1 FROM membro_upsert)\n),\nassociacao_grupo AS (\n  INSERT INTO membros_grupos (id_grupo, id_membro, ativo)\n  SELECT gi.grupo_id, mf.id, true\n  FROM grupo_info gi\n  CROSS JOIN membro_final mf\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros_grupos mg \n    WHERE mg.id_grupo = gi.grupo_id AND mg.id_membro = mf.id\n  )\n  ON CONFLICT DO NOTHING\n  RETURNING id\n),\nmensagem_insert AS (\n  INSERT INTO mensagens_whatsapp (\n    id_grupo, id_membro, conteudo_texto, url_midia, \n tipo_mensagem, whatsapp_message_id, \n    id_mensagem_respondida, dt_create\n  )\n  SELECT \n    gi.grupo_id,\n    mf.id,\n    COALESCE(d.transcribed_text, ''),\n    d.media_url,\n    d.message_type,\n    d.message_id,\n    mr.id_mensagem_respondida,\n    to_timestamp(d.timestamp_unix)\n  FROM dados d\n  CROSS JOIN grupo_info gi\n  CROSS JOIN membro_final mf\n  LEFT JOIN mensagem_respondida mr ON true\n  WHERE NOT EXISTS (\n    SELECT 1 FROM mensagens_whatsapp \n    WHERE whatsapp_message_id = d.message_id\n  )\n  RETURNING id, conteudo_texto, url_midia, id_mensagem_respondida\n)\nSELECT \n  json_build_object(\n    'status', CASE WHEN mi.id IS NOT NULL THEN 'SUCESSO' ELSE 'DUPLICADA' END,\n    'membro_id', mf.id,\n    'grupo_id', gi.grupo_id,\n    'mensagem_id', mi.id,\n    'midia_url', mi.url_midia,\n    'transcricao', mi.conteudo_texto,\n    'respondeu_a', mi.id_mensagem_respondida\n  ) as resultado\nFROM dados d\nCROSS JOIN grupo_info gi\nCROSS JOIN membro_final mf\nLEFT JOIN mensagem_insert mi ON true;",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify({ \nchat_id: $('Dados').first().json.variaveis.chat.chatId,\nuser_whatsapp: $('Dados').first().json.variaveis.user.whatsapp, \nuser_name: $('Dados').first().json.variaveis.user.name || 'Usuário', \nmessage_id: $('Dados').first().json.variaveis.message.id, \nmedia_url: $('Uazapi - get image url').first().json.fileURL || '', \nmessage_type: 'image', \nresponded_id: $('Dados').first().json.variaveis.message.responded?.id || null,\ntimestamp: $('Dados').first().json.variaveis.message.timestamp, \ntranscribed_text: $('Dados').item.json.variaveis.message.text || '' }) }}"
+        }
+      },
+      "id": "6042c55e-11aa-4487-9944-20b5198cd351",
+      "name": "Salvar Mensagem Imagem",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3152,
+        1392
+      ],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- PROCESSAMENTO COMPLETO DE MENSAGEM ÁUDIO COM MENSAGEM RESPONDIDA\nWITH dados AS (\n  SELECT \n    $1::jsonb->>'chat_id' as chat_id,\n    $1::jsonb->>'user_whatsapp' as user_whatsapp,\n    $1::jsonb->>'user_name' as user_name,\n    $1::jsonb->>'message_id' as message_id,\n    $1::jsonb->>'media_url' as media_url,\n    $1::jsonb->>'message_type' as message_type,\n    $1::jsonb->>'responded_id' as responded_id,\n    ($1::jsonb->>'timestamp')::bigint / 1000 as timestamp_unix,\n    $1::jsonb->>'transcribed_text' as transcribed_text\n),\ngrupo_info AS (\n  SELECT id as grupo_id\n  FROM grupos \n  WHERE chat_id_whatsapp = (SELECT chat_id FROM dados)\n  LIMIT 1\n),\nmensagem_respondida AS (\n  SELECT id as id_mensagem_respondida\n  FROM mensagens_whatsapp \n  WHERE whatsapp_message_id = (SELECT responded_id FROM dados)\n    AND (SELECT responded_id FROM dados) IS NOT NULL\n    AND (SELECT responded_id FROM dados) != ''\n  LIMIT 1\n),\nmembro_upsert AS (\n  INSERT INTO membros (nome, whatsapp, ativo)\n  SELECT d.user_name, d.user_whatsapp, true\n  FROM dados d\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros m WHERE m.whatsapp = d.user_whatsapp\n  )\n  RETURNING id, nome, whatsapp\n),\nmembro_final AS (\n  SELECT id, nome, whatsapp FROM membro_upsert\n  UNION ALL\n  SELECT id, nome, whatsapp FROM membros \n  WHERE whatsapp = (SELECT user_whatsapp FROM dados)\n    AND NOT EXISTS (SELECT 1 FROM membro_upsert)\n),\nassociacao_grupo AS (\n  INSERT INTO membros_grupos (id_grupo, id_membro, ativo)\n  SELECT gi.grupo_id, mf.id, true\n  FROM grupo_info gi\n  CROSS JOIN membro_final mf\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros_grupos mg \n    WHERE mg.id_grupo = gi.grupo_id AND mg.id_membro = mf.id\n  )\n  ON CONFLICT DO NOTHING\n  RETURNING id\n),\nmensagem_insert AS (\n  INSERT INTO mensagens_whatsapp (\n    id_grupo, id_membro, conteudo_texto, url_midia, \n tipo_mensagem, whatsapp_message_id, \n    id_mensagem_respondida, dt_create\n  )\n  SELECT \n    gi.grupo_id,\n    mf.id,\n    COALESCE(d.transcribed_text, ''),\n    d.media_url,\n\n    d.message_type,\n    d.message_id,\n    mr.id_mensagem_respondida,\n    to_timestamp(d.timestamp_unix)\n  FROM dados d\n  CROSS JOIN grupo_info gi\n  CROSS JOIN membro_final mf\n  LEFT JOIN mensagem_respondida mr ON true\n  WHERE NOT EXISTS (\n    SELECT 1 FROM mensagens_whatsapp \n    WHERE whatsapp_message_id = d.message_id\n  )\n  RETURNING id, conteudo_texto, url_midia, id_mensagem_respondida\n)\nSELECT \n  json_build_object(\n    'status', CASE WHEN mi.id IS NOT NULL THEN 'SUCESSO' ELSE 'DUPLICADA' END,\n    'membro_id', mf.id,\n    'grupo_id', gi.grupo_id,\n    'mensagem_id', mi.id,\n    'midia_url', mi.url_midia,\n    'transcricao', mi.conteudo_texto,\n    'respondeu_a', mi.id_mensagem_respondida\n  ) as resultado\nFROM dados d\nCROSS JOIN grupo_info gi\nCROSS JOIN membro_final mf\nLEFT JOIN mensagem_insert mi ON true;",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify({ \nchat_id: $('Dados').first().json.variaveis.chat.chatId,\nuser_whatsapp: $('Dados').first().json.variaveis.user.whatsapp, \nuser_name: $('Dados').first().json.variaveis.user.name || 'Usuário', \nmessage_id: $('Dados').first().json.variaveis.message.id, \nmedia_url: $('Uazapi - get video url').first().json.fileURL || '', \nmessage_type: 'video', \nresponded_id: $('Dados').first().json.variaveis.message.responded?.id || null,\ntimestamp: $('Dados').first().json.variaveis.message.timestamp, \ntranscribed_text: $('Dados').first().json.variaveis.message.text || '' }) }}"
+        }
+      },
+      "id": "bc5a0987-f083-485c-b818-fb7e83c6bd0d",
+      "name": "Salvar Mensagem Video",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3152,
+        1568
+      ],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- PROCESSAMENTO COMPLETO DE MENSAGEM ÁUDIO COM MENSAGEM RESPONDIDA\nWITH dados AS (\n  SELECT \n    $1::jsonb->>'chat_id' as chat_id,\n    $1::jsonb->>'user_whatsapp' as user_whatsapp,\n    $1::jsonb->>'user_name' as user_name,\n    $1::jsonb->>'message_id' as message_id,\n    $1::jsonb->>'media_url' as media_url,\n    $1::jsonb->>'message_type' as message_type,\n    $1::jsonb->>'responded_id' as responded_id,\n    ($1::jsonb->>'timestamp')::bigint / 1000 as timestamp_unix,\n    $1::jsonb->>'transcribed_text' as transcribed_text\n),\ngrupo_info AS (\n  SELECT id as grupo_id\n  FROM grupos \n  WHERE chat_id_whatsapp = (SELECT chat_id FROM dados)\n  LIMIT 1\n),\nmensagem_respondida AS (\n  SELECT id as id_mensagem_respondida\n  FROM mensagens_whatsapp \n  WHERE whatsapp_message_id = (SELECT responded_id FROM dados)\n    AND (SELECT responded_id FROM dados) IS NOT NULL\n    AND (SELECT responded_id FROM dados) != ''\n  LIMIT 1\n),\nmembro_upsert AS (\n  INSERT INTO membros (nome, whatsapp, ativo)\n  SELECT d.user_name, d.user_whatsapp, true\n  FROM dados d\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros m WHERE m.whatsapp = d.user_whatsapp\n  )\n  RETURNING id, nome, whatsapp\n),\nmembro_final AS (\n  SELECT id, nome, whatsapp FROM membro_upsert\n  UNION ALL\n  SELECT id, nome, whatsapp FROM membros \n  WHERE whatsapp = (SELECT user_whatsapp FROM dados)\n    AND NOT EXISTS (SELECT 1 FROM membro_upsert)\n),\nassociacao_grupo AS (\n  INSERT INTO membros_grupos (id_grupo, id_membro, ativo)\n  SELECT gi.grupo_id, mf.id, true\n  FROM grupo_info gi\n  CROSS JOIN membro_final mf\n  WHERE NOT EXISTS (\n    SELECT 1 FROM membros_grupos mg \n    WHERE mg.id_grupo = gi.grupo_id AND mg.id_membro = mf.id\n  )\n  ON CONFLICT DO NOTHING\n  RETURNING id\n),\nmensagem_insert AS (\n  INSERT INTO mensagens_whatsapp (\n    id_grupo, id_membro, conteudo_texto, url_midia, \n tipo_mensagem, whatsapp_message_id, \n    id_mensagem_respondida, dt_create\n  )\n  SELECT \n    gi.grupo_id,\n    mf.id,\n    COALESCE(d.transcribed_text, ''),\n    d.media_url,\n    d.message_type,\n    d.message_id,\n    mr.id_mensagem_respondida,\n    to_timestamp(d.timestamp_unix)\n  FROM dados d\n  CROSS JOIN grupo_info gi\n  CROSS JOIN membro_final mf\n  LEFT JOIN mensagem_respondida mr ON true\n  WHERE NOT EXISTS (\n    SELECT 1 FROM mensagens_whatsapp \n    WHERE whatsapp_message_id = d.message_id\n  )\n  RETURNING id, conteudo_texto, url_midia, id_mensagem_respondida\n)\nSELECT \n  json_build_object(\n    'status', CASE WHEN mi.id IS NOT NULL THEN 'SUCESSO' ELSE 'DUPLICADA' END,\n    'membro_id', mf.id,\n    'grupo_id', gi.grupo_id,\n    'mensagem_id', mi.id,\n    'midia_url', mi.url_midia,\n    'transcricao', mi.conteudo_texto,\n    'respondeu_a', mi.id_mensagem_respondida\n  ) as resultado\nFROM dados d\nCROSS JOIN grupo_info gi\nCROSS JOIN membro_final mf\nLEFT JOIN mensagem_insert mi ON true;",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify({ \nchat_id: $('Dados').first().json.variaveis.chat.chatId,\nuser_whatsapp: $('Dados').first().json.variaveis.user.whatsapp, \nuser_name: $('Dados').first().json.variaveis.user.name || 'Usuário', \nmessage_id: $('Dados').first().json.variaveis.message.id, \nmedia_url: $('download - documento').first().json.fileURL || '', \nmessage_type: 'document', \nresponded_id: $('Dados').first().json.variaveis.message.responded?.id || null,\ntimestamp: $('Dados').first().json.variaveis.message.timestamp, \ntranscribed_text: $json.text || '' }) }}"
+        }
+      },
+      "id": "81d0c86c-bf01-4816-88b2-eeedebf3b734",
+      "name": "Salvar Mensagem Documento",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3152,
+        1744
+      ],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.fileURL }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3344,
+        1392
+      ],
+      "id": "88ab29bf-b661-44a7-8cc9-dfd1f155b9be",
+      "name": "download - imagem"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.fileURL }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3344,
+        1568
+      ],
+      "id": "2c5d75f0-5cbe-4110-9132-96f2c697b0f0",
+      "name": "download - video"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.fileURL }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3344,
+        1744
+      ],
+      "id": "bccf6df0-ffc7-4cee-a114-92dbf933f040",
+      "name": "download - documento"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$json.variaveis.instance.host}}/message/download",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $('Dados').first().json.variaveis.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $json.variaveis.message.id }}"
+            },
+            {
+              "name": "generate_mp3",
+              "value": "={{true}}"
+            },
+            {
+              "name": "return_link",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3520,
+        1392
+      ],
+      "id": "caf694ff-5cdd-4d74-8879-ff3a579f9231",
+      "name": "Uazapi - get image url"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$json.variaveis.instance.host}}/message/download",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $('Dados').first().json.variaveis.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $json.variaveis.message.id }}"
+            },
+            {
+              "name": "generate_mp3",
+              "value": "={{true}}"
+            },
+            {
+              "name": "return_link",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3520,
+        1568
+      ],
+      "id": "c83dd817-add0-4b0c-9f50-c71778b9ce0b",
+      "name": "Uazapi - get video url"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$json.variaveis.instance.host}}/message/download",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $('Dados').first().json.variaveis.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $json.variaveis.message.id }}"
+            },
+            {
+              "name": "generate_mp3",
+              "value": "={{true}}"
+            },
+            {
+              "name": "return_link",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3520,
+        1744
+      ],
+      "id": "23bba7ef-88d1-4c18-9a8f-8506884f9884",
+      "name": "Uazapi - get document url"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9fd8627d-e75d-41eb-bb9a-c8938f763022",
+              "name": "image",
+              "value": "={{ $('Uazapi - get profile picture').item.json.image }}",
+              "type": "string"
+            },
+            {
+              "id": "f6131950-c229-4409-beae-1337499aca49",
+              "name": "image_group",
+              "value": "={{ $('Uazapi - get group picture').item.json.image }}",
+              "type": "string"
+            },
+            {
+              "id": "9e8ba77d-161e-4d2e-b6a9-1740e2ac41a1",
+              "name": "group_name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3040,
+        2240
+      ],
+      "id": "c254c937-905a-4ae6-8a81-2844d33224f6",
+      "name": "Edit Fields",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Dados').item.json.variaveis.instance.host }}/chat/details",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $('Dados').item.json.variaveis.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Dados').item.json.variaveis.chat.chatId }}@g.us"
+            },
+            {
+              "name": "preview",
+              "value": "={{false}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3520,
+        2352
+      ],
+      "id": "f857d8e8-cc2a-4002-b75d-5ec92d546d49",
+      "name": "Uazapi - get group picture",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -3248,
+        2240
+      ],
+      "id": "a0a17dbd-f1d9-4021-baa6-804dcd0d106a",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "grupos",
+          "mode": "list",
+          "cachedResultName": "grupos"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id_whatsapp": "={{ $('Dados').first().json.variaveis.chat.chatId }}",
+            "nome": "={{ $('Edit Fields').first().json.group_name }}",
+            "url_imagem": "={{ $('Edit Fields').first().json.image_group }}"
+          },
+          "matchingColumns": [
+            "chat_id_whatsapp"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "dt_create",
+              "displayName": "dt_create",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "dt_update",
+              "displayName": "dt_update",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "id_cliente",
+              "displayName": "id_cliente",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "chat_id_whatsapp",
+              "displayName": "chat_id_whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "url_convite",
+              "displayName": "url_convite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "ativo",
+              "displayName": "ativo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "url_imagem",
+              "displayName": "url_imagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2384,
+        2240
+      ],
+      "id": "b4b8a5f0-4892-4cc3-ba81-1c7e85b82e62",
+      "name": "Update - group picture",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "process-whatsapp-message",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "id": "c0142092-7aa9-4b65-91cb-7638057e303c",
+      "name": "Webhook - Receber Dados1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -4544,
+        1616
+      ],
+      "webhookId": "whatsapp-processor-webhook",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "mensagens_whatsapp",
+          "mode": "list",
+          "cachedResultName": "mensagens_whatsapp"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "whatsapp_message_id": "={{ $('Dados').item.json.variaveis.message.edited }}",
+            "conteudo_texto": "={{ $('Dados').item.json.variaveis.message.text }}"
+          },
+          "matchingColumns": [
+            "whatsapp_message_id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "dt_create",
+              "displayName": "dt_create",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "id_grupo",
+              "displayName": "id_grupo",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "id_membro",
+              "displayName": "id_membro",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "conteudo_texto",
+              "displayName": "conteudo_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url_midia",
+              "displayName": "url_midia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nome_arquivo",
+              "displayName": "nome_arquivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "duracao_audio",
+              "displayName": "duracao_audio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "tipo_mensagem",
+              "displayName": "tipo_mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp_message_id",
+              "displayName": "whatsapp_message_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "marcada_briefing",
+              "displayName": "marcada_briefing",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "marcada_importante",
+              "displayName": "marcada_importante",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "marcada_resumo",
+              "displayName": "marcada_resumo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "id_mensagem_respondida",
+              "displayName": "id_mensagem_respondida",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -3520,
+        656
+      ],
+      "id": "cad3f65d-6640-4800-97a6-9c5218048e49",
+      "name": "Update rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Receber Dados": {
+      "main": [
+        [
+          {
+            "node": "Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Tipo de Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Update rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Salvar Mensagem Texto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Salvar Mensagem Texto1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Uazapi - get audio url",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Uazapi - get image url",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Uazapi - get video url",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Uazapi - get document url",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [],
+        [
+          {
+            "node": "Salvar Reação1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uazapi - get audio url": {
+      "main": [
+        [
+          {
+            "node": "download - audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Salvar Mensagem Áudio1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados": {
+      "main": [
+        [
+          {
+            "node": "Switch - Tipo de Mensagem",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Redis - get picture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "download - audio": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar Mensagem Texto1": {
+      "main": [
+        []
+      ]
+    },
+    "Redis - get picture": {
+      "main": [
+        [
+          {
+            "node": "If - not delay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - not delay": {
+      "main": [
+        [
+          {
+            "node": "Uazapi - get profile picture",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Uazapi - get group picture",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Uazapi - get profile picture": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis - 20 min delay": {
+      "main": [
+        [
+          {
+            "node": "Update - profile picture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "download - imagem": {
+      "main": [
+        [
+          {
+            "node": "Salvar Mensagem Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "download - video": {
+      "main": [
+        [
+          {
+            "node": "Salvar Mensagem Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "download - documento": {
+      "main": [
+        [
+          {
+            "node": "Salvar Mensagem Documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uazapi - get image url": {
+      "main": [
+        [
+          {
+            "node": "download - imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uazapi - get video url": {
+      "main": [
+        [
+          {
+            "node": "download - video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uazapi - get document url": {
+      "main": [
+        [
+          {
+            "node": "download - documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Redis - 20 min delay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uazapi - get group picture": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update - profile picture": {
+      "main": [
+        [
+          {
+            "node": "Update - group picture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "Sjd5x4DDIjqnsxyQ"
+  },
+  "versionId": "7aa7ec4f-a8de-458a-b186-42edd1d401bb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "XRAw6RxtvK8uTj3u",
+  "tags": []
+}

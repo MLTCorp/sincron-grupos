@@ -1,0 +1,1133 @@
+{
+  "name": "5- MCP para configuração",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "groups-analytics-mcp"
+      },
+      "id": "d4ac9388-617e-47b3-8007-e09f7796ec28",
+      "name": "MCP Server - Advanced Analytics1",
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2,
+      "position": [
+        2544,
+        128
+      ],
+      "webhookId": "groups-analytics-mcp-server"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Mostra métricas detalhadas de um grupo nos ÚLTIMOS 30 DIAS: atividade de membros, conteúdo processado, resumos enviados. IMPORTANTE: group_id deve ser número (exemplo: 1, 25).",
+        "operation": "executeQuery",
+        "query": "WITH grupo_info AS (\n    SELECT id, name, status FROM groups WHERE id = $1::INTEGER\n),\nmetricas_30d AS (\n    SELECT \n        (\n            SELECT COUNT(DISTINCT ma.member_id) \n            FROM members_activity ma\n            WHERE ma.group_id = $1::INTEGER\n            AND ma.activity_date >= CURRENT_DATE - INTERVAL '30 days'\n        ) as membros_ativos_30d,\n        (\n            SELECT SUM(ma.message_count + ma.media_count + ma.reaction_count)\n            FROM members_activity ma\n            WHERE ma.group_id = $1::INTEGER\n            AND ma.activity_date >= CURRENT_DATE - INTERVAL '30 days'\n        ) as total_atividade_30d,\n        (\n            SELECT COUNT(*)\n            FROM content_analysis ca\n            INNER JOIN messages m ON ca.message_id = m.id\n            WHERE m.group_id = $1::INTEGER\n            AND ca.created_at >= CURRENT_DATE - INTERVAL '30 days'\n            AND ca.processing_status = 'completed'\n        ) as conteudo_processado_30d,\n        (\n            SELECT COUNT(*)\n            FROM daily_summaries ds\n            WHERE ds.group_id = $1::INTEGER\n            AND ds.summary_date >= CURRENT_DATE - INTERVAL '30 days'\n            AND ds.send_status = 'sent'\n        ) as resumos_enviados_30d\n)\nSELECT json_build_object(\n    'status', CASE WHEN EXISTS(SELECT 1 FROM grupo_info) THEN 'success' ELSE 'not_found' END,\n    'grupo', (SELECT row_to_json(grupo_info) FROM grupo_info),\n    'periodo', 'Últimos 30 dias',\n    'metricas', (SELECT row_to_json(metricas_30d) FROM metricas_30d),\n    'mensagem', CASE WHEN EXISTS(SELECT 1 FROM grupo_info) \n                    THEN 'Métricas dos últimos 30 dias geradas com sucesso'\n                    ELSE 'Grupo não encontrado' END\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "392e4567-80d4-477c-ad9d-4fa75a5ad0d2",
+      "name": "Group Metrics Last 30 Days1",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        2144,
+        336
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Mostra o histórico de membros de um grupo: quantos entraram, saíram, estão ativos. IMPORTANTE: group_id deve ser número (exemplo: 1, 25). Mostra dados de todos os tempos.",
+        "operation": "executeQuery",
+        "query": "WITH grupo_info AS (\n    SELECT id, name, status, created_at FROM groups WHERE id = $1::INTEGER\n),\nhistorico_membros AS (\n    SELECT \n        COUNT(*) as total_registros,\n        COUNT(CASE WHEN mg.status = 'active' THEN 1 END) as membros_ativos,\n        COUNT(CASE WHEN mg.status = 'left' THEN 1 END) as membros_saidos,\n        COUNT(CASE WHEN mg.status = 'removed' THEN 1 END) as membros_removidos,\n        COUNT(CASE WHEN mg.joined_at >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as novos_30d,\n        MIN(mg.joined_at) as primeiro_membro,\n        MAX(mg.joined_at) as ultimo_membro\n    FROM members_groups mg\n    WHERE mg.group_id = $1::INTEGER\n)\nSELECT json_build_object(\n    'status', CASE WHEN EXISTS(SELECT 1 FROM grupo_info) THEN 'success' ELSE 'not_found' END,\n    'grupo', (SELECT row_to_json(grupo_info) FROM grupo_info),\n    'estatisticas_membros', (SELECT row_to_json(historico_membros) FROM historico_membros),\n    'mensagem', CASE WHEN EXISTS(SELECT 1 FROM grupo_info) \n                    THEN 'Histórico de membros gerado com sucesso'\n                    ELSE 'Grupo não encontrado' END\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "a95c4142-109f-41cf-81f5-6b785ec77ba5",
+      "name": "Group Members History1",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        2304,
+        336
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Lista os TOP 10 membros mais ativos de TODA A PLATAFORMA nos últimos 30 dias. Mostra ranking global de atividade entre todos os grupos.",
+        "operation": "executeQuery",
+        "query": "WITH ranking_membros AS (\n    SELECT \n        m.id,\n        m.name,\n        m.phone,\n        SUM(ma.message_count + ma.media_count + ma.reaction_count) as score_total,\n        COUNT(DISTINCT ma.group_id) as grupos_ativos,\n        (\n            SELECT g.name \n            FROM members_activity ma2\n            INNER JOIN groups g ON ma2.group_id = g.id\n            WHERE ma2.member_id = m.id\n            AND ma2.activity_date >= CURRENT_DATE - INTERVAL '30 days'\n            GROUP BY g.id, g.name\n            ORDER BY SUM(ma2.message_count + ma2.media_count + ma2.reaction_count) DESC\n            LIMIT 1\n        ) as grupo_principal,\n        ROW_NUMBER() OVER (ORDER BY SUM(ma.message_count + ma.media_count + ma.reaction_count) DESC) as posicao\n    FROM members m\n    INNER JOIN members_activity ma ON ma.member_id = m.id\n    WHERE ma.activity_date >= CURRENT_DATE - INTERVAL '30 days'\n    AND m.status = 'active'\n    GROUP BY m.id, m.name, m.phone\n    ORDER BY score_total DESC\n    LIMIT 10\n)\nSELECT json_build_object(\n    'status', 'success',\n    'periodo', 'Últimos 30 dias',\n    'top_10_membros_globais', COALESCE(json_agg(\n        json_build_object(\n            'posicao', posicao,\n            'nome', name,\n            'telefone', phone,\n            'score_atividade', score_total,\n            'grupos_participando', grupos_ativos,\n            'grupo_mais_ativo', grupo_principal\n        ) ORDER BY posicao\n    ), json_build_array())\n) as resultado\nFROM ranking_membros;",
+        "options": {}
+      },
+      "id": "3ecd2860-864a-4941-b8ed-01e01d1d2824",
+      "name": "Global Top 10 Members1",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        2448,
+        336
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Mostra todos os grupos que têm RESUMO DIÁRIO habilitado com suas configurações de horário e destino. Lista grupos que geram newsletters automáticas.",
+        "operation": "executeQuery",
+        "query": "WITH grupos_resumo AS (\n    SELECT \n        id,\n        name,\n        status,\n        auto_send_summary_enabled,\n        summary_send_time,\n        summary_destination_type,\n        summary_destination_value,\n        created_at\n    FROM groups \n    WHERE daily_summary_enabled = true\n    AND status = 'active'\n    ORDER BY name\n),\nestatisticas AS (\n    SELECT \n        COUNT(*) as total_com_resumo,\n        COUNT(CASE WHEN auto_send_summary_enabled = true THEN 1 END) as com_envio_automatico,\n        COUNT(CASE WHEN summary_destination_type = 'group' THEN 1 END) as envio_no_grupo,\n        COUNT(CASE WHEN summary_destination_type = 'phone' THEN 1 END) as envio_por_telefone\n    FROM grupos_resumo\n)\nSELECT json_build_object(\n    'status', 'success',\n    'total_grupos_com_resumo', e.total_com_resumo,\n    'grupos_resumo_habilitado', json_agg(\n        json_build_object(\n            'id', gr.id,\n            'nome', gr.name,\n            'status', gr.status,\n            'envio_automatico', gr.auto_send_summary_enabled,\n            'horario_envio', gr.summary_send_time,\n            'destino_tipo', gr.summary_destination_type,\n            'destino_valor', gr.summary_destination_value,\n            'criado_em', gr.created_at\n        )\n    ),\n    'estatisticas', json_build_object(\n        'com_envio_automatico', e.com_envio_automatico,\n        'envio_no_grupo', e.envio_no_grupo,\n        'envio_por_telefone', e.envio_por_telefone\n    )\n) as resultado\nFROM estatisticas e\nLEFT JOIN grupos_resumo gr ON true\nGROUP BY e.total_com_resumo, e.com_envio_automatico, e.envio_no_grupo, e.envio_por_telefone;",
+        "options": {}
+      },
+      "id": "530793fd-b2d6-4ae0-9616-5d36f269e458",
+      "name": "Groups With Daily Summary Enabled1",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        2608,
+        336
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Dashboard executivo: estatísticas consolidadas de TODA A PLATAFORMA nos últimos 30 dias. Visão geral completa para gestores.",
+        "operation": "executeQuery",
+        "query": "WITH estatisticas_plataforma AS (\n    SELECT \n        COUNT(DISTINCT g.id) as total_grupos,\n        COUNT(DISTINCT CASE WHEN g.status = 'active' THEN g.id END) as grupos_ativos,\n        (\n            SELECT COUNT(DISTINCT mg.member_id) \n            FROM members_groups mg \n            WHERE mg.status = 'active'\n        ) as total_membros_ativos,\n        (\n            SELECT COUNT(DISTINCT ma.member_id)\n            FROM members_activity ma\n            WHERE ma.activity_date >= CURRENT_DATE - INTERVAL '30 days'\n        ) as membros_ativos_30d,\n        (\n            SELECT SUM(ma.message_count + ma.media_count + ma.reaction_count)\n            FROM members_activity ma\n            WHERE ma.activity_date >= CURRENT_DATE - INTERVAL '30 days'\n        ) as score_atividade_total_30d,\n        COUNT(CASE WHEN g.auto_transcription_enabled = true THEN 1 END) as grupos_transcricao,\n        COUNT(CASE WHEN g.daily_summary_enabled = true THEN 1 END) as grupos_resumo_diario,\n        COUNT(CASE WHEN g.auto_send_summary_enabled = true THEN 1 END) as grupos_envio_auto,\n        (\n            SELECT COUNT(*) \n            FROM content_analysis ca\n            WHERE ca.created_at >= CURRENT_DATE - INTERVAL '30 days'\n            AND ca.processing_status = 'completed'\n        ) as conteudo_processado_30d,\n        (\n            SELECT COUNT(*) \n            FROM daily_summaries ds\n            WHERE ds.summary_date >= CURRENT_DATE - INTERVAL '30 days'\n            AND ds.send_status = 'sent'\n        ) as resumos_enviados_30d\n    FROM groups g\n),\ngrupos_top_5 AS (\n    SELECT \n        g.id,\n        g.name,\n        (\n            SELECT SUM(ma.message_count + ma.media_count + ma.reaction_count)\n            FROM members_activity ma\n            WHERE ma.group_id = g.id\n            AND ma.activity_date >= CURRENT_DATE - INTERVAL '30 days'\n        ) as score_30d\n    FROM groups g\n    WHERE g.status = 'active'\n    ORDER BY score_30d DESC NULLS LAST\n    LIMIT 5\n)\nSELECT json_build_object(\n    'status', 'success',\n    'data_relatorio', CURRENT_DATE,\n    'periodo_analise', 'Últimos 30 dias',\n    'resumo_executivo', json_build_object(\n        'total_grupos', ep.total_grupos,\n        'grupos_ativos', ep.grupos_ativos,\n        'total_membros_ativos', ep.total_membros_ativos,\n        'membros_ativos_30d', ep.membros_ativos_30d,\n        'score_atividade_total_30d', ep.score_atividade_total_30d,\n        'grupos_transcricao', ep.grupos_transcricao,\n        'grupos_resumo_diario', ep.grupos_resumo_diario,\n        'grupos_envio_auto', ep.grupos_envio_auto,\n        'conteudo_processado_30d', ep.conteudo_processado_30d,\n        'resumos_enviados_30d', ep.resumos_enviados_30d\n    ),\n    'top_5_grupos_mais_ativos', json_agg(\n        json_build_object(\n            'id', gt.id,\n            'nome', gt.name,\n            'score_atividade_30d', COALESCE(gt.score_30d, 0)\n        )\n    ),\n    'insights', json_build_object(\n        'taxa_engajamento_geral', \n        CASE WHEN ep.total_membros_ativos > 0 \n             THEN ROUND((ep.membros_ativos_30d::DECIMAL / ep.total_membros_ativos) * 100, 2)\n             ELSE 0 END,\n        'adocao_transcricao_pct',\n        CASE WHEN ep.grupos_ativos > 0\n             THEN ROUND((ep.grupos_transcricao::DECIMAL / ep.grupos_ativos) * 100, 2)\n             ELSE 0 END,\n        'adocao_resumo_pct',\n        CASE WHEN ep.grupos_ativos > 0\n             THEN ROUND((ep.grupos_resumo_diario::DECIMAL / ep.grupos_ativos) * 100, 2)\n             ELSE 0 END\n    )\n) as resultado\nFROM estatisticas_plataforma ep\nCROSS JOIN grupos_top_5 gt\nGROUP BY ep.total_grupos, ep.grupos_ativos, ep.total_membros_ativos, ep.membros_ativos_30d,\n         ep.score_atividade_total_30d, ep.grupos_transcricao, ep.grupos_resumo_diario, ep.grupos_envio_auto,\n         ep.conteudo_processado_30d, ep.resumos_enviados_30d;",
+        "options": {}
+      },
+      "id": "3ae644f8-e56e-4104-b965-2c6827f6cd5e",
+      "name": "Executive Dashboard1",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        2752,
+        336
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Mostra detalhes específicos de um membro por ID: em quais grupos participa, sua atividade, posição nos rankings. IMPORTANTE: member_id deve ser número (exemplo: 1, 25).",
+        "operation": "executeQuery",
+        "query": "WITH membro_info AS (\n    SELECT id, name, phone, profile_name, status, created_at \n    FROM members WHERE id = $1::INTEGER\n),\ngrupos_participando AS (\n    SELECT \n        g.id as group_id,\n        g.name as group_name,\n        mg.status as membership_status,\n        mg.joined_at,\n        (\n            SELECT SUM(ma.message_count + ma.media_count + ma.reaction_count)\n            FROM members_activity ma\n            WHERE ma.member_id = $1::INTEGER\n            AND ma.group_id = g.id\n            AND ma.activity_date >= CURRENT_DATE - INTERVAL '30 days'\n        ) as atividade_30d_grupo\n    FROM members_groups mg\n    INNER JOIN groups g ON mg.group_id = g.id\n    WHERE mg.member_id = $1::INTEGER\n    ORDER BY atividade_30d_grupo DESC NULLS LAST\n),\natividade_geral AS (\n    SELECT \n        COUNT(DISTINCT ma.group_id) as grupos_ativos,\n        SUM(ma.message_count + ma.media_count + ma.reaction_count) as score_total_30d,\n        COUNT(DISTINCT ma.activity_date) as dias_ativo_30d\n    FROM members_activity ma\n    WHERE ma.member_id = $1::INTEGER\n    AND ma.activity_date >= CURRENT_DATE - INTERVAL '30 days'\n)\nSELECT json_build_object(\n    'status', CASE WHEN EXISTS(SELECT 1 FROM membro_info) THEN 'success' ELSE 'not_found' END,\n    'membro_info', (\n        SELECT json_build_object(\n            'id', id,\n            'name', name,\n            'phone', phone,\n            'profile_name', profile_name,\n            'status', status,\n            'created_at', created_at\n        ) FROM membro_info\n    ),\n    'atividade_geral_30d', (\n        SELECT json_build_object(\n            'grupos_ativos', grupos_ativos,\n            'score_total_30d', score_total_30d,\n            'dias_ativo_30d', dias_ativo_30d\n        ) FROM atividade_geral\n    ),\n    'grupos_participando', COALESCE(json_agg(\n        json_build_object(\n            'group_id', gp.group_id,\n            'group_name', gp.group_name,\n            'status_membership', gp.membership_status,\n            'entrou_em', gp.joined_at,\n            'atividade_30d', COALESCE(gp.atividade_30d_grupo, 0)\n        )\n    ) FILTER (WHERE gp.group_id IS NOT NULL), json_build_array()),\n    'mensagem', CASE WHEN EXISTS(SELECT 1 FROM membro_info) \n                    THEN 'Perfil do membro gerado com sucesso'\n                    ELSE 'Membro não encontrado' END\n) as resultado\nFROM membro_info\nCROSS JOIN atividade_geral\nLEFT JOIN grupos_participando gp ON true\nGROUP BY membro_info.id, membro_info.name, membro_info.phone, membro_info.profile_name, \n         membro_info.status, membro_info.created_at,\n         atividade_geral.grupos_ativos, atividade_geral.score_total_30d, atividade_geral.dias_ativo_30d;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('member_id', 'ID numérico do membro (exemplo: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "7b3459d8-ef57-421a-82c7-d3bbf16e3888",
+      "name": "Get Member Profile Details1",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        2896,
+        336
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Busca membros pelo nome (busca parcial). IMPORTANTE: Digite qualquer parte do nome do membro (exemplo: 'João', 'Silva', 'Maria'). Retorna lista de membros encontrados.",
+        "operation": "executeQuery",
+        "query": "WITH membros_encontrados AS (\n    SELECT \n        m.id,\n        m.name,\n        m.phone,\n        m.profile_name,\n        m.status,\n        (\n            SELECT COUNT(*) \n            FROM members_groups mg \n            WHERE mg.member_id = m.id \n            AND mg.status = 'active'\n        ) as grupos_participando,\n        (\n            SELECT COALESCE(SUM(ma.message_count + ma.media_count + ma.reaction_count), 0)\n            FROM members_activity ma\n            WHERE ma.member_id = m.id\n            AND ma.activity_date >= CURRENT_DATE - INTERVAL '30 days'\n        ) as atividade_30d\n    FROM members m\n    WHERE m.name ILIKE '%' || $1::TEXT || '%'\n    ORDER BY m.name\n    LIMIT 20\n)\nSELECT json_build_object(\n    'status', 'success',\n    'total_encontrados', (SELECT COUNT(*) FROM membros_encontrados),\n    'membros_encontrados', json_agg(\n        json_build_object(\n            'id', id,\n            'nome', name,\n            'telefone', phone,\n            'profile_name', profile_name,\n            'status', status,\n            'grupos_participando', grupos_participando,\n            'atividade_30d', atividade_30d\n        )\n    )\n) as resultado\nFROM membros_encontrados;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('nome_busca', 'Parte do nome do membro para buscar (exemplo: João, Silva, Maria)', 'string') }}"
+        }
+      },
+      "id": "272e15c6-c384-4d32-9bc2-09eb228a7375",
+      "name": "Search Members By Name1",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        3072,
+        336
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Lista o histórico dos últimos 20 resumos enviados na plataforma: quais grupos, quando foram enviados, status. Visão geral da atividade de resumos.",
+        "operation": "executeQuery",
+        "query": "WITH ultimos_resumos AS (\n    SELECT \n        ds.id as resumo_id,\n        g.id as grupo_id,\n        g.name as grupo_nome,\n        ds.summary_date,\n        ds.sent_at,\n        ds.send_status,\n        g.summary_destination_type,\n        ds.created_at\n    FROM daily_summaries ds\n    INNER JOIN groups g ON ds.group_id = g.id\n    ORDER BY ds.sent_at DESC NULLS LAST, ds.created_at DESC\n    LIMIT 20\n),\nestatisticas_resumos AS (\n    SELECT \n        (\n            SELECT COUNT(*) FROM daily_summaries \n            WHERE send_status = 'sent' \n            AND sent_at >= CURRENT_DATE - INTERVAL '30 days'\n        ) as total_enviados_30d,\n        (\n            SELECT COUNT(*) FROM daily_summaries \n            WHERE send_status = 'pending'\n        ) as total_pendentes,\n        (\n            SELECT COUNT(*) FROM daily_summaries \n            WHERE send_status = 'failed' \n            AND created_at >= CURRENT_DATE - INTERVAL '30 days'\n        ) as total_falharam_30d\n)\nSELECT json_build_object(\n    'status', 'success',\n    'ultimos_20_resumos', json_agg(\n        json_build_object(\n            'resumo_id', ur.resumo_id,\n            'grupo_id', ur.grupo_id,\n            'grupo_nome', ur.grupo_nome,\n            'data_resumo', ur.summary_date,\n            'enviado_em', ur.sent_at,\n            'status_envio', ur.send_status,\n            'destino_tipo', ur.summary_destination_type,\n            'criado_em', ur.created_at\n        )\n    ),\n    'estatisticas_resumos', json_build_object(\n        'total_enviados_30d', er.total_enviados_30d,\n        'total_pendentes', er.total_pendentes,\n        'total_falharam_30d', er.total_falharam_30d\n    )\n) as resultado\nFROM ultimos_resumos ur\nCROSS JOIN estatisticas_resumos er\nGROUP BY er.total_enviados_30d, er.total_pendentes, er.total_falharam_30d;",
+        "options": {}
+      },
+      "id": "ff889cd5-0cf2-48f9-a260-6430f95e96e9",
+      "name": "Recent Summaries History1",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        2160,
+        576
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "groups-admin-mcp"
+      },
+      "id": "3db2b2cd-8ac8-4202-a7bf-694e4574c4a9",
+      "name": "MCP Server - Groups Admin",
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2,
+      "position": [
+        704,
+        96
+      ],
+      "webhookId": "groups-admin-mcp-server"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Lista TODOS os grupos cadastrados na plataforma com informações básicas. Use esta tool quando precisar ver uma visão geral de todos os grupos.",
+        "operation": "executeQuery",
+        "query": "WITH todos_grupos AS (\n    SELECT \n        id,\n        name,\n        chat_id,\n        status,\n        created_at\n    FROM groups\n    ORDER BY name\n)\nSELECT json_build_object(\n    'status', 'success',\n    'total_grupos', (SELECT COUNT(*) FROM todos_grupos),\n    'grupos', json_agg(\n        json_build_object(\n            'id', id,\n            'nome', name,\n            'chat_id', chat_id,\n            'status', status,\n            'criado_em', created_at\n        )\n    )\n) as resultado\nFROM todos_grupos;",
+        "options": {}
+      },
+      "id": "d60ba5bd-c664-4812-a56d-bafd3ae9fd34",
+      "name": "List All Groups",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        304,
+        304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Busca um grupo específico pelo seu ID numérico. IMPORTANTE: Use apenas números inteiros (exemplo: 1, 25, 156). Retorna detalhes completos do grupo incluindo configurações.",
+        "operation": "executeQuery",
+        "query": "WITH grupo_encontrado AS (\n    SELECT \n        id,\n        name,\n        chat_id,\n        status,\n        auto_transcription_enabled,\n        transcription_mode,\n        CASE transcription_mode\n            WHEN 'disabled' THEN 'Desabilitado'\n            WHEN 'simple_auto' THEN 'Simples Automático'\n            WHEN 'detailed_auto' THEN 'Detalhado com IA'\n            WHEN 'command_only' THEN 'Apenas por Comando'\n        END as transcription_description,\n        youtube_auto_transcript_enabled,\n        pdf_summary_enabled,\n        daily_summary_enabled,\n        auto_send_summary_enabled,\n        summary_destination_type,\n        summary_send_time,\n        created_at,\n        updated_at\n    FROM groups \n    WHERE id = $1::INTEGER\n)\nSELECT json_build_object(\n    'status', CASE WHEN EXISTS(SELECT 1 FROM grupo_encontrado) THEN 'success' ELSE 'not_found' END,\n    'grupo', CASE WHEN EXISTS(SELECT 1 FROM grupo_encontrado) THEN (\n        SELECT json_build_object(\n            'id', id,\n            'nome', name,\n            'chat_id', chat_id,\n            'status', status,\n            'transcricao_audio', auto_transcription_enabled,\n            'modo_transcricao', transcription_mode,\n            'descricao_transcricao', transcription_description,\n            'resumo_video_youtube', youtube_auto_transcript_enabled,\n            'resumo_pdf', pdf_summary_enabled,\n            'resumo_diario', daily_summary_enabled,\n            'envio_automatico', auto_send_summary_enabled,\n            'destino_resumo', summary_destination_type,\n            'horario_envio', summary_send_time,\n            'criado_em', created_at,\n            'atualizado_em', updated_at\n        )\n        FROM grupo_encontrado\n    ) ELSE null END,\n    'mensagem', CASE WHEN EXISTS(SELECT 1 FROM grupo_encontrado) THEN 'Grupo encontrado' ELSE 'Grupo não encontrado' END\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "645b960e-08d2-4d82-97e6-bf8c688ec956",
+      "name": "Get Group By ID",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        464,
+        304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Busca grupos pelo nome (busca parcial). IMPORTANTE: Digite qualquer parte do nome do grupo (exemplo: 'Tech', 'Marketing', 'Suporte'). A busca não é case-sensitive.",
+        "operation": "executeQuery",
+        "query": "WITH grupos_encontrados AS (\n    SELECT \n        id,\n        name,\n        chat_id,\n        status,\n        created_at\n    FROM groups \n    WHERE name ILIKE '%' || $1::TEXT || '%'\n    ORDER BY name\n)\nSELECT json_build_object(\n    'status', 'success',\n    'total_encontrados', (SELECT COUNT(*) FROM grupos_encontrados),\n    'grupos', json_agg(\n        json_build_object(\n            'id', id,\n            'nome', name,\n            'chat_id', chat_id,\n            'status', status,\n            'criado_em', created_at\n        )\n    )\n) as resultado\nFROM grupos_encontrados;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('nome_busca', 'Parte do nome do grupo para buscar (exemplo: Tech, Marketing)', 'string') }}"
+        }
+      },
+      "id": "53ef309c-8dab-4a8e-bebe-7f71d0735e86",
+      "name": "Search Groups By Name",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        608,
+        304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Lista apenas grupos ATIVOS (status = active). Use quando quiser ver apenas os grupos funcionais da plataforma.",
+        "operation": "executeQuery",
+        "query": "WITH grupos_ativos AS (\n    SELECT \n        id,\n        name,\n        chat_id,\n        transcription_mode,\n        CASE transcription_mode\n            WHEN 'disabled' THEN 'Desabilitado'\n            WHEN 'simple_auto' THEN 'Simples Automático'\n            WHEN 'detailed_auto' THEN 'Detalhado com IA'\n            WHEN 'command_only' THEN 'Apenas por Comando'\n        END as transcription_description,\n        daily_summary_enabled,\n        created_at\n    FROM groups \n    WHERE status = 'active'\n    ORDER BY name\n)\nSELECT json_build_object(\n    'status', 'success',\n    'total_grupos_ativos', (SELECT COUNT(*) FROM grupos_ativos),\n    'grupos', json_agg(\n        json_build_object(\n            'id', id,\n            'nome', name,\n            'chat_id', chat_id,\n            'modo_transcricao', transcription_mode,\n            'descricao_transcricao', transcription_description,\n            'resumo_diario', daily_summary_enabled,\n            'criado_em', created_at\n        )\n    )\n) as resultado\nFROM grupos_ativos;",
+        "options": {}
+      },
+      "id": "1177d63b-39d8-43c2-bd22-ee1217dbaf5f",
+      "name": "List Active Groups Only",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        768,
+        304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Altera o status de um grupo. IMPORTANTE: group_id deve ser número (exemplo: 1, 25). Status aceitos: 'active', 'blocked', 'inactive'.",
+        "operation": "executeQuery",
+        "query": "UPDATE groups \nSET status = $2::TEXT, updated_at = now()\nWHERE id = $1::INTEGER\nRETURNING json_build_object(\n    'status', 'success',\n    'grupo_atualizado', json_build_object(\n        'id', id,\n        'nome', name,\n        'status_anterior', 'N/A',\n        'status_novo', status,\n        'atualizado_em', updated_at\n    ),\n    'mensagem', 'Status atualizado com sucesso'\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}, {{ $fromAI('novo_status', 'Novo status: active, blocked ou inactive', 'string') }}"
+        }
+      },
+      "id": "6840b4a0-4a48-4f60-ac68-ec258c557d95",
+      "name": "Update Group Status",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        912,
+        304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "DEFINE o modo de transcrição para SIMPLES AUTOMÁTICO. IMPORTANTE: group_id deve ser número (exemplo: 1, 25). Esta funcionalidade transcreve automaticamente mensagens de áudio de forma simples.",
+        "operation": "executeQuery",
+        "query": "UPDATE groups \n  SET \n  auto_transcription_enabled = true,\n  transcription_mode = 'simple_auto'::transcription_mode_enum, updated_at = now()\nWHERE id = $1::INTEGER\nRETURNING json_build_object(\n    'status', 'success',\n    'grupo', json_build_object(\n        'id', id,\n        'nome', name,\n        'modo_transcricao', transcription_mode,\n        'descricao', 'Transcrição simples automática ativada'\n    ),\n    'mensagem', 'Modo de transcrição definido para SIMPLES AUTOMÁTICO'\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "4fa61177-c318-4f7a-b600-ca4a7a27af96",
+      "name": "Enable Auto Transcription",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1056,
+        304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "DESABILITA qualquer modo de transcrição no grupo. IMPORTANTE: group_id deve ser número (exemplo: 1, 25). Remove toda funcionalidade de transcrição.",
+        "operation": "executeQuery",
+        "query": "UPDATE groups \nSET \n  auto_transcription_enabled = false,\n  transcription_mode = 'disabled'::transcription_mode_enum, updated_at = now()\nWHERE id = $1::INTEGER\nRETURNING json_build_object(\n    'status', 'success',\n    'grupo', json_build_object(\n        'id', id,\n        'nome', name,\n        'modo_transcricao', transcription_mode,\n        'descricao', 'Transcrição desabilitada'\n    ),\n    'mensagem', 'Transcrição DESABILITADA com sucesso'\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "80405570-a56f-49e9-9e78-dc8cd1a46a73",
+      "name": "Disable Auto Transcription",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1216,
+        304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "HABILITA o resumo diário em um grupo. IMPORTANTE: group_id deve ser número (exemplo: 1, 25). Esta funcionalidade gera resumos das conversas do dia.",
+        "operation": "executeQuery",
+        "query": "UPDATE groups \nSET daily_summary_enabled = true, updated_at = now()\nWHERE id = $1::INTEGER\nRETURNING json_build_object(\n    'status', 'success',\n    'grupo', json_build_object(\n        'id', id,\n        'nome', name,\n        'resumo_diario_habilitado', daily_summary_enabled\n    ),\n    'mensagem', 'Resumo diário HABILITADO com sucesso'\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "6143c9d5-9494-4162-a3d3-a2c3b5039ae8",
+      "name": "Enable Daily Summary",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1360,
+        304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "DESABILITA o resumo diário em um grupo. IMPORTANTE: group_id deve ser número (exemplo: 1, 25).",
+        "operation": "executeQuery",
+        "query": "UPDATE groups \nSET daily_summary_enabled = false, updated_at = now()\nWHERE id = $1::INTEGER\nRETURNING json_build_object(\n    'status', 'success',\n    'grupo', json_build_object(\n        'id', id,\n        'nome', name,\n        'resumo_diario_habilitado', daily_summary_enabled\n    ),\n    'mensagem', 'Resumo diário DESABILITADO com sucesso'\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "a104a446-6f38-484d-97a8-f15925993f9a",
+      "name": "Disable Daily Summary",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1504,
+        304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Define o horário para envio automático de resumos. IMPORTANTE: group_id deve ser número. Horário no formato HH:MM (exemplo: '09:00', '18:30', '23:00').",
+        "operation": "executeQuery",
+        "query": "UPDATE groups \nSET summary_send_time = $2::TIME, auto_send_summary_enabled = true, updated_at = now()\nWHERE id = $1::INTEGER\nRETURNING json_build_object(\n    'status', 'success',\n    'grupo', json_build_object(\n        'id', id,\n        'nome', name,\n        'horario_envio', summary_send_time,\n        'envio_automatico_habilitado', auto_send_summary_enabled\n    ),\n    'mensagem', 'Horário de envio configurado com sucesso'\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}, {{ $fromAI('horario', 'Horário no formato HH:MM (exemplo: 09:00, 18:30, 23:00)', 'string') }}"
+        }
+      },
+      "id": "b45b3480-808f-4c5f-8a50-de6d63233bb9",
+      "name": "Set Summary Send Time",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        304,
+        496
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Configura o resumo para ser enviado no PRÓPRIO GRUPO. IMPORTANTE: group_id deve ser número (exemplo: 1, 25). O resumo será enviado diretamente no grupo.",
+        "operation": "executeQuery",
+        "query": "UPDATE groups \nSET summary_destination_type = 'group', \n    summary_destination_value = chat_id,\n    updated_at = now()\nWHERE id = $1::INTEGER\nRETURNING json_build_object(\n    'status', 'success',\n    'grupo', json_build_object(\n        'id', id,\n        'nome', name,\n        'destino_resumo', summary_destination_type,\n        'valor_destino', summary_destination_value\n    ),\n    'mensagem', 'Resumo configurado para envio no próprio grupo'\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "e2e59d32-801c-480e-8c78-32fbf318bd29",
+      "name": "Set Summary Destination to Group",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        464,
+        496
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Configura o resumo para ser enviado para um TELEFONE específico. IMPORTANTE: group_id deve ser número. telefone deve incluir código do país (exemplo: 5511999887766).",
+        "operation": "executeQuery",
+        "query": "UPDATE groups \nSET summary_destination_type = 'phone', \n    summary_destination_value = $2::TEXT,\n    updated_at = now()\nWHERE id = $1::INTEGER\nRETURNING json_build_object(\n    'status', 'success',\n    'grupo', json_build_object(\n        'id', id,\n        'nome', name,\n        'destino_resumo', summary_destination_type,\n        'telefone_destino', summary_destination_value\n    ),\n    'mensagem', 'Resumo configurado para envio ao telefone especificado'\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}, {{ $fromAI('telefone', 'Número completo com código do país (exemplo: 5511999887766)', 'string') }}"
+        }
+      },
+      "id": "ac14f4fd-9835-4539-9d59-a384f33e16b6",
+      "name": "Set Summary Destination to Phone",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        608,
+        496
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Mostra estatísticas básicas de um grupo específico: total de membros ativos, mensagens recentes e configurações. IMPORTANTE: group_id deve ser número (exemplo: 1, 25).",
+        "operation": "executeQuery",
+        "query": "SELECT json_build_object(\n    'status', 'success',\n    'grupo_info', json_build_object(\n        'id', g.id,\n        'nome', g.name,\n        'status', g.status\n    ),\n    'estatisticas', json_build_object(\n        'membros_ativos', (\n            SELECT COUNT(*) FROM members_groups mg \n            WHERE mg.group_id = g.id AND mg.status = 'active'\n        ),\n        'mensagens_ultima_semana', (\n            SELECT COUNT(*) FROM messages m \n            WHERE m.group_id = g.id \n            AND m.timestamp >= CURRENT_DATE - INTERVAL '7 days'\n        ),\n        'conteudo_processado_30d', (\n            SELECT COUNT(*) FROM content_analysis ca\n            INNER JOIN messages m ON ca.message_id = m.id\n            WHERE m.group_id = g.id\n            AND ca.created_at >= CURRENT_DATE - INTERVAL '30 days'\n        )\n    ),\n    'configuracoes', json_build_object(\n        'modo_transcricao', g.transcription_mode,\n        'descricao_transcricao', CASE g.transcription_mode\n            WHEN 'disabled' THEN 'Desabilitado'\n            WHEN 'simple_auto' THEN 'Simples Automático'\n            WHEN 'detailed_auto' THEN 'Detalhado com IA'\n            WHEN 'command_only' THEN 'Apenas por Comando'\n        END,\n        'transcricao_audio', g.auto_transcription_enabled,\n        'resumo_pdf', g.pdf_summary_enabled,\n        'resumo_diario', g.daily_summary_enabled,\n        'envio_automatico', g.auto_send_summary_enabled,\n        'horario_envio', g.summary_send_time\n    )\n) as resultado\nFROM groups g\nWHERE g.id = $1::INTEGER;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "7b2c6503-c7e2-419d-8a7c-a1062b1d7820",
+      "name": "Get Group Basic Stats",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        768,
+        496
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Lista os membros mais ativos de um grupo específico no último mês. IMPORTANTE: group_id deve ser número (exemplo: 1, 25). Mostra ranking por atividade.",
+        "operation": "executeQuery",
+        "query": "WITH grupo_info AS (\n    SELECT id, name FROM groups WHERE id = $1::INTEGER\n),\nraking_membros AS (\n    SELECT \n        m.name as membro_nome,\n        m.phone as telefone,\n        COALESCE(SUM(ma.message_count), 0) as total_mensagens,\n        COALESCE(SUM(ma.media_count), 0) as total_midias,\n        COALESCE(SUM(ma.reaction_count), 0) as total_reacoes,\n        COALESCE(SUM(ma.message_count + ma.media_count + ma.reaction_count), 0) as score_atividade,\n        ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(ma.message_count + ma.media_count + ma.reaction_count), 0) DESC) as posicao\n    FROM groups g\n    LEFT JOIN members_groups mg ON mg.group_id = g.id AND mg.status = 'active'\n    LEFT JOIN members m ON m.id = mg.member_id\n    LEFT JOIN members_activity ma ON ma.member_id = m.id \n        AND ma.group_id = g.id\n        AND ma.activity_date >= CURRENT_DATE - INTERVAL '30 days'\n    WHERE g.id = $1::INTEGER\n    GROUP BY m.id, m.name, m.phone\n    ORDER BY score_atividade DESC\n)\nSELECT json_build_object(\n    'status', 'success',\n    'grupo_info', (\n        SELECT json_build_object('id', id, 'nome', name) \n        FROM grupo_info\n    ),\n    'periodo', 'Últimos 30 dias',\n    'ranking_membros', COALESCE(json_agg(\n        json_build_object(\n            'posicao', posicao,\n            'membro_nome', membro_nome,\n            'telefone', telefone,\n            'total_mensagens', total_mensagens,\n            'total_midias', total_midias,\n            'total_reacoes', total_reacoes,\n            'score_atividade', score_atividade\n        )\n    ), json_build_array())\n) as resultado\nFROM raking_membros\nWHERE membro_nome IS NOT NULL;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "d1e71c48-42af-4656-96d8-39d745237763",
+      "name": "Get Group Active Members Ranking",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        912,
+        496
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Mostra uma visão geral de TODOS os grupos da plataforma com estatísticas consolidadas: total de grupos, membros, atividade geral.",
+        "operation": "executeQuery",
+        "query": "WITH estatisticas AS (\n    SELECT \n        COUNT(*) as total_grupos,\n        COUNT(CASE WHEN status = 'active' THEN 1 END) as grupos_ativos,\n        COUNT(CASE WHEN status = 'blocked' THEN 1 END) as grupos_bloqueados,\n        COUNT(CASE WHEN status = 'inactive' THEN 1 END) as grupos_inativos,\n        COUNT(CASE WHEN transcription_mode != 'disabled' THEN 1 END) as com_transcricao_ativa,\n        COUNT(CASE WHEN transcription_mode = 'simple_auto' THEN 1 END) as transcricao_simples,\n        COUNT(CASE WHEN transcription_mode = 'detailed_auto' THEN 1 END) as transcricao_detalhada,\n        COUNT(CASE WHEN daily_summary_enabled = true THEN 1 END) as com_resumo_diario,\n        COUNT(CASE WHEN auto_send_summary_enabled = true THEN 1 END) as com_envio_automatico,\n        COUNT(CASE WHEN pdf_summary_enabled = true THEN 1 END) as com_resumo_pdf\n    FROM groups\n),\ntop_5_grupos AS (\n    SELECT \n        id,\n        name,\n        status,\n        created_at\n    FROM groups\n    ORDER BY name\n    LIMIT 5\n)\nSELECT json_build_object(\n    'status', 'success',\n    'data_consulta', CURRENT_DATE,\n    'resumo_geral', json_build_object(\n        'total_grupos', e.total_grupos,\n        'grupos_ativos', e.grupos_ativos,\n        'grupos_bloqueados', e.grupos_bloqueados,\n        'grupos_inativos', e.grupos_inativos\n    ),\n    'funcionalidades', json_build_object(\n        'com_transcricao_ativa', e.com_transcricao_ativa,\n        'transcricao_simples', e.transcricao_simples,\n        'transcricao_detalhada', e.transcricao_detalhada,\n        'com_resumo_diario', e.com_resumo_diario,\n        'com_envio_automatico', e.com_envio_automatico,\n        'com_resumo_pdf', e.com_resumo_pdf\n    ),\n    'top_5_grupos_por_nome', json_agg(\n        json_build_object(\n            'id', tg.id,\n            'nome', tg.name,\n            'status', tg.status,\n            'criado_em', tg.created_at\n        )\n    )\n) as resultado\nFROM estatisticas e\nCROSS JOIN top_5_grupos tg\nGROUP BY e.total_grupos, e.grupos_ativos, e.grupos_bloqueados, e.grupos_inativos,\n         e.com_transcricao_ativa, e.transcricao_simples, e.transcricao_detalhada,\n         e.com_resumo_diario, e.com_envio_automatico, e.com_resumo_pdf;",
+        "options": {}
+      },
+      "id": "9f79e5a5-a800-47ec-8900-75a03a6dbbaa",
+      "name": "Get Platform Overview",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1056,
+        496
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Altera o modo de transcrição de um grupo específico. Modos disponíveis: disabled (desabilitado), simple_auto (transcrição simples automática), detailed_auto (transcrição com resumo IA automática), command_only (apenas por comando).",
+        "operation": "executeQuery",
+        "query": "WITH validacao AS (\n    SELECT \n        EXISTS(SELECT 1 FROM groups WHERE id = $1::BIGINT) as grupo_existe,\n        $1::BIGINT as group_id,\n        $2::TEXT as novo_modo,\n        CASE WHEN $2::TEXT IN ('disabled', 'simple_auto', 'detailed_auto', 'command_only') \n             THEN true \n             ELSE false \n        END as modo_valido\n),\ngrupo_anterior AS (\n    SELECT \n        id,\n        name,\n        transcription_mode as modo_anterior\n    FROM groups \n    WHERE id = $1::BIGINT\n),\natualizar_modo AS (\n    UPDATE groups \n    SET \n        transcription_mode = validacao.novo_modo::transcription_mode_enum,\n        updated_at = now() AT TIME ZONE 'America/Sao_Paulo'\n    FROM validacao\n    WHERE groups.id = validacao.group_id \n    AND validacao.grupo_existe = true\n    AND validacao.modo_valido = true\n    RETURNING \n        groups.id,\n        groups.name,\n        groups.chat_id,\n        groups.transcription_mode,\n        CASE groups.transcription_mode\n            WHEN 'disabled' THEN 'Desabilitado'\n            WHEN 'simple_auto' THEN 'Simples Automático'\n            WHEN 'detailed_auto' THEN 'Detalhado com IA Automático'\n            WHEN 'command_only' THEN 'Apenas por Comando'\n        END as modo_descricao,\n        groups.updated_at\n)\nSELECT json_build_object(\n    'status', CASE \n                WHEN NOT EXISTS(SELECT 1 FROM validacao WHERE grupo_existe = true) THEN 'error'\n                WHEN NOT EXISTS(SELECT 1 FROM validacao WHERE modo_valido = true) THEN 'error'\n                WHEN EXISTS(SELECT 1 FROM atualizar_modo) THEN 'success'\n                ELSE 'error'\n              END,\n    'grupo_anterior', CASE WHEN EXISTS(SELECT 1 FROM grupo_anterior) \n                         THEN row_to_json(grupo_anterior) \n                         ELSE null END,\n    'grupo_atualizado', CASE WHEN EXISTS(SELECT 1 FROM atualizar_modo) \n                           THEN row_to_json(atualizar_modo) \n                           ELSE null END,\n    'mensagem', CASE \n                  WHEN NOT EXISTS(SELECT 1 FROM validacao WHERE grupo_existe = true) \n                      THEN 'Grupo não encontrado com o ID fornecido'\n                  WHEN NOT EXISTS(SELECT 1 FROM validacao WHERE modo_valido = true) \n                      THEN 'Modo inválido. Use: disabled, simple_auto, detailed_auto ou command_only'\n                  WHEN EXISTS(SELECT 1 FROM atualizar_modo) \n                      THEN 'Modo de transcrição atualizado com sucesso'\n                  ELSE 'Erro desconhecido ao atualizar modo'\n                END,\n    'modos_disponiveis', ARRAY['disabled', 'simple_auto', 'detailed_auto', 'command_only']\n) as resultado\nFROM validacao\nLEFT JOIN grupo_anterior ON true\nLEFT JOIN atualizar_modo ON true;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (obrigatório)', 'string') }}, {{ $fromAI('transcription_mode', 'Novo modo: disabled, simple_auto, detailed_auto ou command_only', 'string') }}"
+        }
+      },
+      "id": "be33def6-d0af-41b8-8947-97c6e0e0b11f",
+      "name": "Set Group Transcription Mode",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1376,
+        496
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Mostra informações sobre o modo de transcrição de todos os grupos status=ativos no sistema",
+        "operation": "executeQuery",
+        "query": "WITH grupos_transcricao AS (\n    SELECT \n        g.id,\n        g.chat_id,\n        g.name,\n        g.status,\n        g.transcription_mode,\n        CASE g.transcription_mode\n            WHEN 'disabled' THEN 'Desabilitado'\n            WHEN 'simple_auto' THEN 'Simples Automático'\n            WHEN 'detailed_auto' THEN 'Detalhado com IA Automático'\n            WHEN 'command_only' THEN 'Apenas por Comando'\n            ELSE 'Desconhecido'\n        END as modo_descricao,\n        g.created_at,\n        g.updated_at\n    FROM groups g\n    WHERE g.status = 'active'\n    ORDER BY g.name\n)\nSELECT json_build_object(\n    'status', 'success',\n    'total_grupos', (SELECT COUNT(*) FROM grupos_transcricao),\n    'grupos', COALESCE(json_agg(grupos_transcricao ORDER BY name), '[]'::json),\n    'estatisticas_modo', json_build_object(\n        'disabled', (SELECT COUNT(*) FROM grupos_transcricao WHERE transcription_mode = 'disabled'),\n        'simple_auto', (SELECT COUNT(*) FROM grupos_transcricao WHERE transcription_mode = 'simple_auto'),\n        'detailed_auto', (SELECT COUNT(*) FROM grupos_transcricao WHERE transcription_mode = 'detailed_auto'),\n        'command_only', (SELECT COUNT(*) FROM grupos_transcricao WHERE transcription_mode = 'command_only')\n    ),\n    'modos_disponiveis', ARRAY['disabled', 'simple_auto', 'detailed_auto', 'command_only']\n) as resultado\nFROM grupos_transcricao;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1520,
+        496
+      ],
+      "id": "59b65329-1d79-45e6-8ba1-7a0d6315f167",
+      "name": "Show All Group Transcriptions",
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Lista todos os grupos que estão com a transcrição ativa",
+        "operation": "executeQuery",
+        "query": "WITH grupos_transcricao AS (\n    SELECT \n        g.id,\n        g.chat_id,\n        g.name,\n        g.status,\n        g.transcription_mode,\n        CASE g.transcription_mode\n            WHEN 'disabled' THEN 'Desabilitado'\n            WHEN 'simple_auto' THEN 'Simples Automático'\n            WHEN 'detailed_auto' THEN 'Detalhado com IA Automático'\n            WHEN 'command_only' THEN 'Apenas por Comando'\n            ELSE 'Desconhecido'\n        END as modo_descricao,\n        g.created_at,\n        g.updated_at\n    FROM groups g\n    WHERE \n        -- Sempre filtrar por status active (remover parametrização por enquanto)\n        g.status = 'active'\n    ORDER BY g.name\n)\nSELECT json_build_object(\n    'status', 'success',\n    'total_grupos', (SELECT COUNT(*) FROM grupos_transcricao),\n    'grupos', COALESCE(json_agg(grupos_transcricao ORDER BY name), '[]'::json),\n    'estatisticas_modo', json_build_object(\n        'disabled', (SELECT COUNT(*) FROM grupos_transcricao WHERE transcription_mode = 'disabled'),\n        'simple_auto', (SELECT COUNT(*) FROM grupos_transcricao WHERE transcription_mode = 'simple_auto'),\n        'detailed_auto', (SELECT COUNT(*) FROM grupos_transcricao WHERE transcription_mode = 'detailed_auto'),\n        'command_only', (SELECT COUNT(*) FROM grupos_transcricao WHERE transcription_mode = 'command_only')\n    ),\n    'modos_disponiveis', ARRAY['disabled', 'simple_auto', 'detailed_auto', 'command_only']\n) as resultado\nFROM grupos_transcricao;",
+        "options": {}
+      },
+      "id": "1ffb94b0-bf44-4000-9187-71e9e82756dd",
+      "name": "Get Groups Transcriptions As Active",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1216,
+        496
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "HABILITA a funcionalidade de Transcrição Automática de imagens/documentos para um grupo do WhatsApp. IMPORTANTE: group_id deve ser um número (exemplo: 1, 25, 156). Esta funcionalidade analisa e transcreve automaticamente imagens, documentos e PDFs usando IA quando são compartilhados no grupo e salva o conteúdo para buscas e resumos.",
+        "operation": "executeQuery",
+        "query": "UPDATE groups \nSET pdf_summary_enabled = true, updated_at = now() AT TIME ZONE 'America/Sao_Paulo'\nWHERE id = $1::INTEGER\nRETURNING json_build_object(\n    'status', 'success',\n    'group', json_build_object(\n        'id', id,\n        'name', name,\n        'chat_id', chat_id,\n        'pdf_auto_transcribe_enabled', pdf_summary_enabled,\n        'description', 'PDF Auto Transcribe functionality activated - AI will now automatically analyze documents, images and PDFs shared in this group'\n    ),\n    'message', 'PDF Auto Transcribe ENABLED successfully for this group'\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'Numeric group ID (example: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "d44f6a71-ae08-4e0e-8cbd-2b3826d3cbf3",
+      "name": "Enable PDF Auto Transcribe",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1648,
+        304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "DISABLES PDF Auto Transcribe functionality for a WhatsApp group. IMPORTANT: group_id must be a number (example: 1, 25, 156). This will stop the automatic AI analysis and transcription of images, documents, and PDFs shared in the group.",
+        "operation": "executeQuery",
+        "query": "UPDATE groups \nSET pdf_summary_enabled = false, updated_at = now() AT TIME ZONE 'America/Sao_Paulo'\nWHERE id = $1::INTEGER\nRETURNING json_build_object(\n    'status', 'success',\n    'group', json_build_object(\n        'id', id,\n        'name', name,\n        'chat_id', chat_id,\n        'pdf_auto_transcribe_enabled', pdf_summary_enabled,\n        'description', 'PDF Auto Transcribe functionality deactivated - AI will no longer automatically analyze documents, images and PDFs shared in this group'\n    ),\n    'message', 'PDF Auto Transcribe DISABLED successfully for this group'\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'Numeric group ID (example: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "630b12f2-6daa-4664-9026-24f7fa4d4714",
+      "name": "Disable PDF Auto Transcribe",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1664,
+        496
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "CHECKS the current status of PDF Auto Transcribe functionality for a WhatsApp group. IMPORTANT: group_id must be a number (example: 1, 25, 156). Returns whether the AI analysis of documents, images and PDFs is currently enabled or disabled.",
+        "operation": "executeQuery",
+        "query": "SELECT json_build_object(\n    'status', 'success',\n    'group', json_build_object(\n        'id', id,\n        'name', name,\n        'chat_id', chat_id,\n        'pdf_auto_transcribe_enabled', pdf_summary_enabled,\n        'status', status,\n        'description', CASE \n            WHEN pdf_summary_enabled = true THEN 'PDF Auto Transcribe is ACTIVE - AI automatically analyzes documents, images and PDFs'\n            ELSE 'PDF Auto Transcribe is INACTIVE - AI will not analyze documents, images and PDFs'\n        END,\n        'last_updated', updated_at\n    ),\n    'message', CASE \n        WHEN pdf_summary_enabled = true THEN 'PDF Auto Transcribe is currently ENABLED'\n        ELSE 'PDF Auto Transcribe is currently DISABLED'\n    END\n) as resultado\nFROM groups \nWHERE id = $1::INTEGER;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'Numeric group ID (example: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "id": "cbbefef0-6d40-40f2-8db9-8713c09114dc",
+      "name": "Check PDF Auto Transcribe Status",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1632,
+        704
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "HABILITA a funcionalidade de Transcrição Automática de vídeos do YouTube para um grupo do WhatsApp. IMPORTANTE: group_id deve ser um número (exemplo: 1, 25, 156). Esta funcionalidade analisa e transcreve automaticamente vídeos do YouTube compartilhados no grupo usando IA para extrair o conteúdo e salvar para buscas e resumos.",
+        "operation": "executeQuery",
+        "query": "UPDATE groups \nSET youtube_auto_transcript_enabled = true, updated_at = now() AT TIME ZONE 'America/Sao_Paulo'\nWHERE id = $1::INTEGER\nRETURNING json_build_object(\n    'status', 'success',\n    'group', json_build_object(\n        'id', id,\n        'name', name,\n        'chat_id', chat_id,\n        'youtube_auto_transcript_enabled', youtube_auto_transcript_enabled,\n        'description', 'YouTube Auto Transcript functionality activated - AI will now automatically analyze and transcribe YouTube videos shared in this group'\n    ),\n    'message', 'YouTube Auto Transcript ENABLED successfully for this group'\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1808,
+        304
+      ],
+      "id": "978e63b9-a4a6-466e-a5dd-15c2a98b3f16",
+      "name": "Enable YouTube Auto Transcript",
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "DESABILITA a funcionalidade de Transcrição Automática de vídeos do YouTube para um grupo do WhatsApp. IMPORTANTE: group_id deve ser um número (exemplo: 1, 25, 156). Esta ação interrompe a análise e transcrição automática de vídeos do YouTube compartilhados no grupo.",
+        "operation": "executeQuery",
+        "query": "UPDATE groups \nSET youtube_auto_transcript_enabled = false, updated_at = now() AT TIME ZONE 'America/Sao_Paulo'\nWHERE id = $1::INTEGER\nRETURNING json_build_object(\n    'status', 'success',\n    'group', json_build_object(\n        'id', id,\n        'name', name,\n        'chat_id', chat_id,\n        'youtube_auto_transcript_enabled', youtube_auto_transcript_enabled,\n        'description', 'YouTube Auto Transcript functionality deactivated - AI will no longer automatically analyze and transcribe YouTube videos shared in this group'\n    ),\n    'message', 'YouTube Auto Transcript DISABLED successfully for this group'\n) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('group_id', 'ID numérico do grupo (exemplo: 1, 25, 156)', 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1824,
+        496
+      ],
+      "id": "862d4d7e-0e0c-4cee-97f5-e5492d4f6f7e",
+      "name": "Disable YouTube Auto Transcript1",
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Group Metrics Last 30 Days1": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Advanced Analytics1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Group Members History1": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Advanced Analytics1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Global Top 10 Members1": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Advanced Analytics1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groups With Daily Summary Enabled1": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Advanced Analytics1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Executive Dashboard1": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Advanced Analytics1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Member Profile Details1": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Advanced Analytics1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Members By Name1": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Advanced Analytics1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recent Summaries History1": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Advanced Analytics1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List All Groups": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Group By ID": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Groups By Name": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Active Groups Only": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Group Status": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enable Auto Transcription": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disable Auto Transcription": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enable Daily Summary": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disable Daily Summary": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Summary Send Time": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Summary Destination to Group": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Summary Destination to Phone": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Group Basic Stats": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Group Active Members Ranking": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Platform Overview": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Group Transcription Mode": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Show All Group Transcriptions": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Groups Transcriptions As Active": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enable PDF Auto Transcribe": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disable PDF Auto Transcribe": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enable YouTube Auto Transcript": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disable YouTube Auto Transcript1": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server - Groups Admin",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e0c4c46b-9645-4900-a48c-c07ae18f2bed",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "OnscrnP4RWlividg",
+  "tags": []
+}

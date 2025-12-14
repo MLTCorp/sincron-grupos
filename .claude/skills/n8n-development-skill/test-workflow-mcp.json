@@ -1,0 +1,192 @@
+{
+  "name": "TEST: AI Agent with MCP DeepWiki",
+  "nodes": [
+    {
+      "id": "aa111001-mcp-4a5b-8c9d-mcptest00001",
+      "name": "MCP Test Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 200],
+      "parameters": {
+        "content": "## TEST WORKFLOW - MCP Integration\n\n**What this tests:**\n- OpenAI MCP server integration ✅\n- Correct /v1/responses endpoint ✅\n- MCP tools configuration ✅\n- DeepWiki server ✅\n\n**How to test:**\n1. Import to n8n\n2. Configure OpenAI credentials\n3. Click 'Test workflow'\n4. Check if DeepWiki tool is called\n5. Verify response about MCP specs\n\n**Expected:** Answer about MCP transport protocols",
+        "height": 300,
+        "width": 550,
+        "color": 3
+      }
+    },
+    {
+      "id": "bb222002-mcp-4b5c-9d0e-mcptest00002",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 560],
+      "parameters": {}
+    },
+    {
+      "id": "cc333003-mcp-4c5d-0e1f-mcptest00003",
+      "name": "Prepare Question",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 560],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dd444004-mcp-4d5e-1f2a-mcptest00004",
+              "name": "question",
+              "value": "What transport protocols does the 2025-03-26 version of the MCP spec support?",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ee555005-mcp-4e5f-2a3b-mcptest00005",
+      "name": "OpenAI with MCP DeepWiki",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 560],
+      "parameters": {
+        "url": "https://api.openai.com/v1/responses",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $credential.openAiApi.apiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "gpt-4o"
+            },
+            {
+              "name": "input",
+              "value": "={{ $json.question }}"
+            },
+            {
+              "name": "tools",
+              "value": "={{ [{\"type\": \"mcp\", \"server_label\": \"deepwiki_test\", \"server_url\": \"https://mcp.deepwiki.com/mcp\", \"require_approval\": \"never\", \"allowed_tools\": [\"ask_question\"]}] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "1",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "id": "ff666006-mcp-4f5a-3b4c-mcptest00006",
+      "name": "Extract Answer",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [900, 560],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "aa777007-mcp-4a5b-4c5d-mcptest00007",
+              "name": "answer",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "bb888008-mcp-4b5c-5d6e-mcptest00008",
+              "name": "mcp_used",
+              "value": "={{ $json.items ? $json.items.some(item => item.type === 'mcp_call') : false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "cc999009-mcp-4c5d-6e7f-mcptest00009",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "dd000010-mcp-4d5e-7f8a-mcptest00010",
+      "name": "Validation Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 560],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Validate MCP integration test\nconst item = items[0].json;\nconst validations = {\n  has_answer: !!item.answer,\n  mcp_was_called: item.mcp_used === true,\n  answer_not_empty: item.answer && item.answer.length > 0,\n  timestamp_valid: !!item.timestamp\n};\n\nconst all_passed = Object.values(validations).every(v => v === true);\n\nreturn [{\n  json: {\n    test_result: all_passed ? 'PASSED' : 'FAILED',\n    validations: validations,\n    summary: {\n      total_checks: Object.keys(validations).length,\n      passed: Object.values(validations).filter(v => v).length,\n      failed: Object.values(validations).filter(v => !v).length\n    },\n    answer: item.answer,\n    tested_at: item.timestamp\n  }\n}];",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Question": {
+      "main": [
+        [
+          {
+            "node": "OpenAI with MCP DeepWiki",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI with MCP DeepWiki": {
+      "main": [
+        [
+          {
+            "node": "Extract Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Answer": {
+      "main": [
+        [
+          {
+            "node": "Validation Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "versionId": "test0002-mcp-test-mcp-test00000002",
+  "tags": ["test", "mcp", "validation"]
+}

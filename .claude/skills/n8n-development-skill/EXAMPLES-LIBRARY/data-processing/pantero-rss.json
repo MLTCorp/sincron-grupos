@@ -1,0 +1,873 @@
+{
+  "name": "Pantero RSS",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "0b49d1e8-e7df-47dd-b6fb-a01e219c8f1a",
+              "leftValue": "={{ $json.title }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "eece018c-bc53-44af-8649-49047196f8ca",
+      "name": "If2",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        352
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Receber os dados das variáveis de entrada\nconst title = $json.title;\nconst link = $json.link;\nconst subHeadline = $json['content:encoded'];\nconst pubDate = $json.pubDate;\n\n// Função para codificar a URL\nfunction encodeURL(url) {\n    return encodeURI(url);\n}\n\n// Codificar a URL\nconst encodedUrl = encodeURL(link);\n\n// Retornar os dados formatados\nreturn {\n    title: title,\n    link: encodedUrl,\n    subHeadline: subHeadline,\n    pubDate: pubDate\n};\n"
+      },
+      "id": "e0ba0cd4-5cd3-4f59-a454-2c734df2e464",
+      "name": "Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        48
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "d361523d-5a1a-46af-b8ca-20e8ec5a5423",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2112,
+        784
+      ],
+      "webhookId": "0c7a9248-06ec-4f36-9261-194eed3205c6"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "ab525c85-297a-4ecc-a80e-0dd4d44dbaa5",
+      "name": "loop pacote de grupos",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1712,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "0c51d01a-02c7-49cc-a466-bb8b5a107945",
+              "leftValue": "={{ $json.messageid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2dd4cfd6-8c9e-4783-ae11-207d1aefe9bd",
+      "name": "msg enviada?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2288,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://themove.gg/stories.rss",
+        "options": {}
+      },
+      "id": "6150b614-6455-4d68-871e-a24a55fff7e9",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "d993fd0a-bdb7-454e-9c5c-22b5e5b03af9",
+      "name": "XML",
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        752,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "RSS",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "title",
+              "fieldValue": "={{ $('Loop Over Items').item.json.title }}"
+            },
+            {
+              "fieldId": "sub_headline",
+              "fieldValue": "={{ $('Loop Over Items').item.json.subHeadline }}"
+            },
+            {
+              "fieldId": "url",
+              "fieldValue": "={{ $('Loop Over Items').item.json.link }}"
+            }
+          ]
+        }
+      },
+      "id": "40344a6a-4ca1-4d3f-880d-32e02d47dcb5",
+      "name": "create_rss_entry",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        384
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "X4GdL269uG2FpPPZ",
+          "name": "Supabase  - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "RSS",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "title",
+              "keyValue": "={{ $json.title }}"
+            }
+          ]
+        }
+      },
+      "id": "5653788c-2783-4b94-ba4c-06aabdf16759",
+      "name": "get_entry",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        864,
+        352
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "X4GdL269uG2FpPPZ",
+          "name": "Supabase  - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "RSS",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('create_rss_entry').item.json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "text",
+              "fieldValue": "={{ $('OpenAI').first().json.message.content }}"
+            }
+          ]
+        }
+      },
+      "id": "e8d0a704-fddc-4675-a839-af8c46b2e356",
+      "name": "update_entry_text",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        720
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "X4GdL269uG2FpPPZ",
+          "name": "Supabase  - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "groups",
+        "returnAll": true
+      },
+      "id": "63daf1dd-d523-46f9-8f2f-bbfb8b9f017a",
+      "name": "get_all_groups",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        720
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "X4GdL269uG2FpPPZ",
+          "name": "Supabase  - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "instances",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "1"
+            }
+          ]
+        }
+      },
+      "id": "c3bf999d-f661-4a13-ad0a-048e3d639f17",
+      "name": "get_instance_info",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        864,
+        720
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "X4GdL269uG2FpPPZ",
+          "name": "Supabase  - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "rss.channel.item",
+        "options": {}
+      },
+      "id": "707b4fe1-9c99-4477-b368-bbbd3b319629",
+      "name": "Split Out",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        928,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f88a8d5d-3120-4c13-8ac5-39ebf84519ed",
+              "leftValue": "={{ $json['media:keywords'] }}",
+              "rightValue": "Comunidade",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "92e83b5c-4b76-4a34-a93f-7fbaf87d324a",
+      "name": "Filter",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1104,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "5c9546a0-6f27-4ff4-861c-6f701a988c8d",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        560,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=você é o Pantero, um estagiário descolado e meio sem paciência, que gosta de gerar suspense nas notícias, e de provocar e diminuir os adversários. Você é bem folgado e zoeiro, adora zoar os outros e engrandecer a FURIA, além de tirar sarro e rir dos adversários. Se o papo é zoeira você não economiza na gargalhada! \"KKKKKK\"\n\nVocê representa o clã Furia. Você vai receber a informação do artigo que postamos, resumir o conteúdo informado e postar uma chamada interessante, usando gatilhos de curiosidade pro pessoal querer entrar. Precisamos dar valor a marca, ao clã Furia, então tenha uma energia alta para falar sobre nosso clã e as melhorias que teremos ou dos desafios que encontraremos. Fale gritando, ria, gargalhe!!! KKKK\n\nvocê nao precisa entrar nos links, apenas organizar as informações, resumir e devolver num formato que eu possa mansar no grupo de whatsapp.\nsua função é gerar essa mensagem como se fosse uma notificação automatica enviada nos grupos\n\n- você não precisa falar o título e a headline. Só precisa fazer a chamada para nossa comunidade se interessar em ir ler\n- use um ou dois parágrafos, sendo o segundo uma chamada curta e provocativa para erguer o pessoal\n- Vamos colocar o link no final do artigo então peça para clicarem e se puder use um emogi apontando SEMPRE para baixo no final da mensagem (importante)\n- a sua saída já será a mensagem enviada, então já fale sempre como o Pantero, pois tem personalidade da marca Fúria para falar com a comunidade. \n- Refira-se a comunidade como nação Furia ou clã, ou rapaziada \"faaala clã!!\", \"salve nação!!!\", \"salve rapaziadaaaaaaa\"...\n- Você tem uma personalidade forte. Quando for falar de outras equipes, fale em tom de sarcasmo e se perderem tire sarro.\n- A CTA para o link é muito importante\n- use emogis com reações para se expressar\n- Não use sentenças no diminutivo. Isso não combina com a persona do Pantero que é furioso\n- engrandeça a Furia e não dê tanto valor as outras equipes\n- não enfatize muito o cenário geral na chamada. Eles precisam ler o artigo. Oculte elementos, faça suspense sobre os desafios pra gerar interesse e curiosidade. Faça uma chamada curta\n- personalize a mensagem com *negrito*\n\naqui está as informações do artigo que você vai anunciar:\nTitulo: {{ $json.title }}\nConteúdo: {{ $json.sub_headline }}\nLink: no fim da mensagem no formato [Link]"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 1200
+        }
+      },
+      "id": "bf18674c-8177-4784-b020-91ed63dd8ff0",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.3,
+      "position": [
+        544,
+        640
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "rT93CPwfBaROlKtw",
+          "name": "Openai - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 100,
+        "options": {}
+      },
+      "id": "85086c60-82dd-4a6a-b1be-fbd45343fece",
+      "name": "reenvio dos failed",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2112,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "send_function",
+        "limit": 70,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "created_at",
+              "condition": "eq",
+              "keyValue": "={{ $('create_request_rows').first().json.created_at }}"
+            },
+            {
+              "keyName": "success",
+              "condition": "is",
+              "keyValue": "false"
+            }
+          ]
+        }
+      },
+      "id": "93e53e90-a765-4c42-a6f3-e4a0a6b1ea25",
+      "name": "get all unmarked",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1952,
+        544
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "X4GdL269uG2FpPPZ",
+          "name": "Supabase  - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "send_function",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('loop pacote de grupos').item.json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "success",
+              "fieldValue": "={{ true }}"
+            }
+          ]
+        }
+      },
+      "id": "842da582-2a96-4384-8a64-25f573e50b78",
+      "name": "sent = true",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2544,
+        848
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "X4GdL269uG2FpPPZ",
+          "name": "Supabase  - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "send_function",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "text_sent",
+              "fieldValue": "={{ $('OpenAI').item.json[\"message\"][\"content\"].replaceAll(\"**\",\"*\").replaceAll(\"[Link]\",\"\") }}{{ $('Code').item.json.link }}"
+            },
+            {
+              "fieldId": "id_group",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldId": "chat_id",
+              "fieldValue": "={{ $json.chat_id }}"
+            }
+          ]
+        }
+      },
+      "id": "84d4e34b-8845-4dbd-a3b9-43ed21f83357",
+      "name": "create_request_rows",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        720
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "X4GdL269uG2FpPPZ",
+          "name": "Supabase  - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.chat_id +'@g.us'}}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $('create_request_rows').first().json.text_sent }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ Math.floor(Math.random() * (10 - 5 + 1))*1000 + 2000 }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1840,
+        800
+      ],
+      "id": "395af211-2e93-4630-8512-2ea8b9aa7889",
+      "name": "send_text",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        48
+      ],
+      "id": "0e5407f2-dd1b-4b00-bf5c-cdf1bac5a619",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "connections": {
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "create_rss_entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "msg enviada?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop pacote de grupos": {
+      "main": [
+        [
+          {
+            "node": "get all unmarked",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "send_text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "msg enviada?": {
+      "main": [
+        [
+          {
+            "node": "sent = true",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "loop pacote de grupos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_rss_entry": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_entry": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update_entry_text": {
+      "main": [
+        [
+          {
+            "node": "get_all_groups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_all_groups": {
+      "main": [
+        [
+          {
+            "node": "create_request_rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_instance_info": {
+      "main": [
+        [
+          {
+            "node": "update_entry_text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "get_entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "get_instance_info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reenvio dos failed": {
+      "main": [
+        [],
+        [
+          {
+            "node": "loop pacote de grupos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get all unmarked": {
+      "main": [
+        [
+          {
+            "node": "reenvio dos failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sent = true": {
+      "main": [
+        [
+          {
+            "node": "loop pacote de grupos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_request_rows": {
+      "main": [
+        [
+          {
+            "node": "loop pacote de grupos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_text": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c569cac2-a6e3-4a61-976a-0b004ce1ad8d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "jvEIaNtmqWKcBYQs",
+  "tags": [
+    {
+      "createdAt": "2025-03-01T19:53:57.613Z",
+      "updatedAt": "2025-03-01T19:53:57.613Z",
+      "id": "yfZBovSU78ejR9Uo",
+      "name": "v2"
+    },
+    {
+      "createdAt": "2025-03-01T19:53:57.616Z",
+      "updatedAt": "2025-03-01T19:53:57.616Z",
+      "id": "yfIje2YrPNg0mcIl",
+      "name": "Pantero"
+    }
+  ]
+}

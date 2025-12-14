@@ -1,0 +1,1305 @@
+{
+  "name": "Mensagens Programadas",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "469cf937-1b47-4922-82ae-88250acac27f",
+              "leftValue": "={{ $json.botoes }}",
+              "rightValue": "=",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1296,
+        64
+      ],
+      "id": "ad9af1b9-51fe-4dc0-a9a8-601ead3ab1b1",
+      "name": "Possui botao?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Padroniza Dados').last().json.instance.url }}/sender/simple",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"numbers\": [\n    \"{{ $json.chat_id_whatsapp }}\"\n  ],\n  \"type\": \"text\",\n  \"delayMin\": 10,\n  \"delayMax\": 30,\n  \"scheduled_for\": {{ DateTime.fromISO($json.dt_programada.replace(' ', 'T') + ':00').toMillis() }},\n  \"info\": \"string\",\n  \"text\": {{ JSON.stringify($json.conteudo) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1744,
+        560
+      ],
+      "id": "d5c1caea-39ea-40d6-910f-201a7b22864f",
+      "name": "envia_texto",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZtFXzJZKhheInQBf",
+          "name": "Uazapi - Briefia"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "56c29dd1-58d0-46b9-ba14-535c0adb88bb",
+              "name": "count",
+              "value": "={{ $json.count }}",
+              "type": "number"
+            },
+            {
+              "id": "224ba1d8-9769-4d62-a99f-0c87d784227d",
+              "name": "folder_id",
+              "value": "={{ $json.folder_id }}",
+              "type": "string"
+            },
+            {
+              "id": "c77d4dbf-6ebc-4a5a-b4b1-994443680d32",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2656,
+        128
+      ],
+      "id": "966636ad-2979-40c3-96a3-2fea426d2c6a",
+      "name": "retorno dos dados"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Padroniza Dados').last().json.instance.url }}/sender/simple",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"numbers\": [\n    \"{{ $json.chat_id_whatsapp }}\"\n  ],\n  \"type\": \"image\",\n  \"delayMin\": 10,\n  \"delayMax\": 30,\n  \"scheduled_for\": {{ DateTime.fromSQL($json.dt_programada.slice(0, -3)).toMillis() }},\n  \"text\": {{ JSON.stringify($json.conteudo) }},\n  \"file\": \"{{ $json.url_midia }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1744,
+        368
+      ],
+      "id": "006c10f4-a11c-4082-988d-8cdb4f405a85",
+      "name": "envia_imagem",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZtFXzJZKhheInQBf",
+          "name": "Uazapi - Briefia"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Padroniza Dados').last().json.instance.url }}/sender/simple",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"numbers\": [\n    \"{{ $json.chat_id_whatsapp }}\"\n  ],\n  \"type\": \"button\",\n  \"delayMin\": 10,\n  \"delayMax\": 30,\n  \"scheduled_for\": {{ DateTime.fromSQL($json.dt_programada.slice(0, -3)).toMillis() }},\n  \"text\": {{ JSON.stringify('\\n' + $json.conteudo) }},\n  \"file\": \"{{ $json.url_midia }}\",\n  \"footerText\": \"Utilize os botões para responder\",\n  \"buttonText\": \"botao\",\n  \"choices\": [\n    {{ $json.botoes.map(botao => `\"${botao.nome}|${botao.nome}\"`) }}\n  ],\n  \"imageButton\": \"{{ $json.url_midia }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1744,
+        -224
+      ],
+      "id": "4b6d4b29-8e00-4ec9-b1a9-407bb669ac76",
+      "name": "envia_botao_imagem",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZtFXzJZKhheInQBf",
+          "name": "Uazapi - Briefia"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Padroniza Dados').last().json.instance.url }}/sender/simple",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"numbers\": [\n    \"{{ $json.chat_id_whatsapp }}\"\n  ],\n  \"type\": \"button\",\n  \"delayMin\": 10,\n  \"delayMax\": 30,\n  \"scheduled_for\": {{ DateTime.fromSQL($json.dt_programada.slice(0, -3)).toMillis() }},\n  \"text\": {{ JSON.stringify('\\n' + $json.conteudo) }},\n  \"footerText\": \"Utilize os botões para responder\",\n  \"choices\": [\n    {{ $json.botoes.map(botao => `\"${botao.nome}|${botao.nome}\"`) }}\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1744,
+        -32
+      ],
+      "id": "39db4907-8fdc-469d-ad40-235aec41e713",
+      "name": "envia_botao_texto",
+      "retryOnFail": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZtFXzJZKhheInQBf",
+          "name": "Uazapi - Briefia"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Padroniza Dados').item.json.instance.url }}/sender/edit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "folder_id",
+              "value": "={{ $json.agendamento_id }}"
+            },
+            {
+              "name": "action",
+              "value": "delete"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1312,
+        -688
+      ],
+      "id": "93991850-a528-4ec1-9e69-1ca1e6c46f33",
+      "name": "Remove Agendamento",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZtFXzJZKhheInQBf",
+          "name": "Uazapi - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Query corrigida - lógica de conversão de fuso ajustada\nSELECT\n  mp.id AS id_mensagem_programada,\n  mp.id_grupo,\n  mp.agendamento_id,\n  mp.conteudo,\n  mp.url_midia,\n  mp.nome_arquivo,\n  \n  -- Data para uso (convertida para -03 apenas se empresa tiver fuso diferente)\n  CASE \n    WHEN e.fuso IS NOT NULL AND e.fuso != '-03' THEN\n      TO_CHAR(\n        mp.dt_programada + INTERVAL '1 hour' * ((-3) - CAST(SUBSTRING(e.fuso, 1, 3) AS INTEGER)),\n        'YYYY-MM-DD HH24:MI:SS'\n      ) || '-03'\n    ELSE\n      TO_CHAR(mp.dt_programada, 'YYYY-MM-DD HH24:MI:SS') || '-03'\n  END AS dt_programada,\n  \n  mp.status,\n  mp.id_template_botao,\n  g.chat_id_whatsapp,\n  \n  -- Data original sem conversão (como está no banco)\n  TO_CHAR(mp.dt_programada, 'YYYY-MM-DD HH24:MI:SS') || COALESCE(e.fuso, '-03') AS dt_programada_original,\n  \n  COALESCE(e.fuso, '-03') AS fuso_empresa,\n  \n  -- Diferença de horas (quantas horas somar/subtrair para chegar em -03)\n  CASE \n    WHEN e.fuso IS NOT NULL AND e.fuso != '-03' THEN\n      (-3) - CAST(SUBSTRING(e.fuso, 1, 3) AS INTEGER)\n    ELSE 0\n  END AS diferenca_horas,\n  \n  -- Array de botões\n  COALESCE(\n    JSON_AGG(\n      JSON_BUILD_OBJECT(\n        'id', b.id,\n        'nome', b.nome,\n        'descricao', b.descricao,\n        'ativo', b.ativo\n      )\n      ORDER BY b.nome\n    ) FILTER (WHERE b.id IS NOT NULL),\n    '[]'::json\n  ) AS botoes\n\nFROM\n  mensagens_programadas mp\n  LEFT JOIN grupos g ON g.id = mp.id_grupo\n  LEFT JOIN clientes c ON c.id = g.id_cliente\n  LEFT JOIN empresas e ON e.id = c.id_empresa\n  LEFT JOIN templates_botoes tb ON tb.id = mp.id_template_botao\n  LEFT JOIN templates_botoes_relacionamento tbr ON tbr.id_template_botao = tb.id AND tbr.ativo = true\n  LEFT JOIN botoes b ON b.id = tbr.id_botao AND b.ativo = true\n\nWHERE\n  mp.id = {{ $('Nova Mensagem Programada').last().json.body.id }}\n\nGROUP BY\n  mp.id,\n  mp.id_grupo,\n  mp.agendamento_id,\n  mp.conteudo,\n  mp.url_midia,\n  mp.dt_programada,\n  mp.status,\n  mp.id_template_botao,\n  e.fuso,\n  g.chat_id_whatsapp\n\nORDER BY mp.dt_programada;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        592,
+        -240
+      ],
+      "id": "87faa7f6-ee28-4aab-8d7c-45e6663fff4d",
+      "name": "Busca Mensagem",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "briefia/v1/mensagem-programada",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -240
+      ],
+      "id": "759217ff-20b5-4f0e-8daa-b69e8021a272",
+      "name": "Nova Mensagem Programada",
+      "webhookId": "628b6427-c8d5-4136-be29-8e5613156070"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "mensagens_programadas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Busca Mensagem').item.json.id_mensagem_programada }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "cancelada"
+            },
+            {
+              "fieldId": "agendamento_id",
+              "fieldValue": "={{ $('Busca Mensagem').item.json.agendamento_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        -688
+      ],
+      "id": "dc491771-f856-4804-8f6c-63533265b298",
+      "name": "Atualiza Status2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s4stma8E9rLogINA",
+          "name": "Supabase - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "mensagens_programadas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Busca Mensagem').item.json.id_mensagem_programada }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "agendada"
+            },
+            {
+              "fieldId": "agendamento_id",
+              "fieldValue": "={{ $json.folder_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        128
+      ],
+      "id": "8aa1d409-db6e-4aaa-98fa-c2bdf05f739d",
+      "name": "Atualiza Status3",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s4stma8E9rLogINA",
+          "name": "Supabase - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Cria/Edita mensagem programada\nRecebe dados via webhook do site da Briefia, apenas com o ID na mensagem programada salva no banco de dados. Assim, é realizada a consulta dos dados da mensagem e feita a criação/edição do lembrete.\n\nCom esse fluxo é possível:\n1. Criar um novo lembrete\n2. Cancelar o lembrete\n3. Cancelar e recriar com novos dados",
+        "height": 480,
+        "width": 624,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        128,
+        -512
+      ],
+      "typeVersion": 1,
+      "id": "d4d4d6a2-0038-4cd1-b3ed-17dc88981b57",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a211796f-b36f-4dda-a663-dfac907083bc",
+              "leftValue": "={{ $json.agendamento_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        816,
+        -240
+      ],
+      "id": "70a93de7-0d0a-4765-81b7-4448d91507bb",
+      "name": "Já possui agendamento?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "955c6c8e-0c7f-4071-a014-c3542cfa77dc",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "cancelada",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        -240
+      ],
+      "id": "ade679bf-3bbe-409d-909a-afc95b4a2688",
+      "name": "Mensagem Cancelada?"
+    },
+    {
+      "parameters": {
+        "tableId": "logs_auditoria",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "acao",
+              "fieldValue": "briefia/v1/mensagem-programada"
+            },
+            {
+              "fieldId": "dados_novos",
+              "fieldValue": "={{ $json }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2496,
+        -48
+      ],
+      "id": "10157f47-c7ee-488a-b666-0a4af8b93a9f",
+      "name": "[ERRO] Cria log",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s4stma8E9rLogINA",
+          "name": "Supabase - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "mensagens_programadas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "agendamento_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.agendamento_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "erro"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        448
+      ],
+      "id": "78e22c5a-4edd-4005-b1f4-f76f451a1374",
+      "name": "[ERRO] Atualiza Status",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s4stma8E9rLogINA",
+          "name": "Supabase - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "errorMessage": "Erro ao criar agendamento!"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        2720,
+        448
+      ],
+      "id": "f28610fa-5d0c-41e9-b42f-668cf2ee6658",
+      "name": "Stop and Error"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e9870027-348c-4f4e-8313-0e92fc65fe1d",
+              "name": "instance.url",
+              "value": "https://briefia.uazapi.com",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        368,
+        -240
+      ],
+      "id": "c9d127bc-c33e-4301-84c5-2a27035476ae",
+      "name": "Padroniza Dados"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"code\": 200\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        3088,
+        128
+      ],
+      "id": "987504ec-94ed-4554-b066-0a221606fd8b",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"code\": 400\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        3072,
+        -48
+      ],
+      "id": "3804266e-09a4-471f-8cb1-41ac5affeb22",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"code\": 200\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2000,
+        -704
+      ],
+      "id": "2262673a-e2f7-4b65-be48-92d446034bd1",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "84408908-27c9-4468-8f70-30ebf5aa1e86",
+              "leftValue": "={{ $('Busca Mensagem').item.json.status }}",
+              "rightValue": "cancelada",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1728,
+        -688
+      ],
+      "id": "cdbf1cf3-3536-44ec-b2ad-b495976d71f8",
+      "name": "Cancelada?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Padroniza Dados').last().json.instance.url }}/sender/simple",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"numbers\": [\n    \"{{ $json.chat_id_whatsapp }}\"\n  ],\n  \"type\": \"document\",\n  \"delayMin\": 10,\n  \"delayMax\": 30,\n  \"scheduled_for\": {{ DateTime.fromSQL($json.dt_programada.slice(0, -3)).toMillis() }},\n  \"text\": {{ JSON.stringify($json.conteudo) }},\n  \"file\": \"{{ $json.url_midia }}\",\n  \"docName\": \"{{ $json.nome_arquivo }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1744,
+        192
+      ],
+      "id": "eb5415cb-ea65-48cd-8b92-4a0a1645f141",
+      "name": "envia_pdf",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZtFXzJZKhheInQBf",
+          "name": "Uazapi - Briefia"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Padroniza Dados').last().json.instance.url }}/sender/simple",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"numbers\": [\n    \"{{ $json.chat_id_whatsapp }}\"\n  ],\n  \"type\": \"document\",\n  \"delayMin\": 10,\n  \"delayMax\": 30,\n  \"scheduled_for\": {{ DateTime.fromSQL($json.dt_programada.slice(0, -3)).toMillis() }},\n  \"file\": \"{{ $json.url_midia }}\",\n  \"docName\": \"{{ $json.nome_arquivo }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1616,
+        -400
+      ],
+      "id": "98e67e00-7c32-47cd-bbb4-29b4938a497a",
+      "name": "envia_pdf1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZtFXzJZKhheInQBf",
+          "name": "Uazapi - Briefia"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Padroniza Dados').last().json.instance.url }}/sender/simple",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"numbers\": [\n    \"{{ $('Tipo Mensagem').last().json.chat_id_whatsapp }}\"\n  ],\n  \"type\": \"button\",\n  \"delayMin\": 10,\n  \"delayMax\": 30,\n  \"scheduled_for\": {{ DateTime.fromSQL($('Tipo Mensagem').last().json.dt_programada.slice(0, -3)).toMillis() }},\n  \"text\": {{ JSON.stringify('\\n' + $('Tipo Mensagem').last().json.conteudo) }},\n  \"footerText\": \"Utilize os botões para responder\",\n  \"choices\": [\n    {{ $('Tipo Mensagem').last().json.botoes.map(botao => `\"${botao.nome}|${botao.nome}\"`) }}\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1904,
+        -416
+      ],
+      "id": "4d4228ac-c5ad-4392-a2ca-e2d96104f18e",
+      "name": "envia_botao_texto1",
+      "retryOnFail": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZtFXzJZKhheInQBf",
+          "name": "Uazapi - Briefia"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.url_midia.split('.').pop().toLowerCase() }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "808a6bdb-c98d-4384-b6f1-d81264e6fde5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "94dfbc5e-3db9-44e7-9020-4e44a67df501",
+                    "leftValue": "={{ $json.url_midia }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "imagem"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "texto"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1424,
+        -192
+      ],
+      "id": "c3b9ce0d-05d2-4ced-9de8-449ff36f95e4",
+      "name": "Tipo Mensagem"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.url_midia.split('.').pop().toLowerCase() }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "808a6bdb-c98d-4384-b6f1-d81264e6fde5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "94dfbc5e-3db9-44e7-9020-4e44a67df501",
+                    "leftValue": "={{ $json.url_midia }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "imagem"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "texto"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1424,
+        432
+      ],
+      "id": "57aa30d0-b7e2-481d-bc5f-dcd3efd3272c",
+      "name": "Tipo Mensagem1"
+    }
+  ],
+  "connections": {
+    "Possui botao?": {
+      "main": [
+        [
+          {
+            "node": "Tipo Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tipo Mensagem1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "envia_texto": {
+      "main": [
+        [
+          {
+            "node": "retorno dos dados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "[ERRO] Cria log",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "[ERRO] Atualiza Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "envia_imagem": {
+      "main": [
+        [
+          {
+            "node": "retorno dos dados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "[ERRO] Cria log",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "[ERRO] Atualiza Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "envia_botao_imagem": {
+      "main": [
+        [
+          {
+            "node": "retorno dos dados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "[ERRO] Cria log",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "[ERRO] Atualiza Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "envia_botao_texto": {
+      "main": [
+        [
+          {
+            "node": "retorno dos dados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "[ERRO] Cria log",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "[ERRO] Atualiza Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "retorno dos dados": {
+      "main": [
+        [
+          {
+            "node": "Atualiza Status3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Já possui agendamento?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nova Mensagem Programada": {
+      "main": [
+        [
+          {
+            "node": "Padroniza Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Agendamento": {
+      "main": [
+        [
+          {
+            "node": "Atualiza Status2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza Status3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Já possui agendamento?": {
+      "main": [
+        [
+          {
+            "node": "Remove Agendamento",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Mensagem Cancelada?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensagem Cancelada?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem Cancelada?": {
+      "main": [
+        [
+          {
+            "node": "Remove Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Possui botao?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[ERRO] Cria log": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[ERRO] Atualiza Status": {
+      "main": [
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Padroniza Dados": {
+      "main": [
+        [
+          {
+            "node": "Busca Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza Status2": {
+      "main": [
+        [
+          {
+            "node": "Cancelada?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancelada?": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "envia_pdf": {
+      "main": [
+        [
+          {
+            "node": "retorno dos dados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "[ERRO] Atualiza Status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "[ERRO] Cria log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "envia_pdf1": {
+      "main": [
+        [
+          {
+            "node": "envia_botao_texto1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "retorno dos dados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "[ERRO] Cria log",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "[ERRO] Atualiza Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "envia_botao_texto1": {
+      "main": [
+        [
+          {
+            "node": "retorno dos dados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "[ERRO] Cria log",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "[ERRO] Atualiza Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipo Mensagem": {
+      "main": [
+        [
+          {
+            "node": "envia_pdf1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "envia_botao_imagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "envia_botao_texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipo Mensagem1": {
+      "main": [
+        [
+          {
+            "node": "envia_pdf",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "envia_imagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "envia_texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "Sjd5x4DDIjqnsxyQ"
+  },
+  "versionId": "d0dd38fe-a344-4fd8-9482-737bbf75aebb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "WcjOHupPWWtsWYap",
+  "tags": [
+    {
+      "createdAt": "2025-08-05T13:55:38.375Z",
+      "updatedAt": "2025-08-05T13:55:38.375Z",
+      "id": "r2jHKAIl8KfVXwxE",
+      "name": "Tauã"
+    }
+  ]
+}

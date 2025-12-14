@@ -1,0 +1,904 @@
+{
+  "name": "[MENSAGENS][ENTRADA] 1. Tracker",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Validar grupo, cliente e empresa - forçando tipos JSON\nSELECT json_build_object(\n    'grupo_id', g.id,\n    'grupo_nome', g.nome,\n    'grupo_chat_id', g.chat_id_whatsapp,\n    'id_cliente', g.id_cliente,\n    'cliente_id', c.id,\n    'cliente_nome', c.nome,\n    'cliente_status', c.status,\n    'id_empresa', c.id_empresa,\n    'empresa_id', e.id,\n    'nome_empresa', e.nome_empresa,\n    'empresa_status', e.status,\n    'status_validacao', CASE \n        WHEN g.id IS NULL THEN 'GRUPO_NAO_ENCONTRADO'\n        WHEN c.status != 'ativo' THEN 'CLIENTE_INATIVO'\n        WHEN e.status != 'ativa' THEN 'EMPRESA_INATIVA'\n        ELSE 'VALIDO'\n    END\n) as resultado\nFROM grupos g\nLEFT JOIN clientes c ON g.id_cliente = c.id\nLEFT JOIN empresas e ON c.id_empresa = e.id\nWHERE g.chat_id_whatsapp = $1\nLIMIT 1;",
+        "options": {
+          "queryReplacement": "={{ $('variaveis1').item.json.variaveis.chat.chatId }}"
+        }
+      },
+      "id": "1ae2c47e-5367-4499-b25e-a636ab981c9c",
+      "name": "Validar Grupo e Hierarquia",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        224,
+        1472
+      ],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      },
+      "notes": "Valida grupo → cliente → empresa em uma query\nRetorna dados completos se válido"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "briefia-tracker/messages",
+        "options": {}
+      },
+      "id": "d5ff463a-c594-4e71-9db0-d9a274bd2cda",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -736,
+        1712
+      ],
+      "webhookId": "3d853676-2cd8-4b99-b015-05d0a876b979"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f1a2b3c4-d5e6-7890-abcd-ef0123456789",
+              "leftValue": "={{ $('Validar Grupo e Hierarquia').item.json.resultado.status_validacao }}",
+              "rightValue": "VALIDO",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        1472
+      ],
+      "id": "c4eb78bb-e21b-4181-98f7-a0053cedceb4",
+      "name": "Hierarquia Válida?",
+      "notesInFlow": true,
+      "notes": "Verifica se grupo → cliente → empresa está válido\nSó processa se status_validacao = 'VALIDO'"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Gerenciar entrada de membro no grupo\nWITH input_data AS (\n    SELECT \n        $1::VARCHAR as chat_id,\n        $2::VARCHAR as whatsapp_number\n),\ngrupo_info AS (\n    SELECT id as grupo_id\n    FROM grupos\n    WHERE chat_id_whatsapp = (SELECT chat_id FROM input_data)\n    LIMIT 1\n),\nmembro_upsert AS (\n    INSERT INTO membros (nome, whatsapp, ativo)\n    SELECT \n        'Membro ' || whatsapp_number,\n        whatsapp_number,\n        true\n    FROM input_data\n    ON CONFLICT (whatsapp) \n    DO UPDATE SET \n        ativo = true,\n        dt_update = CURRENT_TIMESTAMP\n    RETURNING id, nome, whatsapp, dt_create\n),\nassociacao AS (\n    INSERT INTO membros_grupos (id_grupo, id_membro, ativo)\n    SELECT \n        g.grupo_id,\n        m.id,\n        true\n    FROM membro_upsert m\n    CROSS JOIN grupo_info g\n    WHERE g.grupo_id IS NOT NULL\n    ON CONFLICT (id_grupo, id_membro) \n    DO UPDATE SET \n        ativo = true,\n        dt_update = CURRENT_TIMESTAMP\n    RETURNING id, id_grupo, id_membro, ativo, dt_create\n)\nSELECT \n    json_build_object(\n        'status', CASE \n            WHEN g.grupo_id IS NULL THEN 'GRUPO_NAO_ENCONTRADO'\n            ELSE 'SUCESSO'\n        END,\n        'operacao', CASE\n            WHEN m.dt_create >= CURRENT_TIMESTAMP - INTERVAL '5 seconds' THEN 'MEMBRO_CRIADO'\n            WHEN a.dt_create >= CURRENT_TIMESTAMP - INTERVAL '5 seconds' THEN 'ASSOCIACAO_CRIADA'\n            ELSE 'MEMBRO_REATIVADO'\n        END,\n        'membro', json_build_object(\n            'id', m.id,\n            'nome', m.nome,\n            'whatsapp', m.whatsapp\n        ),\n        'grupo', json_build_object(\n            'id', g.grupo_id,\n            'chat_id', (SELECT chat_id FROM input_data)\n        )\n    ) as resultado\nFROM membro_upsert m\nCROSS JOIN grupo_info g\nCROSS JOIN associacao a;",
+        "options": {
+          "queryReplacement": "={{ $json.group.chat_id }}, {{ $json.user.whatsapp }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        720,
+        2016
+      ],
+      "id": "794fd596-77a5-4d66-90ee-47e7e8a73624",
+      "name": "Adicionar Membro",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      },
+      "notes": "Gerencia entrada de membro:\n- Cria/atualiza membro\n- Associa ao grupo\n- Reativa se necessário"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Gerenciar saída de membro do grupo\nWITH input_data AS (\n    SELECT \n        $1::VARCHAR as chat_id,\n        $2::VARCHAR as whatsapp_number\n),\ngrupo_info AS (\n    SELECT id as grupo_id\n    FROM grupos\n    WHERE chat_id_whatsapp = (SELECT chat_id FROM input_data)\n    LIMIT 1\n),\nmembro_info AS (\n    SELECT id as membro_id\n    FROM membros\n    WHERE whatsapp = (SELECT whatsapp_number FROM input_data)\n    LIMIT 1\n),\ndesativacao AS (\n    UPDATE membros_grupos\n    SET \n        ativo = false,\n        dt_update = CURRENT_TIMESTAMP\n    WHERE \n        id_membro = (SELECT membro_id FROM membro_info)\n        AND id_grupo = (SELECT grupo_id FROM grupo_info)\n        AND ativo = true\n    RETURNING *\n)\nSELECT \n    json_build_object(\n        'status', CASE \n            WHEN g.grupo_id IS NULL THEN 'GRUPO_NAO_ENCONTRADO'\n            WHEN m.membro_id IS NULL THEN 'MEMBRO_NAO_ENCONTRADO'\n            WHEN d.id IS NULL THEN 'ASSOCIACAO_NAO_ATIVA'\n            ELSE 'SUCESSO'\n        END,\n        'operacao', CASE\n            WHEN d.id IS NOT NULL THEN 'MEMBRO_DESATIVADO'\n            ELSE 'SEM_ALTERACAO'\n        END,\n        'membro', CASE \n            WHEN m.membro_id IS NOT NULL THEN json_build_object(\n                'id', m.membro_id,\n                'whatsapp', (SELECT whatsapp_number FROM input_data)\n            )\n            ELSE NULL\n        END,\n        'grupo', CASE \n            WHEN g.grupo_id IS NOT NULL THEN json_build_object(\n                'id', g.grupo_id,\n                'chat_id', (SELECT chat_id FROM input_data)\n            )\n            ELSE NULL\n        END\n    ) as resultado\nFROM (SELECT 1) dummy\nLEFT JOIN grupo_info g ON true\nLEFT JOIN membro_info m ON true\nLEFT JOIN desativacao d ON true;",
+        "options": {
+          "queryReplacement": "={{ $json.group.chat_id }}, {{ $json.user.whatsapp }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        720,
+        2192
+      ],
+      "id": "caf47c55-954b-4f90-88f0-fb9585e323d6",
+      "name": "Remover Membro",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      },
+      "notes": "Gerencia saída de membro:\n- Desativa associação grupo-membro\n- Mantém histórico\n- Não remove dados"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "eba4f22a-e13c-4c8f-a225-82593bf23af9",
+              "name": "variaveis.chat.chatId",
+              "value": "={{ $json.body.message.chatid.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "dd69a97c-046c-4948-869c-9568fb4ab5fb",
+              "name": "variaveis.chat.groupName",
+              "value": "={{ $json.body.message.groupName }}",
+              "type": "string"
+            },
+            {
+              "id": "6a3fc213-3e9f-4124-a1b8-5a249f15660a",
+              "name": "variaveis.user.whatsapp",
+              "value": "={{ $json.body.message.sender.endsWith(\"@lid\") ? $json.body.message.sender_pn.split(\"@\")[0] : $json.body.message.sender.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "bedd9dfe-2cef-4708-afe6-65739e1fc30b",
+              "name": "variaveis.message.text",
+              "value": "={{ $json.body.message.content.text || $json.body.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "4b8332ca-d18a-4e1d-b79c-864dbc961d36",
+              "name": "variaveis.message.id",
+              "value": "={{ $json.body.message.messageid }}",
+              "type": "string"
+            },
+            {
+              "id": "9346d8da-22f3-42c9-a139-4db62a8062bb",
+              "name": "variaveis.message.fromMe",
+              "value": "={{ $json.body.message.fromMe }}",
+              "type": "boolean"
+            },
+            {
+              "id": "3e48fd29-63ca-4879-9d9c-9bff97a6e02a",
+              "name": "variaveis.message.type",
+              "value": "={{ $json.body.message.type == 'text' ? $json.body.message.type : $json.body.message.messageType.split(\"M\")[0].replace(\"Extended\",\"\") }}",
+              "type": "string"
+            },
+            {
+              "id": "4d61bada-3911-4565-959b-702f96b39bac",
+              "name": "variaveis.message.responded.whatsapp",
+              "value": "={{ $json.body.message.content.contextInfo?.participant.split(\"@\")[0] || $json.body.message.content.key.participant.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "d88bcf78-a460-4369-8072-b18b8fb7ab99",
+              "name": "variaveis.message.responded.text",
+              "value": "={{ $json.body.message.content.contextInfo.quotedMessage.conversation || $json.body.message.content.contextInfo.quotedMessage.extendedTextMessage.text }}",
+              "type": "string"
+            },
+            {
+              "id": "7a3b8be7-14d6-4981-a27d-3f1f2082aecb",
+              "name": "variaveis.message.responded.id",
+              "value": "={{ $json.body.message.content.contextInfo?.stanzaID || $json.body.message.quoted || $json.body.message.content.key.ID }}",
+              "type": "string"
+            },
+            {
+              "id": "f8175cd6-8828-4705-b5cc-7ae2853541ff",
+              "name": "variaveis.message.timestamp",
+              "value": "={{ $json.body.message.messageTimestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "343b33a6-d094-40ec-8656-bb32a65352e0",
+              "name": "variaveis.message.media.url",
+              "value": "={{ $json.body.message.content.URL }}",
+              "type": "string"
+            },
+            {
+              "id": "df04ea52-e9fa-43ea-aba3-e2f0b18d86c0",
+              "name": "variaveis.message.media.file_name",
+              "value": "={{$json.body.data.content.media.metadata.fileName}}",
+              "type": "string"
+            },
+            {
+              "id": "acde62fb-5e0e-42d1-8246-0a798cf908e2",
+              "name": "variaveis.message.media.type",
+              "value": "={{ $json.body.message.messageType }}",
+              "type": "string"
+            },
+            {
+              "id": "bcf93453-6b54-419d-8885-61d22512a04c",
+              "name": "variaveis.instance.number",
+              "value": "={{ $json.body.owner }}",
+              "type": "string"
+            },
+            {
+              "id": "2872a011-4489-45e8-9ad0-d58987ea5084",
+              "name": "variaveis.event.type",
+              "value": "={{ $json.body.event?.Join[0]?.split(\"@\")[0] || $json.body.event?.Leave[0].split(\"@\")[0] || $json.body.EventType }}",
+              "type": "string"
+            },
+            {
+              "id": "56d64047-d557-4599-93b3-4b9adb315314",
+              "name": "variaveis.event.whatsapp",
+              "value": "={{ $json.body.event.Join[0]?.split(\"@\")[0] || $json.body.event.Leave[0].split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "07d3132e-98cf-4083-b1cc-f10af99fee9e",
+              "name": "variaveis.chat.isGroup",
+              "value": "={{ $json.body.message.isGroup }}",
+              "type": "boolean"
+            },
+            {
+              "id": "5a2e6b41-967e-4b74-9c9e-3c063b44a8ed",
+              "name": "variaveis.instance.token",
+              "value": "={{ $json.body.token }}",
+              "type": "string"
+            },
+            {
+              "id": "72b87e46-2def-4452-a118-2de787e739e2",
+              "name": "variaveis.instance.host",
+              "value": "={{ $json.body.BaseUrl || 'https://raisebt.uazapi.com' }}",
+              "type": "string"
+            },
+            {
+              "id": "bfe2a37c-acfd-4d09-bf7e-39fb0db914ad",
+              "name": "variaveis.message.responded.type",
+              "value": "={{ $json.body.message.content.contextInfo.quotedMessage.audioMessage ? 'audio' : ($json.body.message.content.contextInfo.quotedMessage.imageMessage ? 'image' : ($json.body.message.content.contextInfo.quotedMessage.videoMessage ? 'video' : 'text')) }}",
+              "type": "string"
+            },
+            {
+              "id": "41b4adef-1648-4194-a94a-602d3f377228",
+              "name": "variaveis.message.responded.mediaurl",
+              "value": "={{ $json.body.message.content.contextInfo.quotedMessage.audioMessage?.URL || $json.body.message.content.contextInfo.quotedMessage.imageMessage?.URL || $json.body.message.content.contextInfo.quotedMessage.videoMessage.URL}}",
+              "type": "string"
+            },
+            {
+              "id": "b3bbb725-f6fa-4bb0-80ec-64db1c7ef8f8",
+              "name": "variaveis.user.name",
+              "value": "={{ $json.body.message.senderName }}",
+              "type": "string"
+            },
+            {
+              "id": "8ec14933-39d2-44d7-a92e-3bb41a46456f",
+              "name": "variaveis.message.vote",
+              "value": "={{ $json.body.message.vote }}",
+              "type": "string"
+            },
+            {
+              "id": "8b05d001-f224-406e-8978-6692a6fbd51b",
+              "name": "variaveis.message.edited",
+              "value": "={{ $json.body.message.edited }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "ignoreConversionErrors": false
+        }
+      },
+      "id": "cdd401ad-6b25-46ff-808a-d576ac7c1a9b",
+      "name": "variaveis1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -496,
+        1712
+      ],
+      "alwaysOutputData": false,
+      "notesInFlow": true,
+      "notes": "Uazapi - Extrai variáveis do webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ae00a9fc-797e-4e8a-93dd-960279e01998",
+              "name": "variaveis",
+              "value": "={{ $json.variaveis }}",
+              "type": "object"
+            },
+            {
+              "id": "188a3c56-5b68-47b7-bebe-f5643b0d74bc",
+              "name": "grupo",
+              "value": "={{ $('Validar Grupo e Hierarquia').first().json.resultado}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {
+          "ignoreConversionErrors": false
+        }
+      },
+      "id": "f4a55edb-7f14-48dd-b123-ba7ef4ec12c1",
+      "name": "Consolidar Dados1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        944,
+        1680
+      ],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "notes": "Consolida dados das variáveis + grupo\nSem assignments específicos - pega tudo"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "useDataOfInput": 2
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        720,
+        1680
+      ],
+      "id": "15772312-135b-4d46-860a-59b58afca754",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "fromMe",
+              "value": "={{ $json.variaveis.message.fromMe.toString() }}"
+            },
+            {
+              "key": "event",
+              "value": "={{ $json.variaveis.event.type }}"
+            },
+            {
+              "key": "whatsapp",
+              "value": "={{ $json.variaveis.user.whatsapp }}"
+            },
+            {
+              "key": "chatId",
+              "value": "={{ $json.variaveis.chat.chatId }}"
+            },
+            {
+              "key": "type",
+              "value": "={{ $json.variaveis.message.type }}"
+            },
+            {
+              "key": "text",
+              "value": "={{ $json.variaveis.message.text }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -272,
+        1712
+      ],
+      "id": "02a9ee62-cc5e-4120-bcf7-b6d6c894c335",
+      "name": "Execution Data1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('variaveis1').item.json.variaveis.message.text.split(\"\")[0] }}",
+                    "rightValue": "/",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "927a9a91-0d28-4ac8-a597-cc04d43a2fb2"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "command"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e8645621-b69d-457c-a34f-60162cbce473",
+                    "leftValue": "={{ $('variaveis1').item.json.variaveis.message.text }}",
+                    "rightValue": "=@{{ $('variaveis1').item.json.variaveis.instance.number }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "marcação"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1184,
+        1664
+      ],
+      "id": "64f2ac08-5dad-429d-a57e-64e47d383096",
+      "name": "Switch2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://webhook.briefia.com.br/webhook/process-whatsapp-message",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1504,
+        1808
+      ],
+      "id": "9ff58211-e511-48bc-95be-d8da3ca79774",
+      "name": "Call 2. Segmentação1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "77af3f20-5ef4-4b6b-9021-f543e0fccea2",
+                    "leftValue": "={{ $('variaveis1').item.json.variaveis.event.type }}",
+                    "rightValue": "connection",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "connection"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.variaveis.chat.isGroup }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "2a26bf69-de33-49ad-a875-8344b80da427"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Group"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7f693323-cd2c-4ea4-91df-50a9d80d76b0",
+                    "leftValue": "={{ $('Webhook').item.json.body.event.Join[0] }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Join Group"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "679bb476-07ce-4f90-8387-47e17faf3ca5",
+                    "leftValue": "={{ $('Webhook').item.json.body.event.Leave[0] }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Leave Group"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Private"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -48,
+        1648
+      ],
+      "id": "1b9c855b-5f68-4302-b8c8-a94fbfead52f",
+      "name": "Switch3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "976c9c4f-7a4f-49c4-a72c-838caba1fa9a",
+              "name": "group.chat_id",
+              "value": "={{ $('Webhook').item.json.body.event.JID.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "4eeaf0ca-1ee5-4dbe-9070-0ec4864cd760",
+              "name": "user.whatsapp",
+              "value": "={{ $('Webhook').item.json.body.event.Join[0].split(\"@\")[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        496,
+        2016
+      ],
+      "id": "83ebd89d-bba3-4aa1-af0d-47d2198f041a",
+      "name": "Join Info1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "976c9c4f-7a4f-49c4-a72c-838caba1fa9a",
+              "name": "group.chat_id",
+              "value": "={{ $('Webhook').item.json.body.event.JID.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "4eeaf0ca-1ee5-4dbe-9070-0ec4864cd760",
+              "name": "user.whatsapp",
+              "value": "={{ $('Webhook').item.json.body.event.Leave[0].split(\"@\")[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        496,
+        2192
+      ],
+      "id": "a2ae8985-e3f6-4c9b-93c8-9c10356af682",
+      "name": "Leave Info1"
+    },
+    {
+      "parameters": {
+        "content": "## 🔍 VALIDAR GRUPO E HIERARQUIA\n\n**FUNÇÃO:** Valida se grupo → cliente → empresa está ativo\n\n**PARÂMETROS:**\n• $1: chat_id do WhatsApp (string)\n\n**RETORNA:**\n• Dados completos do grupo, cliente e empresa\n• status_validacao: 'VALIDO' | 'GRUPO_NAO_ENCONTRADO' | 'CLIENTE_INATIVO' | 'EMPRESA_INATIVA'\n\n**CRITÉRIO:** Empresa status = 'ativa' AND Cliente status = 'ativo'",
+        "height": 380,
+        "width": 400,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        1184
+      ],
+      "id": "670434c2-ab54-4e23-88d7-03f1c1f3af31",
+      "name": "Sticky - Validar Grupo"
+    },
+    {
+      "parameters": {
+        "content": "## ➕ ADICIONAR MEMBRO\n\n**FUNÇÃO:** Gerencia entrada de membro no grupo\n\n**PARÂMETROS:**\n• $1: chat_id do grupo (string)\n• $2: número WhatsApp do membro (string)\n\n**AÇÕES:**\n• Cria/atualiza membro na tabela 'membros'\n• Associa membro ao grupo via 'membros_grupos'\n• Reativa se membro estava inativo\n\n**CONFLITO:** Usa whatsapp como chave única",
+        "height": 120,
+        "width": 380,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        32,
+        2016
+      ],
+      "id": "68db45f6-5102-4781-8511-4f393ac52751",
+      "name": "Sticky - Adicionar Membro"
+    },
+    {
+      "parameters": {
+        "content": "## ➖ REMOVER MEMBRO\n\n**FUNÇÃO:** Gerencia saída de membro do grupo\n\n**PARÂMETROS:**\n• $1: chat_id do grupo (string)\n• $2: número WhatsApp do membro (string)\n\n**AÇÕES:**\n• Desativa associação em 'membros_grupos' (ativo = false)\n• Mantém histórico completo\n• NÃO remove dados físicos\n\n**RESULTADO:** Status da operação + dados do membro/grupo",
+        "height": 120,
+        "width": 380,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        32,
+        2192
+      ],
+      "id": "85168bbe-4f22-4c29-8e03-638c34840d13",
+      "name": "Sticky - Remover Membro"
+    },
+    {
+      "parameters": {
+        "content": "## ⚙️ CONSOLIDAR DADOS\n\n**FUNÇÃO:** Mescla dados das variáveis + grupo validado\n\n**CONFIGURAÇÃO:**\n• includeOtherFields: true\n• Sem assignments específicos\n\n**RESULTADO:** JSON completo com:\n• Todas as variáveis extraídas do webhook\n• Dados completos do grupo/cliente/empresa validados",
+        "height": 132,
+        "width": 350,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        944,
+        1504
+      ],
+      "id": "77dcdea7-3292-4c29-87bb-aeb2264fe0c4",
+      "name": "Sticky - Consolidar"
+    },
+    {
+      "parameters": {
+        "content": "## 🎯 FLUXO PRINCIPAL\n\n**CONDIÇÃO:** status_validacao = 'VALIDO'\n\n**DESTINO:** Webhook de segmentação\n**PAYLOAD:** Dados consolidados (variáveis + grupo)",
+        "height": 112,
+        "width": 320,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        432,
+        1328
+      ],
+      "id": "6fafcf3f-7546-4391-ae31-42a2c492a73d",
+      "name": "Sticky - Fluxo Principal"
+    }
+  ],
+  "connections": {
+    "Validar Grupo e Hierarquia": {
+      "main": [
+        [
+          {
+            "node": "Hierarquia Válida?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "variaveis1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hierarquia Válida?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "variaveis1": {
+      "main": [
+        [
+          {
+            "node": "Execution Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidar Dados1": {
+      "main": [
+        [
+          {
+            "node": "Switch2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Consolidar Dados1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution Data1": {
+      "main": [
+        [
+          {
+            "node": "Switch3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch2": {
+      "main": [
+        [
+          {
+            "node": "Call 2. Segmentação1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call 2. Segmentação1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call 2. Segmentação1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch3": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Validar Grupo e Hierarquia",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Join Info1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Leave Info1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Join Info1": {
+      "main": [
+        [
+          {
+            "node": "Adicionar Membro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leave Info1": {
+      "main": [
+        [
+          {
+            "node": "Remover Membro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "Sjd5x4DDIjqnsxyQ"
+  },
+  "versionId": "946791d3-0d23-4c78-819d-24cbee597651",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "SpijWl3vGLoM6K9n",
+  "tags": []
+}

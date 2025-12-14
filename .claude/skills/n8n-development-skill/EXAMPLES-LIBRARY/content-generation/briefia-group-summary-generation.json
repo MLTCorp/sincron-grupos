@@ -1,0 +1,549 @@
+{
+  "name": "[Resumos Grupos] - Geração de resumos grupos",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "assign1",
+              "name": "group_id",
+              "value": "={{ $('Organizar mensagens').item.json.group_id }}",
+              "type": "number"
+            },
+            {
+              "id": "assign2",
+              "name": "group_name",
+              "value": "={{ $('Code - Separar Grupos').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "assign3",
+              "name": "chat_id",
+              "value": "={{ $('Code - Separar Grupos').item.json.chat_id }}",
+              "type": "string"
+            },
+            {
+              "id": "assign4",
+              "name": "summary_date",
+              "value": "={{ new Date().toLocaleDateString('en-CA') }}",
+              "type": "string"
+            },
+            {
+              "id": "assign5",
+              "name": "total_messages",
+              "value": "={{ $('Organizar mensagens').item.json.total_messages }}",
+              "type": "number"
+            },
+            {
+              "id": "assign6",
+              "name": "summary_content",
+              "value": "=📋 *Resumo das conversas de hoje no grupo {{ $('Code - Separar Grupos').item.json.name }}*\n\n{{ $json.message.content }}",
+              "type": "string"
+            },
+            {
+              "id": "assign9",
+              "name": "processed_at",
+              "value": "={{ new Date().toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'}) }}",
+              "type": "string"
+            },
+            {
+              "id": "assign10",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fd4e0be1-4f8c-4844-92ed-a47e60c9b4f9",
+      "name": "Set - Processar Resposta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1680,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ✍️ Call Gerar resumos de grupos\nnão apagar. Será útil em escala",
+        "height": 80,
+        "width": 704,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        416
+      ],
+      "id": "204545a5-be37-49ca-9c1a-a2e6d3427115",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "id"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Você é um exímio assistente de resumo de conversas de chat que traz um contexto do que os membros conversaram ou debateram no grupo de WhatsApp.\n\nVocê irá resumir a conversa, destacando por tópicos informando em parágrafos quais são os assuntos, o que cada membro está falando, o conteúdo e principalmente sugestões de links caso tenha.\n\nSeja direto na entrega do tópico, foque no resultado da conversa.\nPontue as dicas, insights, sugestões e ações caso tenha. Isso é importante. Se não houver, traga os assuntos diversos e animados do grupo.\nPriorize links de cada tópico caso tenha\nResume os tópicos em formato de parágrafos\nEnfatize na mensagem caso ela tenha sido em áudio\n\nIgnore apresentações\nJamais critique os usuários, nunca!\n\n---\n\nPontue cada tópico com o que foi dito e concluído pelos membros. Priorize as conclusões e insights. Caso tenha muitas conversas, pegue as mais importantes seguindo o tom do grupo. \nPriorize os links sugeridos para cada tópico caso tenha\n\nIMPORTANTE: \n- Caso não tenha links no tópico jamais invente e não dê exemplos. Apenas informe sobre links se realmente houver e forem úteis!\n- Respeite e informe corretamente os horários dos tópicos\n- Elimine assuntos que possam ter gerado desconforto entre os membros\n- Mantenha a ordem cronológica das mensagens\n- Não esqueça de mencionar caso a mensagem tenha sido em áudio\n- Tente pegar assuntos dos mais variados horários possíveis\n- Elimine mensagens repetidas\n- As REAÇÕES (emojis) podem indicar aprovações, negações ou feedback importantes sobre demandas - considere-as no contexto\n\nPontue o máximo de tópicos abordados detalhando o que foi dito entre os membros\nJamais invente algo e mantenha o seu resumo fiel ao que o usuário disse.",
+              "role": "system"
+            },
+            {
+              "content": "=Faça um resumo conciso da seguinte conversa. START:\nConversa:\n\n{{ $json.formatted_messages_only }}"
+            }
+          ]
+        },
+        "simplify": "={{ true }}",
+        "options": {
+          "temperature": 0.8
+        }
+      },
+      "id": "e4cfc136-1a05-4ea2-a5c4-9cfeb4643ddd",
+      "name": "Message a model",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.3,
+      "position": [
+        1264,
+        144
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "openAiApi": {
+          "id": "IZt4afoTx95lTMUn",
+          "name": "OpenAI - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar e formatar mensagens para o prompt da IA de forma legível\n// Validar se há mensagens antigas\nconst messagesData = items[0].json.resultado;\n\nif (messagesData && messagesData.messages) {\n    // Filtrar mensagens antigas (mais de 2 dias)\n    const hoje = new Date();\n    const ontem = new Date(hoje);\n    ontem.setDate(ontem.getDate() - 1);\n    \n    const mensagensValidas = messagesData.messages.filter(msg => {\n        const msgDate = new Date(msg.message_date);\n        return msgDate >= ontem;\n    });\n    \n    // Se todas as mensagens são antigas, não processar\n    if (mensagensValidas.length === 0) {\n        return [{\n            json: {\n                status: 'all_messages_too_old',\n                skip: true\n            }\n        }];\n    }\n    \n    // Continuar apenas com mensagens válidas\n    messagesData.messages = mensagensValidas;\n}\n\nif (!messagesData || !messagesData.messages) {\n  return [{\n    json: {\n      status: 'no_messages',\n      formatted_messages: '',\n      statistics: {\n        total: 0,\n        text_messages: 0,\n        audio_messages: 0,\n        reactions: 0,\n        replies: 0\n      }\n    }\n  }];\n}\n\n// Função para formatar data/hora (CORRIGIDA - sem conversão de timezone)\nfunction formatDateTime(timestamp) {\n  const date = new Date(timestamp);\n  \n  const day = String(date.getDate()).padStart(2, '0');\n  const month = String(date.getMonth() + 1).padStart(2, '0');\n  const hours = String(date.getHours()).padStart(2, '0');\n  const minutes = String(date.getMinutes()).padStart(2, '0');\n  \n  return `(${day}/${month}) ${hours}:${minutes}`;\n}\n\n// Função para limpar e processar conteúdo\nfunction cleanContent(content) {\n  if (!content) return '';\n  return content\n    .replace(/^\\\"|\\\"$/g, '')           // Remove aspas no início/fim\n    .replace(/&#44;/g, ',')            // Decodifica HTML entities\n    .replace(/\\n+/g, ' ')              // Substitui quebras de linha por espaço\n    .trim();\n}\n\n// Função para obter primeiro nome\nfunction getFirstName(fullName) {\n  if (!fullName) return 'Usuário';\n  return fullName.split(' ')[0];\n}\n\n// Função para truncar texto longo\nfunction truncateText(text, maxLength = 50) {\n  if (!text || text.length <= maxLength) return text;\n  return text.substring(0, maxLength) + '...';\n}\n\n// Processar cada mensagem\nconst formattedMessages = messagesData.messages.map(msg => {\n  const dateTime = formatDateTime(msg.timestamp);\n  const firstName = getFirstName(msg.member_name);\n  let content = cleanContent(msg.message);\n  \n  // Processar diferentes tipos de mensagem\n  if (msg.is_reaction) {\n    // REAÇÕES\n    if (msg.response_to && msg.replied_message) {\n      // Reação a uma mensagem específica\n      const repliedFirstName = getFirstName(msg.replied_message.member_name);\n      const repliedContent = truncateText(cleanContent(msg.replied_message.content));\n      \n      return `${dateTime} - ${firstName}: ${content} (reação à mensagem de ${repliedFirstName}: \"${repliedContent}\")`;\n    } else {\n      // Reação geral\n      return `${dateTime} - ${firstName}: ${content} (reação geral)`;\n    }\n  } else {\n    // MENSAGENS NORMAIS\n    \n    // Verificar se é resposta\n    let responseContext = '';\n    if (msg.response_to && msg.replied_message) {\n      const repliedFirstName = getFirstName(msg.replied_message.member_name);\n      const repliedContent = truncateText(cleanContent(msg.replied_message.content));\n      responseContext = ` (respondendo a ${repliedFirstName}: \"${repliedContent}\")`;\n    }\n    \n    // Processar conteúdo baseado no tipo\n    let processedContent = content;\n    \n    switch (msg.type) {\n      case 'audio':\n        if (content && !content.startsWith('(audio)')) {\n          processedContent = `[áudio] ${content}`;\n        } else if (!content) {\n          processedContent = '[áudio sem transcrição]';\n        }\n        break;\n        \n      case 'image':\n        processedContent = content || '[imagem]';\n        break;\n        \n      case 'video':\n        processedContent = content || '[vídeo]';\n        break;\n        \n      case 'document':\n        processedContent = content || '[documento]';\n        break;\n        \n      case 'sticker':\n        processedContent = '[sticker]';\n        break;\n        \n      default:\n        // Tipo 'text' ou outros\n        processedContent = content || '[mensagem sem conteúdo]';\n    }\n    \n    return `${dateTime} - ${firstName}: ${processedContent}${responseContext}`;\n  }\n});\n\n// Ordenar mensagens por timestamp (garantir ordem cronológica)\nconst sortedMessages = messagesData.messages\n  .map((msg, index) => ({ msg, formatted: formattedMessages[index] }))\n  .sort((a, b) => new Date(a.msg.timestamp) - new Date(b.msg.timestamp))\n  .map(item => item.formatted);\n\n// Calcular estatísticas\nconst stats = {\n  total: messagesData.messages.length,\n  text_messages: messagesData.messages.filter(m => m.type === 'text' && !m.is_reaction).length,\n  audio_messages: messagesData.messages.filter(m => m.type === 'audio').length,\n  image_messages: messagesData.messages.filter(m => m.type === 'image').length,\n  video_messages: messagesData.messages.filter(m => m.type === 'video').length,\n  document_messages: messagesData.messages.filter(m => m.type === 'document').length,\n  reactions: messagesData.messages.filter(m => m.is_reaction).length,\n  replies: messagesData.messages.filter(m => m.response_to && !m.is_reaction).length,\n  reaction_replies: messagesData.messages.filter(m => m.is_reaction && m.response_to).length\n};\n\n// Criar summary das mensagens\nconst messageSummary = [\n  `=== RESUMO DO GRUPO ===`,\n  `Total de mensagens: ${stats.total}`,\n  `Mensagens de texto: ${stats.text_messages}`,\n  `Mensagens de áudio: ${stats.audio_messages}`,\n  `Imagens: ${stats.image_messages}`,\n  `Vídeos: ${stats.video_messages}`,\n  `Documentos: ${stats.document_messages}`,\n  `Reações: ${stats.reactions}`,\n  `Respostas: ${stats.replies}`,\n  `Reações com contexto: ${stats.reaction_replies}`,\n  ``,\n  `=== CONVERSAS ===`,\n  ...sortedMessages\n].join('\\n');\n\nreturn [{\n  json: {\n    status: 'messages_formatted',\n    group_id: messagesData.group_id,\n    total_messages: messagesData.total_messages,\n    formatted_conversation: messageSummary,\n    formatted_messages_only: sortedMessages.join('\\n'),\n    raw_messages: sortedMessages,\n    statistics: stats,\n    message_ids: messagesData.message_ids,\n    processing_info: {\n      formatted_at: new Date().toISOString(),\n      timezone: 'Local (sem conversão)',\n      format_version: '1.1'\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        144
+      ],
+      "id": "72d6edd1-4c64-4187-b15b-db46839f4b77",
+      "name": "Organizar mensagens"
+    },
+    {
+      "parameters": {
+        "content": "## ✍️ Gerar resumos de grupos",
+        "height": 256,
+        "width": 1040,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        80
+      ],
+      "id": "294c981c-ba46-4dec-8f8a-0f92f0729cb3",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "process-summary-ia",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "5433571c-0377-499c-a373-ace34dcee5e7",
+      "name": "Webhook - Gerar resumo de grupos",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        544
+      ],
+      "webhookId": "550e8400-e29b-41d4-a716-446655440099",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://webhook.briefia.com.br/webhook/process-summary-ia",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "group_data",
+              "value": "={{ $('Code - Separar Grupos').item.json }}"
+            },
+            {
+              "name": "messages_data",
+              "value": "={{ $json.formatted_messages_only }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "983717a5-1564-4e6b-b1d6-0462152d4146",
+      "name": "API - Gerar resumo de grupos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        352,
+        544
+      ],
+      "executeOnce": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega o resultado da query\nconst queryResult = items[0].json;\n\n// Verifica se a estrutura existe\nif (!queryResult || !queryResult.resultado) {\n  return [{\n    json: {\n      status: 'invalid_data',\n      message: 'Estrutura de dados inválida'\n    }\n  }];\n}\n\n// Extrai os grupos do resultado\nconst grupos = queryResult.resultado.groups || [];\n\n// Se não houver grupos, retorna mensagem\nif (grupos.length === 0) {\n  return [{\n    json: {\n      status: 'no_groups_found',\n      message: 'Nenhum grupo encontrado na janela de tempo especificada'\n    }\n  }];\n}\n\n// Extrai informações de execução com valores padrão\nconst executionInfo = queryResult.resultado.execution_info || {};\nconst currentDate = executionInfo.current_date || new Date().toISOString().split('T')[0];\nconst timestamp = executionInfo.timestamp || new Date().toISOString();\n\n// Mapeia cada grupo para um item separado\nreturn grupos.map(grupo => ({\n  json: {\n    group_id: grupo.group_id,\n    chat_id: grupo.chat_id,\n    name: grupo.name,\n    destination_type: grupo.destination.type,\n    destination_value: grupo.destination.value,\n    scheduled_time: grupo.scheduled_time,\n    total_messages: grupo.activity_stats.total_messages,\n    active_members: grupo.activity_stats.active_members,\n    has_activity: grupo.activity_stats.has_activity,\n    summary_date: currentDate,\n    execution_timestamp: timestamp\n  }\n}));"
+      },
+      "id": "3ffc0936-7e6e-4713-b337-3c0cf8ce0793",
+      "name": "Code - Separar Grupos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        352,
+        48
+      ],
+      "id": "791a746f-0daf-477a-8c6d-bdfc8eccd935",
+      "name": "Loop Over Items2"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- BUSCAR MENSAGENS DO DIA\n-- Query parameters: {{ $json.group_id }}\n-- IMPORTANTE: Buscar apenas mensagens recentes (hoje e ontem)\n  \nWITH messages_to_process AS (\n    SELECT \n        m.id,\n        m.whatsapp_message_id as message_id,\n        m.conteudo_texto as message,\n        m.tipo_mensagem as type,\n        m.mensagem_fuso_empresa as timestamp,\n        m.id_mensagem_respondida as response_to,\n        mem.nome as member_name,\n        mem.whatsapp as member_phone,\n        -- Data da mensagem para controle\n        DATE(m.dt_create) as message_date,\n        -- Buscar conteúdo da mensagem respondida se existir\n        CASE \n            WHEN m.id_mensagem_respondida IS NOT NULL THEN\n                (SELECT mr.conteudo_texto FROM mensagens_whatsapp mr WHERE mr.id = m.id_mensagem_respondida)\n            ELSE NULL\n        END as replied_message_content,\n        -- Nome do membro da mensagem respondida\n        CASE \n            WHEN m.id_mensagem_respondida IS NOT NULL THEN\n                (SELECT memr.nome FROM mensagens_whatsapp mr \n                 JOIN membros memr ON mr.id_membro = memr.id \n                 WHERE mr.id = m.id_mensagem_respondida)\n            ELSE NULL\n        END as replied_member_name,\n        -- Tipo da mensagem respondida\n        CASE \n            WHEN m.id_mensagem_respondida IS NOT NULL THEN\n                (SELECT mr.tipo_mensagem FROM mensagens_whatsapp mr WHERE mr.id = m.id_mensagem_respondida)\n            ELSE NULL\n        END as replied_message_type\n    FROM mensagens_whatsapp m\n    LEFT JOIN membros mem ON m.id_membro = mem.id\n    WHERE \n        m.id_grupo = $1::INTEGER\n        AND m.marcada_resumo = false\n        -- CRÍTICO: Apenas mensagens de hoje e ontem\n        AND DATE(m.dt_create) >= CURRENT_DATE - INTERVAL '1 day'\n        AND (\n            -- Mensagens normais\n            (m.tipo_mensagem IN ('text', 'audio', 'image', 'video', 'document') \n             AND m.conteudo_texto IS NOT NULL \n             AND LENGTH(TRIM(m.conteudo_texto)) > 0)\n            OR \n            -- Reações (podem indicar aprovações/negações)\n            (m.tipo_mensagem = 'reaction' \n             AND m.conteudo_texto IS NOT NULL)\n        )\n    ORDER BY m.dt_create ASC\n)\nSELECT \n    json_build_object(\n        'status', CASE WHEN COUNT(*) > 0 THEN 'found' ELSE 'no_messages' END,\n        'group_id', $1::INTEGER,\n        'total_messages', COUNT(*),\n        'messages_today', COUNT(CASE WHEN message_date = CURRENT_DATE THEN 1 END),\n        'messages_yesterday', COUNT(CASE WHEN message_date = CURRENT_DATE - INTERVAL '1 day' THEN 1 END),\n        'messages', json_agg(\n            json_build_object(\n                'id', id,\n                'message_id', message_id,\n                'message', message,\n                'type', type,\n                'timestamp', timestamp,\n                'message_date', message_date,\n                'response_to', response_to,\n                'member_name', member_name,\n                'member_phone', member_phone,\n                'is_reaction', CASE WHEN type = 'reaction' THEN true ELSE false END,\n                'replied_message', CASE \n                    WHEN response_to IS NOT NULL THEN\n                        json_build_object(\n                            'content', replied_message_content,\n                            'member_name', replied_member_name,\n                            'type', replied_message_type\n                        )\n                    ELSE NULL\n                END\n            )\n        ) FILTER (WHERE id IS NOT NULL),\n        'message_ids', array_agg(id) FILTER (WHERE id IS NOT NULL)\n    ) as resultado\nFROM messages_to_process;",
+        "options": {
+          "queryReplacement": "={{ $json.group_id }}"
+        }
+      },
+      "id": "ebd038ef-01ad-4623-9a5f-fea57ea4b83a",
+      "name": "PostgreSQL - Buscar Mensagens do Dia",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        608,
+        128
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- MARCAR MENSAGENS COMO PROCESSADAS COM SEGURANÇA (versão n8n)\n-- Query parameters: {{ $json.resultado.group_id }}\n\nWITH check_duplicate AS (\n    -- Verificar se já existe outro resumo hoje\n    SELECT EXISTS(\n        SELECT 1 FROM resumos_diarios \n        WHERE id_grupo = $1::INTEGER \n        AND DATE(dt_create) = CURRENT_DATE\n        -- Se tivermos o ID do resumo recém criado, excluí-lo da verificação\n        AND id != COALESCE(\n            (SELECT MAX(id) FROM resumos_diarios \n             WHERE id_grupo = $1::INTEGER \n             AND dt_create >= NOW() - INTERVAL '1 minute'),\n            -1\n        )\n    ) as tem_duplicado\n),\nmessages_to_update AS (\n    -- Só continuar se não há duplicação\n    SELECT m.* \n    FROM mensagens_whatsapp m, check_duplicate c\n    WHERE m.id_grupo = $1::INTEGER \n      AND m.marcada_resumo = false\n      AND c.tem_duplicado = false  -- Só processa se não há duplicação\n      -- CRÍTICO: Apenas mensagens recentes\n      AND DATE(m.dt_create) >= CURRENT_DATE - INTERVAL '1 day'\n      AND (\n          (m.tipo_mensagem IN ('text', 'audio', 'image', 'video', 'document') \n           AND m.conteudo_texto IS NOT NULL)\n          OR \n          (m.tipo_mensagem = 'reaction' \n           AND m.conteudo_texto IS NOT NULL)\n      )\n),\nmessages_updated AS (\n    UPDATE mensagens_whatsapp \n    SET \n        marcada_resumo = true\n    FROM messages_to_update mtu\n    WHERE mensagens_whatsapp.id = mtu.id\n    RETURNING mensagens_whatsapp.id, mensagens_whatsapp.tipo_mensagem\n),\nsummary_stats AS (\n    SELECT \n        COUNT(*) as messages_processed,\n        COUNT(CASE WHEN tipo_mensagem = 'text' THEN 1 END) as text_processed,\n        COUNT(CASE WHEN tipo_mensagem = 'audio' THEN 1 END) as audio_processed,\n        COUNT(CASE WHEN tipo_mensagem = 'reaction' THEN 1 END) as reactions_processed,\n        COUNT(CASE WHEN tipo_mensagem IN ('image', 'video', 'document') THEN 1 END) as media_processed\n    FROM messages_updated\n)\nSELECT \n    json_build_object(\n        'status', CASE \n            WHEN (SELECT tem_duplicado FROM check_duplicate) THEN 'duplicate_detected'\n            WHEN s.messages_processed > 0 THEN 'messages_processed'\n            ELSE 'no_messages_to_process'\n        END,\n        'group_id', $1::INTEGER,\n        'processed_at', CURRENT_TIMESTAMP,\n        'messages_processed', COALESCE(s.messages_processed, 0),\n        'breakdown', json_build_object(\n            'text_messages', COALESCE(s.text_processed, 0),\n            'audio_messages', COALESCE(s.audio_processed, 0),\n            'reactions', COALESCE(s.reactions_processed, 0),\n            'media_messages', COALESCE(s.media_processed, 0)\n        ),\n        'duplicate_check', (SELECT tem_duplicado FROM check_duplicate)\n    ) as resultado\nFROM summary_stats s;",
+        "options": {
+          "queryReplacement": "={{ $json.resultado.group_id }}"
+        }
+      },
+      "id": "60f7148a-b604-48dc-8691-44fd126ccfb2",
+      "name": "PostgreSQL - Marcar Mensagens Processadas",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        2096,
+        144
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Inserir resumo diário na tabela resumos_diarios\nINSERT INTO resumos_diarios (\n    id_grupo,\n    resumo_conteudo,\n    total_mensagens,\n    dt_create\n) \nVALUES (\n    $1::INTEGER,\n    ($2::JSONB->>'content')::TEXT,\n    $3::INTEGER,\n    CURRENT_TIMESTAMP\n)\nRETURNING \n    json_build_object(\n        'status', 'summary_saved',\n        'summary_id', id,\n        'group_id', id_grupo,\n        'total_messages', total_mensagens,\n        'created_at', dt_create\n    ) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $json.group_id }}, {{ JSON.stringify({content: $json.summary_content}) }}, {{ $json.total_messages }}"
+        }
+      },
+      "id": "f5ec8ff8-d222-41c3-86ab-2c30077df915",
+      "name": "PostgreSQL - Salvar Resumo",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1904,
+        144
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.resultado }}",
+        "options": {}
+      },
+      "id": "3e3873c0-97cd-4f3c-b203-b592e4ead6e3",
+      "name": "Respond - Sucesso",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        112,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -144,
+        48
+      ],
+      "id": "d063d687-71d9-4624-9555-c92a030edaad",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "content": "## 📋 Geração de Resumos de Grupos\n\n**Objetivo**: Processar mensagens do WhatsApp e gerar resumos diários inteligentes por grupo\n\n**Quando executa**: Chamado por outro workflow\n\n**O que faz**:\n- Processa grupos com atividade recente\n- Analisa mensagens não resumidas\n- Gera resumo com IA (GPT-4)\n- Salva na tabela `resumos_diarios`",
+        "height": 152,
+        "width": 400,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        -176
+      ],
+      "id": "1dea8037-a80f-4260-919a-3c7f2c6e2f18",
+      "name": "Sticky Note - Título"
+    },
+    {
+      "parameters": {
+        "content": "## 🔄 Fluxo de Processamento\n\n**1. Trigger**: Execute Workflow Trigger\n**2. Separação**: Divide grupos para processamento individual\n**3. Loop**: Processa um grupo por vez\n**4. Busca Mensagens**:\n   - Mensagens não marcadas para resumo\n   - Textos, áudios, imagens, vídeos, documentos\n   - Reações e respostas (com contexto)\n**5. Organização**:\n   - Formata data/hora (SP timezone)\n   - Identifica tipos (áudio, reação, resposta)\n   - Mantém ordem cronológica\n   - Estatísticas detalhadas\n**6. IA Resumo**:\n   - GPT-4 analisa conversas\n   - Destaca tópicos principais\n   - Identifica insights e ações\n   - Preserva links importantes\n**7. Salvamento**: Grava resumo em `resumos_diarios`\n**8. Marcação**: Atualiza `marcada_resumo = true`\n\n**Destaques**:\n- ✅ Processa reações como feedback\n- ✅ Mantém contexto de respostas\n- ✅ Transcrições de áudio incluídas",
+        "height": 672,
+        "width": 400,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -624,
+        -176
+      ],
+      "id": "4a85f303-8a01-4fb1-8d13-1cf5fbd748f2",
+      "name": "Sticky Note - Detalhes"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0060b85f-d743-4adc-8da5-b1c255aeae71",
+              "leftValue": "={{ $json.resultado.status }}",
+              "rightValue": "no_messages",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        816,
+        128
+      ],
+      "id": "b09d406d-43e8-4e75-abab-81f689ea987a",
+      "name": "If"
+    }
+  ],
+  "connections": {
+    "Set - Processar Resposta": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Salvar Resumo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Set - Processar Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Organizar mensagens": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Gerar resumo de grupos": {
+      "main": [
+        [
+          {
+            "node": "Respond - Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API - Gerar resumo de grupos": {
+      "main": [
+        [],
+        []
+      ]
+    },
+    "Code - Separar Grupos": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items2": {
+      "main": [
+        [],
+        [
+          {
+            "node": "PostgreSQL - Buscar Mensagens do Dia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Buscar Mensagens do Dia": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Marcar Mensagens Processadas": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Salvar Resumo": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Marcar Mensagens Processadas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Code - Separar Grupos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Organizar mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "Sjd5x4DDIjqnsxyQ"
+  },
+  "versionId": "ba26ed3d-941a-4679-a25e-ed61175e120d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "3OfPHPeSC4z95Q2v",
+  "tags": []
+}

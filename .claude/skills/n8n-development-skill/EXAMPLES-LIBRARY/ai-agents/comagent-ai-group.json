@@ -1,0 +1,479 @@
+{
+  "name": "3.1 AI - Group",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pricingcastai/ia-grupo",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        -112
+      ],
+      "id": "78401787-ca1a-4a9c-a6f2-40aae190a04d",
+      "name": "Webhook",
+      "webhookId": "2a0b41d3-ac80-4f37-9f83-71cf324635fa"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Dados').item.json.variaveis.message.text.split(\" \")[0].split(\"\\n\")[0] }}",
+                    "rightValue": "/pricing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "f639f54a-15f8-43fa-b014-55ea07096826"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "IA"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        288,
+        -112
+      ],
+      "id": "b63d981e-52c0-4176-a597-c7dbc7e205a7",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{\n  $json.body\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        64,
+        -112
+      ],
+      "id": "2362fe0f-5cc7-4dde-a79e-0b20b30b0ef0",
+      "name": "Dados"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.variaveis.message.text.replaceAll(\"/pricingai \",\"\") }}",
+        "options": {
+          "systemMessage": "=o usuário perguntará sobre algum material, sobre conteudo de videos... voce deve jogar para o rag uma pergunta que facilite a busca por semelhança.\n\nse voce apresentou uma lista de videos ao usuário, ele pode escolher um deles para pedir um resumo. voce tem que puxar da memória o url do video para procurar esse video na base de dados e procurar pela url usando a tool get video by youtube url.\n\nquando o usuário perguntar por uma informação encontrada da vector store, verificar se temos o url do video no chunk encontrado e procure exatamente usando esse url do video, ou peça para ele.\n\nse voce encontrar um conteudo de video, informe a url do video para o usuário.\n\n\n\n--- sobre noticias ou pesquisas\n\ncaso o usuario pergunte sobre “pílula do dia”, “notícias do dia” ou “/pill”, execute a toll Agente-de-noticias, solicitando apenas as \"noticias do dia\", pois ele já tem um TEMPLATE DEFINITIVO. Para noticias de temas expecificos que ele solicite ou queira pesquisar algo na internet, execute a tool perplexity_search (seria legal você separar por topicos ou noticias usando emojis)"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        672,
+        -128
+      ],
+      "id": "45b966c4-93b1-46fb-81ab-6eb0e1723440",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        96
+      ],
+      "id": "82319b5d-feab-496b-b528-a0a8db3ada80",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "n54CK3O57Rvt7BgD",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Dados').item.json.grupo.chat_id }}_ai",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        560,
+        160
+      ],
+      "id": "b2fd4ab5-9c03-49f4-87a1-a04cda2f314f",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "busca na base de conhecimento por transcrições de videos do youtube, de audios, imagens e pdf que foram salvas.\n\na query de busca deve conter a pergunta inteira para uma melhor pesquisa",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "topK": 5,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        1072,
+        112
+      ],
+      "id": "f6197d0a-7acf-4c0a-b0ef-dff1924ae119",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Mlr0yqoxA93FsNLe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1136,
+        320
+      ],
+      "id": "62dfaf61-456f-4361-9f23-0e4c2730ffcf",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "n54CK3O57Rvt7BgD",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Dados').first().json.variaveis.instance.host }}/send/text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $('Dados').first().json.variaveis.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Dados').first().json.variaveis.chat.chatId }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.output }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{false}}"
+            },
+            {
+              "name": "readchat",
+              "value": "={{ true }}"
+            },
+            {
+              "name": "replyid",
+              "value": "={{ $('Dados').first().json.variaveis.message.id }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1344,
+        -128
+      ],
+      "id": "f1a61dfe-ab95-436f-a3bd-13db4eba0424",
+      "name": "uazapi - send auto transcribe3",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Pode buscar um resumo específico sobre um video pelo seu video url do youtube",
+        "operation": "get",
+        "tableId": "youtube_videos",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "video_url",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions0_Value', `url completa do video do youtube`, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        736,
+        128
+      ],
+      "id": "408f2b07-8745-4efd-986e-d801c37daf0e",
+      "name": "get_video_by_youtube_url",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Mlr0yqoxA93FsNLe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "sonar-pro",
+        "messages": {
+          "message": [
+            {
+              "content": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('message0_Text', ``, 'string') }}"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexityTool",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        128
+      ],
+      "id": "5992f47a-240f-490d-b3fb-2a5d6f84e4ad",
+      "name": "perplexity_search",
+      "credentials": {
+        "perplexityApi": {
+          "id": "7gRjy8dUvfr7DZdq",
+          "name": "Perplexity account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "chame essa tool sempre que o usuario pedir por noticias e escreva em consulta algo para caso ele tenha pedido um estilo",
+        "workflowId": {
+          "__rl": true,
+          "value": "fi3Do2x0Z4DHv6rk",
+          "mode": "list",
+          "cachedResultName": "AgentePesquisa"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "consulta": "={{ $fromAI('consulta', 'query do assunto que o usuario quer procurar por', 'string') }}"
+          },
+          "matchingColumns": [
+            "consulta"
+          ],
+          "schema": [
+            {
+              "id": "consulta",
+              "displayName": "consulta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        912,
+        128
+      ],
+      "id": "e2f26d72-81c1-4e7a-8566-1d538e6d7275",
+      "name": "Agente-de-noticias"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send auto transcribe3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_video_by_youtube_url": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "perplexity_search": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente-de-noticias": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f846b65a-4942-477f-9f7f-682ab64414fb",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "BgIvPPzJaHNsJpLS",
+  "tags": []
+}

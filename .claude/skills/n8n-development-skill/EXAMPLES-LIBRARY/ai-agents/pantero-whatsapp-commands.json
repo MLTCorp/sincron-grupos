@@ -1,0 +1,1328 @@
+{
+  "name": "[Call] [Whatsapp_commands]",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "extracted-user",
+              "name": "user",
+              "value": "={{ $json.user }}",
+              "type": "object"
+            },
+            {
+              "id": "extracted-all-tags",
+              "name": "all_tags",
+              "value": "={{ $json.tags.requested }}",
+              "type": "array"
+            },
+            {
+              "id": "extracted-valid-tags",
+              "name": "valid_tags",
+              "value": "={{ $json.tags.valid }}",
+              "type": "array"
+            },
+            {
+              "id": "extracted-invalid-tags",
+              "name": "invalid_tags",
+              "value": "={{ $json.tags.invalid }}",
+              "type": "array"
+            },
+            {
+              "id": "extracted-invite-link",
+              "name": "invite_link",
+              "value": "={{ $json.invite_link }}",
+              "type": "string"
+            },
+            {
+              "id": "extracted-group-code",
+              "name": "group_code",
+              "value": "={{ $json.group_code }}",
+              "type": "string"
+            },
+            {
+              "id": "extracted-chat-ids",
+              "name": "chat_ids",
+              "value": "={{ $json.chat_ids }}",
+              "type": "array"
+            },
+            {
+              "id": "extracted-groups-count",
+              "name": "groups_count",
+              "value": "={{ $json.groups_count }}",
+              "type": "number"
+            },
+            {
+              "id": "extracted-command-info",
+              "name": "command_info",
+              "value": "={{ {\n  name: $json.command.name,\n  requires_tags: $json.command.require_tags,\n  required_role: $json.command.required_role,\n  validated: $json.command.validated || true\n} }}",
+              "type": "object"
+            },
+            {
+              "id": "extracted-source-type",
+              "name": "source_type",
+              "value": "={{ $json.source_type }}",
+              "type": "string"
+            },
+            {
+              "id": "extracted-has-invite",
+              "name": "has_invite_link",
+              "value": "={{ Boolean($json.invite_link && $json.invite_link.trim() !== '') }}",
+              "type": "boolean"
+            },
+            {
+              "id": "extracted-has-invalid-tags",
+              "name": "has_invalid_tags",
+              "value": "={{ ($json.tags.invalid || []).length > 0 }}",
+              "type": "boolean"
+            },
+            {
+              "id": "extracted-tags-summary",
+              "name": "tags_summary",
+              "value": "={{ {\n  total_requested: ($json.tags.requested || []).length,\n  total_valid: ($json.tags.valid || []).length,\n  total_invalid: ($json.tags.invalid || []).length,\n  all_valid: ($json.tags.invalid || []).length === 0,\n  has_valid: ($json.tags.valid || []).length > 0\n} }}",
+              "type": "object"
+            },
+            {
+              "id": "34f0a1a1-5c72-4e20-bd9b-b4167f77c469",
+              "name": "chat",
+              "value": "={{ $json.chat }}",
+              "type": "string"
+            },
+            {
+              "id": "extracted-media-info",
+              "name": "media_info",
+              "value": "={{ $json.media_info }}",
+              "type": "object"
+            },
+            {
+              "id": "extracted-instance-info",
+              "name": "instance_info",
+              "value": "={{ $json.instance_info }}",
+              "type": "object"
+            },
+            {
+              "id": "extracted-debug-info",
+              "name": "debug_info",
+              "value": "={{ {\n  original_source: $json.source_type,\n  normalization_timestamp: new Date().toISOString(),\n  original_timestamp: $json.timestamp,\n  workflow_execution: $workflow.id,\n  node_execution: $execution.id\n} }}",
+              "type": "object"
+            },
+            {
+              "id": "0f736820-112f-4a1e-b219-54cecc821c35",
+              "name": "messag.text",
+              "value": "={{ $json.message_text }}",
+              "type": "string"
+            },
+            {
+              "id": "2f81fcbb-d7ea-424e-bac1-abc9d587fa25",
+              "name": "message.id",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a25dd08d-99b9-4a4b-81b1-01b834fae625",
+      "name": "Enhanced Data Extractor",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        928,
+        -144
+      ],
+      "notes": "Extrai dados específicos incluindo mídia e instância, preparando estrutura final para processamento"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "call",
+              "value": "={{ $json.command_info.name.replace(\"!\",\"\") }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        -144
+      ],
+      "id": "af6dd505-8abf-48c6-bb30-b31f51377abd",
+      "name": "save 'call'"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "command-base",
+              "name": "message.command",
+              "value": "={{ $json.body.message.text.split(' ')[0].split('#')[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "command-tags",
+              "name": "message.tags",
+              "value": "={{ $json.body.message.text.includes('#') ? $json.body.message.text.split('#').slice(1).map(tag => tag.split(' ')[0].split('\\n')[0]) : [] }}",
+              "type": "array"
+            },
+            {
+              "id": "message-text-clean",
+              "name": "message.text",
+              "value": "={{ $json.body.message.text.replace(/^!\\w+\\s*/, '').replace(/#\\w+\\s*/g, '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "message-text",
+              "name": "message.original",
+              "value": "={{ $json.body.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "user-whatsapp",
+              "name": "user.whatsapp",
+              "value": "={{ $json.body.user.whatsapp }}",
+              "type": "string"
+            },
+            {
+              "id": "user-name",
+              "name": "user.name",
+              "value": "={{ $json.body.user.name || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "chat-data",
+              "name": "chat",
+              "value": "={{ { chatId: $json.body.chat.chatId, isGroup: $json.body.chat.isGroup, groupName: $json.body.chat.groupName || null } }}",
+              "type": "object"
+            },
+            {
+              "id": "message-type",
+              "name": "message.type",
+              "value": "={{ $json.body.message.type }}",
+              "type": "string"
+            },
+            {
+              "id": "has-media",
+              "name": "message.has_media",
+              "value": "={{ Boolean($json.body.message.media && $json.body.message.media.url) }}",
+              "type": "boolean"
+            },
+            {
+              "id": "message-media",
+              "name": "message.media",
+              "value": "={{ $json.body.message.media || null }}",
+              "type": "object"
+            },
+            {
+              "id": "instance-data",
+              "name": "instance",
+              "value": "={{ { host: $json.body.instance.host, token: $json.body.instance.token, number: $json.body.instance.number } }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6a5b5e87-b672-452e-abf2-e902ee841006",
+      "name": "Parse Webhook Data1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        80,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0de3910a-6301-4c9b-91a6-073313cd195e",
+              "name": "media_info",
+              "value": "={{    (() => {     const webhook = $('Webhook - whatsapp_command').first()?.json?.body || {};     return {       media_url: webhook.message?.media?.url || '',       type: webhook.message?.type || '',       message_id: webhook.message?.id || '',       has_media: Boolean(webhook.message?.media?.url)     };   })() }}",
+              "type": "string"
+            },
+            {
+              "id": "40a9a300-88b6-43e1-9b6d-863ae9c041d4",
+              "name": "instance_info",
+              "value": "={{    (() => {     const webhook = $('Webhook - whatsapp_command').first()?.json?.body || {};     return {       instance: webhook.instance || '',       host: webhook.instance?.host || '',       number: webhook.instance?.number || '',       token: webhook.instance?.token || ''     };   })() }}",
+              "type": "string"
+            },
+            {
+              "id": "672885b3-9299-41b9-b6aa-cc4ca0fa467f",
+              "name": "chat",
+              "value": "={{ $('Parse Webhook Data1').item.json.chat }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        496,
+        -144
+      ],
+      "id": "94edd319-6b7c-4325-a7b0-8436d92707e4",
+      "name": "set media/instance_info"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/functions/v1/pantero-command-validator",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "whatsapp",
+              "value": "={{ $json.user.whatsapp }}"
+            },
+            {
+              "name": "command",
+              "value": "={{ $json.message.command || $json.command || $('Webhook - whatsapp_command').item.json.body.message.text.split(\" \")[0] }}"
+            },
+            {
+              "name": "tags",
+              "value": "={{ $json.message.tags || $json.body.tags }}"
+            },
+            {
+              "name": "text_content",
+              "value": "={{ $json.message.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f35b2e5e-bcc4-4ce6-aa65-0641445949d1",
+      "name": "Edge Function command validator",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        272,
+        -32
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GaOznV2Qpovea8iN",
+          "name": "Pantero - system"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "source-type",
+              "name": "source_type",
+              "value": "={{ $json.success !== undefined ? 'api_rest' : 'whatsapp_command' }}",
+              "type": "string"
+            },
+            {
+              "id": "normalized-success",
+              "name": "success",
+              "value": "={{ $json.success !== undefined ? $json.success : $json.valid }}",
+              "type": "boolean"
+            },
+            {
+              "id": "normalized-user",
+              "name": "user",
+              "value": "={{ \n  $json.success !== undefined \n  ? {\n      whatsapp: $json.user.whatsapp,\n      name: $json.user.name,\n      role: $json.user.role,\n      full_access: $json.user.full_access,\n      is_active: $json.user.is_active,\n      id: null\n    }\n  : {\n      whatsapp: $json.user.whatsapp,\n      name: $json.user.name,\n      role: $json.user.role,\n      full_access: $json.user.full_access,\n      is_active: true,\n      id: $json.user.id\n    }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "normalized-command",
+              "name": "command",
+              "value": "={{ \n  $json.success !== undefined \n  ? {\n      name: $json.command.name,\n      description: null,\n      required_role: $json.command.required_role,\n      requires_full_access: $json.command.requires_full_access,\n      require_tags: $json.command.require_tags,\n      is_active: $json.command.is_active,\n      validated: $json.command.validated\n    }\n  : {\n      name: $json.command.name,\n      description: $json.command.description,\n      required_role: $json.command.required_role,\n      requires_full_access: $json.command.requires_full_access,\n      require_tags: $json.command.require_tags,\n      is_active: true,\n      validated: true\n    }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "normalized-tags",
+              "name": "tags",
+              "value": "={{ \n  $json.success !== undefined \n  ? {\n      requested: $json.tags.provided || [],\n      valid: $json.tags.valid || [],\n      invalid: $json.tags.invalid || [],\n      used_all: ($json.tags.invalid || []).length === 0\n    }\n  : {\n      requested: $json.execution_data.tags_processed.requested || [],\n      valid: $json.execution_data.tags_processed.valid || [],\n      invalid: $json.execution_data.tags_processed.invalid || [],\n      used_all: $json.execution_data.tags_processed.used_all\n    }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "normalized-chat-ids",
+              "name": "chat_ids",
+              "value": "={{ \n  $json.success !== undefined \n  ? ($json.tags.chat_ids || [])\n  : ($json.execution_data.chat_ids || [])\n}}",
+              "type": "array"
+            },
+            {
+              "id": "normalized-groups-count",
+              "name": "groups_count",
+              "value": "={{ \n  $json.success !== undefined \n  ? ($json.tags.groups_count || 0)\n  : ($json.execution_data.groups_summary.total_count || 0)\n}}",
+              "type": "number"
+            },
+            {
+              "id": "normalized-message-text",
+              "name": "message_text",
+              "value": "={{ \n  $json.success !== undefined \n  ? ''\n  : ($json.execution_data.message_text || '')\n}}",
+              "type": "string"
+            },
+            {
+              "id": "normalized-invite-link",
+              "name": "invite_link",
+              "value": "={{\n(() => {\n  const messageText = $json.success !== undefined \n    ? ''\n    : ($json.execution_data?.message_text || '');\n  const inviteLinkRegex = /https:\\/\\/chat\\.whatsapp\\.com\\/[A-Za-z0-9]+/;\n  const inviteMatch = messageText.match(inviteLinkRegex);\n  return inviteMatch ? inviteMatch[0] : (null);\n})()\n}}",
+              "type": "string"
+            },
+            {
+              "id": "normalized-group-code",
+              "name": "group_code",
+              "value": "={{ \n  (() => {\n    const messageText = $json.success !== undefined \n      ? ''\n      : ($json.execution_data.message_text || '');\n    const inviteLinkRegex = /https:\\/\\/chat\\.whatsapp\\.com\\/[A-Za-z0-9]+/;\n    const inviteMatch = messageText.match(inviteLinkRegex);\n    if (inviteMatch) {\n      const codeMatch = inviteMatch[0].match(/\\/([A-Za-z0-9]+)$/);\n      return codeMatch ? codeMatch[1] : (null);\n    }\n    return null;\n  })()\n}}",
+              "type": "string"
+            },
+            {
+              "id": "normalized-timestamp",
+              "name": "timestamp",
+              "value": "={{ \n  $json.success !== undefined \n  ? $json.timestamp\n  : new Date().toISOString()\n}}",
+              "type": "string"
+            },
+            {
+              "id": "normalized-original-data",
+              "name": "original_data",
+              "value": "={{ $json }}",
+              "type": "object"
+            },
+            {
+              "id": "e44aa770-6eb6-4ea7-8206-814f9aad9ccf",
+              "name": "media_info",
+              "value": "={{ $json.media_info }}",
+              "type": "string"
+            },
+            {
+              "id": "d39ffd95-4ff1-4e1c-86b5-5cbc881d15f4",
+              "name": "instance_info",
+              "value": "={{ $json.instance_info }}",
+              "type": "string"
+            },
+            {
+              "id": "621ca99a-92a9-4fa6-a157-99d83297955e",
+              "name": "chat",
+              "value": "={{ $json.chat }}",
+              "type": "string"
+            },
+            {
+              "id": "8f9f88e0-2c81-4699-8d6a-b1f50b351651",
+              "name": "message.id",
+              "value": "={{ $('Webhook - whatsapp_command').item.json.body.message.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c20ab410-68c3-436e-afb2-f1efac795a55",
+      "name": "Webhook Normalizer1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        -144
+      ],
+      "notes": "Detecta automaticamente se é Edge Function REST ou WhatsApp Command e normaliza para estrutura padrão"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mgm.uazapi.com/message/react",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $('Webhook - whatsapp_command').first().json.body.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "👍"
+            },
+            {
+              "name": "id",
+              "value": "={{ $('Webhook - whatsapp_command').first().json.body.message.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        496,
+        -320
+      ],
+      "id": "9c41af41-2aa2-487e-acd6-47cffcac53c5",
+      "name": "Enviar Feedback 👍",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mgm.uazapi.com/message/react",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $('Webhook - whatsapp_command').first().json.body.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "🔒"
+            },
+            {
+              "name": "id",
+              "value": "={{ $('Webhook - whatsapp_command').first().json.body.message.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        496,
+        80
+      ],
+      "id": "b0dfb62e-4546-4d9b-a678-b7dd3c98d92d",
+      "name": "Enviar Feedback 🔒",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mgm.uazapi.com/message/react",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $('Webhook - whatsapp_command').first().json.body.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Parse Webhook Data1').first().json.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "✅"
+            },
+            {
+              "name": "id",
+              "value": "={{ $('Webhook - whatsapp_command').first().json.body.message.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1808,
+        -320
+      ],
+      "id": "201982f6-a54f-4bba-8584-06f6f4a7dfea",
+      "name": "Enviar Feedback ✅",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mgm.uazapi.com/message/react",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $('Webhook - whatsapp_command').first().json.body.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Parse Webhook Data1').first().json.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "❌"
+            },
+            {
+              "name": "id",
+              "value": "={{ $('Webhook - whatsapp_command').first().json.body.message.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1808,
+        -128
+      ],
+      "id": "cbae8369-7d40-4593-9b04-3d6c084a4bf2",
+      "name": "Enviar Feedback ❌",
+      "executeOnce": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "private-commands",
+        "authentication": "basicAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        -48
+      ],
+      "id": "5c834dc4-7c1b-4b25-9ef2-ada309c98e79",
+      "name": "Webhook - whatsapp_command",
+      "webhookId": "26506f68-158a-40ef-841c-707e1a308b24",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dbc44f79-8d9a-45a6-977e-b36f58650199",
+              "leftValue": "={{ $json }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1568,
+        -304
+      ],
+      "id": "2921d6d4-ee9d-490b-b0d1-4b1fe79400e4",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "42117f74-8be4-446b-b606-b594025ec11a",
+                    "leftValue": "={{ $('Edge Function command validator').item.json.error.message }}",
+                    "rightValue": "user_not_found",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "user_not_found"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Edge Function command validator').item.json.error.message }}",
+                    "rightValue": "tags_required",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "32cb6b48-05b3-4e29-9a43-3a42de3e864b"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "tags_required"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "8343ea66-c5d8-48f1-815c-05805d507661",
+                    "leftValue": "={{ $('Edge Function command validator').item.json.error.message }}",
+                    "rightValue": "command_not_found",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "command_not_found"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "eb12d25e-8abf-43e9-8d08-4fe9e9ace3b0",
+                    "leftValue": "={{ $('Edge Function command validator').item.json.error.message }}",
+                    "rightValue": "no_valid_tags",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "no_valid_tags"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        704,
+        80
+      ],
+      "id": "4d481138-d147-42ab-81d8-04b0aa84149e",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Webhook - whatsapp_command').item.json.body.instance.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook - whatsapp_command').item.json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "=❌ *Tag obrigatória*\n\nEste comando requer uma tag para identificar os grupos.\n\n*Exemplo de comando no formato correto:*\n`!comando #tag #tag #tag`\n\n*Exemplo:*\n`!todos #furia #fpm Oi pessoal, tudo bem?`\n\n*Tags disponíveis:* Verifique com o administrador quais tags estão configuradas para seus grupos."
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        928,
+        240
+      ],
+      "id": "7674ba1d-a3b8-425d-9065-8a6402c6e3c9",
+      "name": "uazapi - send text - comando precisa de tag",
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Webhook - whatsapp_command').item.json.body.instance.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook - whatsapp_command').item.json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "=🚫 *Acesso negado*\n\nSeu usuário não está autorizado a executar este comando.\n\n*Possíveis causas:*\n- Usuário não cadastrado no sistema\n- Permissões insuficientes para comandos em massa\n- Conta inativa ou bloqueada\n\n*Para resolver:*\nEntre em contato com o Yuri para verificar suas permissões. Se for erro do sistema, contate o Dev.\n\n*Código do erro:* user_not_found (403)"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        928,
+        80
+      ],
+      "id": "a3a5b08b-b9bf-4f87-83e7-cb017cd4c265",
+      "name": "uazapi - send text - comando precisa de tag1",
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Executa a tool",
+        "height": 208,
+        "width": 192,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        -208
+      ],
+      "id": "15aa6dfd-b797-4507-a2a3-43b102435a29",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://pantero-n8n-webhook.respondeaqui.com.br/webhook/whatsapp-command/{{ $json.command_info.name.replace(\"!\",\"\") }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1312,
+        -144
+      ],
+      "id": "6058ca15-7946-41ec-9c5d-ea36fb7fd46f",
+      "name": "Run Command_Tools",
+      "alwaysOutputData": false,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Validação Edge Function",
+        "height": 272,
+        "width": 192,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        224,
+        -128
+      ],
+      "id": "ca665f00-7fd9-4dc1-9e0a-da9b78eccc5a",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Webhook - whatsapp_command').item.json.body.instance.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook - whatsapp_command').item.json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "=❓ *Comando não encontrado*\n\nO comando digitado não existe ou não está disponível.\n\ndigite !comandos para saber mais sobre os comandos\n\n*Código do erro:* command_not_found (404)"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        928,
+        416
+      ],
+      "id": "d7bd1e75-028b-41c9-b02c-7a8525d1e1ea",
+      "name": "uazapi - send text - comando precisa de tag2",
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Webhook - whatsapp_command').item.json.body.instance.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook - whatsapp_command').item.json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "=🏷️ *Tags inválidas*\n\nAs tags informadas não existem ou não estão ativas no sistema.\n\n*Problema identificado:*\n- Tags não cadastradas\n- Erro de digitação nas tags\n\n*Como corrigir:*\n1. Verifique a lista de tags disponíveis\n2. Confirme a grafia das tags\n3. Entre em contato com o administrador para validar as tags\n\n*Exemplo de uso correto:*\n`!todos #furia #fpm Mensagem para os grupos`\n\ndigite !comandos para saber mais sobre os comandos\n\n*Código do erro:* no_valid_tags (400)"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        928,
+        592
+      ],
+      "id": "499cce8d-87e5-4f54-9d12-3db8024fa276",
+      "name": "uazapi - send text - comando precisa de tag3",
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6d27364a-8bc3-4d41-9df7-8649c3013a2e",
+              "leftValue": "={{ $json.body.message.text }}",
+              "rightValue": "!membros",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -352,
+        -48
+      ],
+      "id": "74a57e70-4ad2-4ba4-b0c2-c0b7f51b2c83",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pantero-n8n-webhook.respondeaqui.com.br/webhook/v2/pantero/private",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -128,
+        -192
+      ],
+      "id": "3686486f-b515-4a35-8ea8-832b309c5dff",
+      "name": "call Pantero - private V1",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Enhanced Data Extractor": {
+      "main": [
+        [
+          {
+            "node": "save 'call'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save 'call'": {
+      "main": [
+        [
+          {
+            "node": "Run Command_Tools",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Webhook Data1": {
+      "main": [
+        [
+          {
+            "node": "Edge Function command validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set media/instance_info": {
+      "main": [
+        [
+          {
+            "node": "Webhook Normalizer1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edge Function command validator": {
+      "main": [
+        [
+          {
+            "node": "set media/instance_info",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Enviar Feedback 👍",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar Feedback 🔒",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Normalizer1": {
+      "main": [
+        [
+          {
+            "node": "Enhanced Data Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - whatsapp_command": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Enviar Feedback ✅",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Enviar Feedback 🔒": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text - comando precisa de tag1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "uazapi - send text - comando precisa de tag",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "uazapi - send text - comando precisa de tag2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "uazapi - send text - comando precisa de tag3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Command_Tools": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar Feedback ❌",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "call Pantero - private V1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse Webhook Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "562f4d75-fb71-4a58-80e2-563e541c141f",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "DztORlcPRud2bBg3",
+  "tags": []
+}

@@ -1,0 +1,961 @@
+{
+  "name": "Pantero - Private v2",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "5eb8be50-7f3a-4bf2-83fa-bd732b4ad5ca",
+              "leftValue": "={{ $json.whatsapp }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "04631956-d094-425f-b8e0-3a307bac14bf",
+      "name": "Tem cadastro?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Checa cadastro do usuário\ne quais grupos ele tem acesso",
+        "height": 526.6967400354632,
+        "width": 383.9956167740963,
+        "color": 6
+      },
+      "id": "c77e2406-7b55-4f33-be45-d2da78ffc9e4",
+      "name": "Sticky Note13",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "users",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "whatsapp",
+              "keyValue": "={{ $('Webhook').first().json.body.user.whatsapp }}"
+            }
+          ]
+        }
+      },
+      "id": "727afe5d-59ef-409f-9ca6-63bc563c21a8",
+      "name": "get_member_info",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        48
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "X4GdL269uG2FpPPZ",
+          "name": "Supabase  - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "v2/pantero/private/v2",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1088,
+        48
+      ],
+      "id": "35be41fb-660f-4f96-8932-711ae94679b4",
+      "name": "Webhook",
+      "webhookId": "62b3f964-b7e3-49cf-b476-c2c1fa770c21"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "eba4f22a-e13c-4c8f-a225-82593bf23af9",
+              "name": "variaveis.chat.chatId",
+              "value": "={{ $json.body.message.chatid.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "dd69a97c-046c-4948-869c-9568fb4ab5fb",
+              "name": "variaveis.chat.groupName",
+              "value": "={{ $json.body.message.groupName }}",
+              "type": "string"
+            },
+            {
+              "id": "c01ec17a-1a4f-4fd4-b2dd-5737710f2013",
+              "name": "variaveis.user.name",
+              "value": "={{ $json.body.message.senderName.replace(/'/g, \"\") }}",
+              "type": "string"
+            },
+            {
+              "id": "6a3fc213-3e9f-4124-a1b8-5a249f15660a",
+              "name": "variaveis.user.whatsapp",
+              "value": "={{ $json.body.message.sender.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "bedd9dfe-2cef-4708-afe6-65739e1fc30b",
+              "name": "variaveis.message.text",
+              "value": "={{ $json.body.message.content.text || $json.body.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "4b8332ca-d18a-4e1d-b79c-864dbc961d36",
+              "name": "variaveis.message.id",
+              "value": "={{ $json.body.message.messageid }}",
+              "type": "string"
+            },
+            {
+              "id": "9346d8da-22f3-42c9-a139-4db62a8062bb",
+              "name": "variaveis.message.fromMe",
+              "value": "={{ $json.body.message.fromMe }}",
+              "type": "boolean"
+            },
+            {
+              "id": "3e48fd29-63ca-4879-9d9c-9bff97a6e02a",
+              "name": "variaveis.message.type",
+              "value": "={{ $json.body.message.type == 'text' ? $json.body.message.type : $json.body.message.messageType.split(\"M\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "4d61bada-3911-4565-959b-702f96b39bac",
+              "name": "variaveis.message.responded.whatsapp",
+              "value": "={{ $json.body.message.content.contextInfo?.participant.split(\"@\")[0] || $json.body.message.content.key.participant.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "d88bcf78-a460-4369-8072-b18b8fb7ab99",
+              "name": "variaveis.message.responded.text",
+              "value": "={{ $json.body.message.content.contextInfo.quotedMessage.conversation }}",
+              "type": "string"
+            },
+            {
+              "id": "7a3b8be7-14d6-4981-a27d-3f1f2082aecb",
+              "name": "variaveis.message.responded.id",
+              "value": "={{ $json.body.message.content.contextInfo?.stanzaID || $json.body.message.quoted || $json.body.message.content.key.ID }}",
+              "type": "string"
+            },
+            {
+              "id": "f8175cd6-8828-4705-b5cc-7ae2853541ff",
+              "name": "variaveis.message.timestamp",
+              "value": "={{ $json.body.message.messageTimestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "343b33a6-d094-40ec-8656-bb32a65352e0",
+              "name": "variaveis.message.media.url",
+              "value": "={{ $json.body.message.content.URL }}",
+              "type": "string"
+            },
+            {
+              "id": "df04ea52-e9fa-43ea-aba3-e2f0b18d86c0",
+              "name": "variaveis.message.media.base64",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "acde62fb-5e0e-42d1-8246-0a798cf908e2",
+              "name": "variaveis.message.media.type",
+              "value": "={{ $json.body.message.messageType }}",
+              "type": "string"
+            },
+            {
+              "id": "bcf93453-6b54-419d-8885-61d22512a04c",
+              "name": "variaveis.instance.number",
+              "value": "={{ $json.body.owner }}",
+              "type": "string"
+            },
+            {
+              "id": "2872a011-4489-45e8-9ad0-d58987ea5084",
+              "name": "variaveis.event.type",
+              "value": "={{ $json.body.event.Join[0]?.split(\"@\")[0] || $json.body.event.Leave[0].split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "56d64047-d557-4599-93b3-4b9adb315314",
+              "name": "variaveis.event.whatsapp",
+              "value": "={{ $json.body.event.Join[0]?.split(\"@\")[0] || $json.body.event.Leave[0].split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "07d3132e-98cf-4083-b1cc-f10af99fee9e",
+              "name": "variaveis.chat.isGroup",
+              "value": "={{ $json.body.message.isGroup }}",
+              "type": "boolean"
+            },
+            {
+              "id": "5a2e6b41-967e-4b74-9c9e-3c063b44a8ed",
+              "name": "variaveis.instance.token",
+              "value": "={{ $json.body.token }}",
+              "type": "string"
+            },
+            {
+              "id": "72b87e46-2def-4452-a118-2de787e739e2",
+              "name": "variaveis.instance.host",
+              "value": "https://mgm.uazapi.com",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {
+          "ignoreConversionErrors": false
+        }
+      },
+      "id": "945570aa-4390-45c4-9dcf-3ddea5116907",
+      "name": "variaveis",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -528,
+        352
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Webhook').first().json.body.instance.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook').first().json.body.chat.chatId }}"
+            },
+            {
+              "name": "text",
+              "value": "=<lista de comandos>"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 5400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        128
+      ],
+      "id": "2023f010-ae61-470c-abf2-4418306fa148",
+      "name": "uazapi - send text - comandos",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Webhook').first().json.body.instance.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook').first().json.body.chat.chatId }}"
+            },
+            {
+              "name": "text",
+              "value": "=🔒 *Desculpe mas aparentemente você não tem acesso a comandos de grenciamento de grupos atualmente*\n\nEm breve liberaremos o Pantero para falar com toda a comunidade!!!"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 5400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        368
+      ],
+      "id": "51cc4ae7-6107-4725-9a2d-0d24759ec2c6",
+      "name": "uazapi - send text - sem acesso",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "55becb74-0436-4f08-8653-59017ba8d881",
+              "leftValue": "={{ $json.cache }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -640,
+        48
+      ],
+      "id": "113e48d5-66d2-4111-b88d-65d431c48e3a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "content": "## Trava de segurança contra mensagem duplicada",
+        "height": 240,
+        "width": 592
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        -32
+      ],
+      "id": "35a72994-3326-4a3a-a76f-0ed6a20a4601",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=msg_unique_{{ $('Webhook').item.json.body.message.id }}",
+        "value": "1",
+        "expire": true,
+        "ttl": "={{ 60*60*24*4 }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        48
+      ],
+      "id": "b5023d9c-6c18-4e1e-ab04-acbb53f3163d",
+      "name": "Set - Salva msg id",
+      "credentials": {
+        "redis": {
+          "id": "8YeSUJFjwFQIbwcE",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "cache",
+        "key": "=msg_unique_{{ $json.body.message.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -816,
+        48
+      ],
+      "id": "0b2749bc-0597-4b81-a869-1f00c93cfccc",
+      "name": "Get - procura msg id",
+      "credentials": {
+        "redis": {
+          "id": "8YeSUJFjwFQIbwcE",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pantero-n8n-webhook.respondeaqui.com.br/webhook/private-commands",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Webhook').first().json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        -96
+      ],
+      "id": "11ed8cf9-43ea-47cb-92d4-38483587f13e",
+      "name": "Call - !tools - whatsapp_command",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "ff36638a-5790-49af-b304-c2c62a1fc726",
+                    "leftValue": "={{ $('Webhook').first().json.body.message.text.split(\" \")[0].split(\"#\")[0] }}",
+                    "rightValue": "!comandos",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "comandos"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "cd7959ba-7d31-4bc4-a7c1-04358f088dd3",
+                    "leftValue": "={{ $('Webhook').first().json.body.message.text.split(\" \")[0].split(\"#\")[0] }}",
+                    "rightValue": "!cmd",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cmd"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "feef9ee2-739a-4e8d-8487-638223a416e8",
+      "name": "Admin_functions1",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        288,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b712aa94-13c2-4ea0-a320-f1a878230879",
+              "leftValue": "={{ $('get_member_info').item.json.whatsapp }}",
+              "rightValue": "5521979373322",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "162de814-08c4-43e5-ac0d-5428b5bf6d65",
+              "leftValue": "={{ $('get_member_info').item.json.whatsapp }}",
+              "rightValue": "5519994317797",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "54fd57a0-2a38-4219-9fc1-fe4f0e8cc009",
+      "name": "user = Yuri?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        304,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Webhook').first().json.body.instance.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook').first().json.body.chat.chatId }}"
+            },
+            {
+              "name": "text",
+              "value": "=🐾 *PANTERO - LISTA DE COMANDOS DISPONÍVEIS*\n═══════════════════════════════════════════\n\n🟦*NOVO CADASTRAR GRUPOS (Beta)* \n🆕`!join #tag1 #tag2 https://chat.whatsapp.com/invite-link14253647` - Funciona no privado (o usuário precisa estar cadastrado pelo Yuri)\n🆕`!join #tag1 #tag2` - Funciona no grupo (o usuário precisa ser admin)\n═══════════════════════════════════════════\n\n📢 *COMANDOS PÚBLICOS (Disponíveis em grupos):*\n🔸 `!comandos` ou `!cmd` - Mostra esta lista de comandos\n🔸 `!transcrever` - Responda a um áudio com este comando para transcrever o conteúdo\n🔸 `!calendario` - Mostra o calendário da semana com eventos e jogos da FURIA\n🔸 `!convite 5519993210000` - Envia convite do grupo para o número informado\n🔸 `!tradução` - Traduz o texto da mensagem respondida\n─────────────────────────────────────────\n\n🔒 *COMANDOS PRIVADOS (Somente para membros autorizados):*\n\n📋 *GESTÃO DE GRUPOS:*\n🔹 `!listar_grupos` - Lista todos os grupos cadastrados no banco com chat_id e #tags\n🔹 `!listar_todos_grupos` - Lista todos os grupos onde o Pantero está presente\n🔹 `!new_group#categoria 120363123456789` - Cadastra grupo pela categoria e chat_id\n🔹 `!join #categoria https://chat.whatsapp.com/xxxxx` - Entra em grupo via link e cadastra\n\n📤 *ENVIO EM MASSA:*\n🔹 `!mass_msg#categoria` texto - Envia mensagem para grupos da categoria específica\n🔹 `!mass_msg#all` texto - Envia mensagem para TODOS os grupos cadastrados\n🔹 `!todos#categoria` texto - Envia mensagem marcando @todos nos grupos da categoria\n🔹 `!todos#all` texto - Envia mensagem marcando @todos em TODOS os grupos\n\n📊 *RELATÓRIOS:*\n🔹 `!membros 120363123456789,120363987654321` - Relatório detalhado de membros dos grupos informados (separar chat_ids por vírgula)\n🔹 `!membros #tag` - Mostra o relatório contando todos os grupos da #tag informada\n\n─────────────────────────────────────────\n\n💡 *DICAS DE USO:*\n- Use *#all* para atingir todos os grupos\n- Use *#categoria* para grupos específicos (ex: #furia #fpm)\n- Para comandos de massa, você pode anexar imagens com texto\n\n─────────────────────────────────────────\n🎲 *SISTEMA DE TOKENS E SORTEIOS:*\n\n📊 *CONSULTAS:*\n🔹 `!token_show` - Mostra ranking top 10 de tokens\n🔹 `!token_show 5519999888777` - Consulta tokens de usuário específico\n\n💰 *GESTÃO DE TOKENS (Moderadores+):*\n🔹 `!token_add 5 5519999888777` - Adiciona tokens ao usuário\n🔹 `!token_remove 3 5519999888777` - Remove tokens (mínimo 1 mantido)\n🔹 `!token_freeze 5519999888777 7` - Congela tokens por X dias (padrão 7)\n\n🎯 *SORTEIOS:*\n🔹 `!sorteio` - Sorteia 1 ganhador entre TODOS com tokens\n🔹 `!sorteio 3` - Sorteia 3 ganhadores entre TODOS\n🔹 `!sorteio #tag 5` - Sorteia 5 ganhadores da tag específica\n🔹 `!sorteio #tag1 #tag2 2` - Sorteia 2 ganhadores das tags informadas\n\n⚠️ *Observações:*\n- Ganhadores ficam congelados por 30 dias\n- Mais tokens = mais chances no sorteio\n- Membros congelados não participam"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        832
+      ],
+      "id": "2aba9ba7-24ec-4d52-9d60-658e631856d8",
+      "name": "uazapi - send text - comandos 2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Webhook').first().json.body.instance.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook').first().json.body.chat.chatId }}"
+            },
+            {
+              "name": "text",
+              "value": "=🐾 *PANTERO - LISTA DE COMANDOS DISPONÍVEIS*\n═══════════════════════════════════════════\n\n🆕*NOVO CADASTRAR GRUPOS (Beta)* \n▫️`!join #tag1 #tag2 https://chat.whatsapp.com/invite-link14253647` - Funciona no privado (o usuário precisa estar cadastrado pelo Yuri)\n▫️`!join #tag1 #tag2` - Funciona no grupo (o usuário precisa ser admin)\n═══════════════════════════════════════════\n\n👥 *GESTÃO DE MEMBROS (Somente Yuri):*\n🔺`!show_members` - Lista usuários com acesso aos comandos privados\n🔺 `!add_member 5519991234567 Nome` - Libera acesso aos comandos privados\n🔺 `!remove_member 5519991234567` - Remove acesso aos comandos privados\n─────────────────────────────────────────\n\n📢 *COMANDOS PÚBLICOS (Disponíveis em grupos):*\n🔸 `!comandos` ou `!cmd` - Mostra esta lista de comandos\n🔸 `!transcrever` - Responda a um áudio com este comando para transcrever o conteúdo\n🔸 `!calendario` - Mostra o calendário da semana com eventos e jogos da FURIA\n🔸 `!convite 5519993210000` - Envia convite do grupo para o número informado\n🔸 `!tradução` - Traduz o texto da mensagem respondida\n─────────────────────────────────────────\n\n🔒 *COMANDOS PRIVADOS (Somente para membros autorizados):*\n\n📋 *GESTÃO DE GRUPOS:*\n🔹 `!listar_grupos` - Lista todos os grupos cadastrados no banco com chat_id e #tags\n🔹 `!listar_todos_grupos` - Lista todos os grupos onde o Pantero está presente\n🔹 `!new_group#categoria 120363123456789` - Cadastra grupo pela categoria e chat_id\n🔹 `!join #categoria https://chat.whatsapp.com/xxxxx` - Entra em grupo via link e cadastra\n\n📤 *ENVIO EM MASSA:*\n🔹 `!mass_msg#categoria` texto - Envia mensagem para grupos da categoria específica\n🔹 `!mass_msg#all` texto - Envia mensagem para TODOS os grupos cadastrados\n🔹 `!todos#categoria` texto - Envia mensagem marcando @todos nos grupos da categoria\n🔹 `!todos#all` texto - Envia mensagem marcando @todos em TODOS os grupos\n\n📊 *RELATÓRIOS:*\n🔹 `!membros 120363123456789,120363987654321` - Relatório detalhado de membros dos grupos informados (separar chat_ids por vírgula)\n🔹 `!membros #tag` - Mostra o relatório contando todos os grupos da #tag informada\n\n─────────────────────────────────────────\n\n💡 *DICAS DE USO:*\n- Use *#all* para atingir todos os grupos\n- Use *#categoria* para grupos específicos (ex: #furia #fpm)\n- Para comandos de massa, você pode anexar imagens com texto\n\n─────────────────────────────────────────\n🎲 *SISTEMA DE TOKENS E SORTEIOS:*\n\n📊 *CONSULTAS:*\n🔹 `!token_show` - Mostra ranking top 10 de tokens\n🔹 `!token_show 5519999888777` - Consulta tokens de usuário específico\n\n💰 *GESTÃO DE TOKENS (Moderadores+):*\n🔹 `!token_add 5 5519999888777` - Adiciona tokens ao usuário\n🔹 `!token_remove 3 5519999888777` - Remove tokens (mínimo 1 mantido)\n🔹 `!token_freeze 5519999888777 7` - Congela tokens por X dias (padrão 7)\n\n🎯 *SORTEIOS:*\n🔹 `!sorteio` - Sorteia 1 ganhador entre TODOS com tokens\n🔹 `!sorteio 3` - Sorteia 3 ganhadores entre TODOS\n🔹 `!sorteio #tag 5` - Sorteia 5 ganhadores da tag específica\n🔹 `!sorteio #tag1 #tag2 2` - Sorteia 2 ganhadores das tags informadas\n\n⚠️ *Observações:*\n- Ganhadores ficam congelados por 30 dias\n- Mais tokens = mais chances no sorteio\n- Membros congelados não participam"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        592
+      ],
+      "id": "a8c38777-af0e-45ba-b7f7-695eb6e37fec",
+      "name": "uazapi - send text - comandos  ADMIN",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 📤 COMANDOS BÁSICOS\n\nEnvia lista básica de comandos para usuários **sem cadastro** no sistema.\n\n**Quando executa:**\n- Usuário não tem cadastro no Supabase\n- Digitou !comandos ou !cmd\n\n**O que envia:**\n- Lista simplificada de comandos públicos apenas",
+        "height": 120,
+        "width": 320,
+        "color": 5
+      },
+      "id": "9abcc12c-f1a8-47b4-ab05-4d0800bdbf8b",
+      "name": "Sticky Note - Comandos Básicos",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        800,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔒 SEM ACESSO\n\nInforma ao usuário que **não tem permissão** para usar comandos administrativos.\n\n**Quando executa:**\n- Usuário sem cadastro no sistema\n- Tentou usar comando que não seja !comandos\n\n**Mensagem:**\n- Aviso de falta de acesso\n- Informação sobre liberação futura",
+        "height": 120,
+        "width": 320,
+        "color": 3
+      },
+      "id": "3845f115-24b0-41b1-a11a-21b2f96a386d",
+      "name": "Sticky Note - Sem Acesso",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        800,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🛠️ CALL TOOLS\n\nChama webhook externo para processar **comandos administrativos** avançados.\n\n**Quando executa:**\n- Usuário cadastrado usa comando diferente de !comandos\n- Encaminha para processamento especializado\n\n**Destino:**\n- Webhook: pantero-n8n-webhook.respondeaqui.com.br\n- Endpoint: /webhook/private-commands",
+        "height": 120,
+        "width": 320,
+        "color": 4
+      },
+      "id": "23f2c1c5-a4bb-40c1-99b7-c4039f014a54",
+      "name": "Sticky Note - Call Tools",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 👤 COMANDOS USUÁRIO\n\nEnvia lista **completa de comandos** para usuários cadastrados (não admin).\n\n**Quando executa:**\n- Usuário cadastrado (não é Yuri)\n- Digitou !comandos ou !cmd\n\n**Inclui:**\n- Comandos públicos\n- Comandos privados básicos\n- Gestão de grupos e envios",
+        "height": 120,
+        "width": 320,
+        "color": 5
+      },
+      "id": "11bf3db1-5e46-4f5b-a6c2-668bb0df619d",
+      "name": "Sticky Note - Comandos Usuário",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        800,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 👑 COMANDOS ADMIN\n\nEnvia lista **COMPLETA** incluindo comandos de **gestão de membros** (exclusivo Yuri).\n\n**Quando executa:**\n- Usuário é Yuri (5521979373322 ou 5519994317797)\n- Digitou !comandos ou !cmd\n\n**Inclui:**\n- Todos os comandos de usuário\n- Comandos de gestão de membros\n- !add_member, !remove_member, !show_members",
+        "height": 120,
+        "width": 320,
+        "color": 5
+      },
+      "id": "c1a5c2c2-99a5-4c53-a312-9571af5e06e7",
+      "name": "Sticky Note - Comandos Admin",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        800,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "ec369e7f-3b63-463d-910a-2bb0dc4b2d48",
+              "leftValue": "={{ $('Webhook').first().json.body.message.text }}",
+              "rightValue": "!comandos",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "e0b475c8-a3d0-42d4-af67-c6f0c7fe772c",
+              "leftValue": "={{ $('Webhook').first().json.body.message.text }}",
+              "rightValue": "!cmd",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "0fd43cf0-e0f2-47a4-bbe9-c69813873b37",
+      "name": "!comandos - sem cadastro",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        304,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Tem cadastro?": {
+      "main": [
+        [
+          {
+            "node": "Admin_functions1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "!comandos - sem cadastro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_member_info": {
+      "main": [
+        [
+          {
+            "node": "Tem cadastro?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get - procura msg id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Set - Salva msg id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Salva msg id": {
+      "main": [
+        [
+          {
+            "node": "get_member_info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get - procura msg id": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Admin_functions1": {
+      "main": [
+        [
+          {
+            "node": "user = Yuri?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "user = Yuri?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call - !tools - whatsapp_command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "user = Yuri?": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text - comandos  ADMIN",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "uazapi - send text - comandos 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "!comandos - sem cadastro": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text - sem acesso",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "uazapi - send text - sem acesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "dc041c57-3961-4f6f-a8b9-a4a26d4a8162",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "lPwflfWR1tJwwk8b",
+  "tags": []
+}

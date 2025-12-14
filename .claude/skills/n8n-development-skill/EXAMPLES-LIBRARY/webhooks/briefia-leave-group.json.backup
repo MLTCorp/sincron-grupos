@@ -1,0 +1,221 @@
+{
+  "name": "[WEBHOOK] Sai do Grupo",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "419f05e3-4733-45ba-be9d-c87791bc79c6",
+              "name": "id_grupo",
+              "value": "={{ $json.body.id }}",
+              "type": "number"
+            },
+            {
+              "id": "6891485c-aba7-428f-ac12-9e2dc71c638e",
+              "name": "uazapi.url",
+              "value": "https://briefia.uazapi.com",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -48,
+        16
+      ],
+      "id": "6e289953-a72b-44dd-8048-79c8cd7154ba",
+      "name": "Padroniza Dados"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Padroniza Dados').item.json.uazapi.url }}/group/leave",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "groupjid",
+              "value": "={{ $json.chat_id_whatsapp }}@g.us"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        384,
+        16
+      ],
+      "id": "d1b38d39-0e96-4af0-98ea-a882244390e0",
+      "name": "Sai do Grupo",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZtFXzJZKhheInQBf",
+          "name": "Uazapi - Briefia"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "grupos",
+          "mode": "list",
+          "cachedResultName": "grupos"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "id",
+              "value": "={{ $json.id_grupo }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        160,
+        16
+      ],
+      "id": "bd4de80d-df4d-43a5-84af-3ce4fa43f035",
+      "name": "Busca Grupo",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "briefia/v1/exclui-grupo",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "4e56f383-38d7-4e4c-9fbc-0a35d035e15b",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        16
+      ],
+      "webhookId": "550e8400-e29b-41d4-a716-446655440002"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"code\": 200,\n  \"message\": \"{{ $json.response }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        -80
+      ],
+      "id": "4bcd5aef-b004-4587-b4d0-7dd2d04301dd",
+      "name": "success",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"code\": 400,\n  \"message\": \"{{ $json.response }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        128
+      ],
+      "id": "4dba666d-6201-4655-b3b7-23b7b91b0443",
+      "name": "error",
+      "notesInFlow": true
+    }
+  ],
+  "connections": {
+    "Padroniza Dados": {
+      "main": [
+        [
+          {
+            "node": "Busca Grupo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Grupo": {
+      "main": [
+        [
+          {
+            "node": "Sai do Grupo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Padroniza Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sai do Grupo": {
+      "main": [
+        [
+          {
+            "node": "success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "Sjd5x4DDIjqnsxyQ"
+  },
+  "versionId": "0385fde8-7608-486a-9423-1bb15c5bc8c7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "czEWqSGA0JuDBwY8",
+  "tags": []
+}

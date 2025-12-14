@@ -1,0 +1,3231 @@
+{
+  "name": "[Tools] !grupos",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('save \\'command\\' - lista_grupos').first().json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "=*{{ $json.resultado.mensagem_contexto }}*{{ $('Switch - source').item.json.body.invalid_tags ? \"\\ntags inexistentes: \" + $('Switch - source').item.json.body.invalid_tags : '' }}\n\n{{ $json.resultado.lista_grupos }}\n\n*Lista de chat_id*\n{{ $json.resultado.chat_ids }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        624,
+        -1104
+      ],
+      "id": "4ad544b1-08d3-4400-9150-1afdc668a6c2",
+      "name": "uazapi - send text1",
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Query para listar grupos com formatação personalizada\n-- Parâmetro $1: Array de tags (ex: '{\"furia\",\"cs\"}' ou '{\"all\"}' para todos)\n\nWITH tag_filter AS (\n  SELECT \n    CASE \n      WHEN $1::text[] = '{}' OR 'all' = ANY($1::text[]) THEN true\n      ELSE false \n    END as show_all_groups,\n    $1::text[] as requested_tags\n),\nfiltered_groups AS (\n  SELECT DISTINCT g.*\n  FROM groups g\n  LEFT JOIN group_tags gt ON g.id = gt.group_id\n  LEFT JOIN tags t ON gt.tag_id = t.id\n  CROSS JOIN tag_filter tf\n  WHERE \n    tf.show_all_groups = true \n    OR t.name = ANY(tf.requested_tags)\n),\ngroup_data AS (\n  SELECT \n    fg.id,\n    fg.chat_id,\n    fg.group_name,\n    fg.category,\n    fg.created_at,\n    COALESCE(\n      ARRAY_AGG(t.name) FILTER (WHERE t.name IS NOT NULL), \n      ARRAY[]::text[]\n    ) as tags\n  FROM filtered_groups fg\n  LEFT JOIN group_tags gt ON fg.id = gt.group_id\n  LEFT JOIN tags t ON gt.tag_id = t.id\n  GROUP BY fg.id, fg.chat_id, fg.group_name, fg.category, fg.created_at\n),\nsummary AS (\n  SELECT \n    COUNT(*) as total_groups,\n    STRING_AGG(DISTINCT gd.chat_id::text, ',' ORDER BY gd.chat_id::text) as chat_ids_list,\n    STRING_AGG(\n      gd.group_name || ' - ' || gd.chat_id || \n      CASE \n        WHEN array_length(gd.tags, 1) > 0 \n        THEN ' - ' || array_to_string(gd.tags, ', ')\n        ELSE ''\n      END, \n      E'\\n' \n      ORDER BY gd.group_name\n    ) as groups_list\n  FROM group_data gd\n)\nSELECT \n  json_build_object(\n    'status', 'success',\n    'total_encontrados', s.total_groups,\n    'filtro_tags', CASE \n      WHEN tf.show_all_groups THEN 'todas as tags'\n      ELSE array_to_string(tf.requested_tags, ', ')\n    END,\n    'mensagem_contexto', CASE \n      WHEN tf.show_all_groups THEN s.total_groups || ' grupos encontrados em todas as tags'\n      ELSE s.total_groups || ' grupos encontrados com as tags ' || \n           array_to_string(ARRAY(SELECT '#' || unnest(tf.requested_tags)), ', ')\n    END,\n    'lista_grupos', s.groups_list,\n    'chat_ids', '(' || s.chat_ids_list || ')'\n  ) as resultado\nFROM summary s\nCROSS JOIN tag_filter tf;",
+        "options": {
+          "queryReplacement": "={{ '{' + $json.body.valid_tags + '}' }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        416,
+        -1104
+      ],
+      "id": "e463793d-0578-4bab-af40-678a3338e6f5",
+      "name": "Postgres - lista grupos",
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Auto-criar tags inválidas e retornar informações\nWITH new_tags AS (\n  INSERT INTO tags (name)\n  SELECT tag_name\n  FROM unnest($1::text[]) as tag_name\n  WHERE NOT EXISTS (\n    SELECT 1 FROM tags t WHERE t.name = tag_name\n  )\n  ON CONFLICT (name) DO NOTHING\n  RETURNING name as created_tag\n)\nSELECT json_build_object(\n  'success', true,\n  'all_tags', $1::text[],\n  'created_tags', COALESCE(array_agg(created_tag), '{}'),\n  'created_count', COUNT(created_tag)\n) as resultado\nFROM new_tags;",
+        "options": {
+          "queryReplacement": "={{ '{' + $json.all_tags + '}' }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        336,
+        -624
+      ],
+      "id": "48ffc920-0d80-4537-ac9d-c538e8b25b41",
+      "name": "Auto Create Tags",
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH \n-- 1. UPSERT do grupo (criar ou atualizar)\ngroup_upsert AS (\n  INSERT INTO groups (chat_id, group_name, category)\n  VALUES ($1::text, $2::text, $3::text)\n  ON CONFLICT (chat_id) \n  DO UPDATE SET \n    group_name = EXCLUDED.group_name,\n    category = CASE \n      WHEN groups.category IS NULL THEN EXCLUDED.category \n      ELSE groups.category \n    END\n  RETURNING id as group_id, chat_id, group_name, category\n),\n\n-- 2. Preparar array de TODAS as tags (agora todas existem)\ntags_array AS (\n  SELECT unnest($4::text[]) AS tag_name\n),\n\n-- 3. Buscar IDs de TODAS as tags\nall_tags AS (\n  SELECT t.id as tag_id, t.name as tag_name\n  FROM tags_array ta\n  JOIN tags t ON t.name = ta.tag_name\n),\n\n-- 4. Remover associações antigas que não estão nas novas tags\ncleanup_old_tags AS (\n  DELETE FROM group_tags gt\n  WHERE gt.group_id = (SELECT group_id FROM group_upsert)\n    AND gt.tag_id NOT IN (SELECT tag_id FROM all_tags)\n  RETURNING tag_id as removed_tag_id\n),\n\n-- 5. Inserir novas associações (ignorar duplicatas)\ninsert_new_tags AS (\n  INSERT INTO group_tags (group_id, tag_id)\n  SELECT \n    (SELECT group_id FROM group_upsert),\n    at.tag_id\n  FROM all_tags at\n  ON CONFLICT (group_id, tag_id) DO NOTHING\n  RETURNING tag_id as added_tag_id\n)\n\n-- 6. Retornar resultado consolidado\nSELECT json_build_object(\n  'success', true,\n  'group', json_build_object(\n    'id', gu.group_id,\n    'chat_id', gu.chat_id,\n    'group_name', gu.group_name,\n    'category', gu.category\n  ),\n  'tags', json_build_object(\n    'all_tags', COALESCE(array_agg(DISTINCT at.tag_name), '{}'),\n    'added_count', (SELECT COUNT(*) FROM insert_new_tags),\n    'removed_count', (SELECT COUNT(*) FROM cleanup_old_tags)\n  ),\n  'operation', CASE \n    WHEN EXISTS(SELECT 1 FROM groups WHERE chat_id = $1) THEN 'updated'\n    ELSE 'created'\n  END\n) as resultado\nFROM group_upsert gu\nLEFT JOIN all_tags at ON true\nGROUP BY gu.group_id, gu.chat_id, gu.group_name, gu.category;",
+        "options": {
+          "queryReplacement": "={{(() => {\n  const data = $json;\n  const tags = $('Parse New Webhook Format1').item.json.all_tags;\n  const chatId = data.JID.split(\"@\")[0];\n  const groupName = data.Name;\n  const category = tags?.[0] ?? null;\n  const allTags = tags || []; // TODAS as tags\n\n  return [chatId, groupName, category, allTags];\n})()}}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1088,
+        -624
+      ],
+      "id": "971295f8-7678-4cc8-ab49-56a0b6351c27",
+      "name": "Update Group With All Tags",
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Função segura para acessar dados de nós\nfunction getNodeData(nodeName) {\n  try {\n    return $node[nodeName].json;\n  } catch (e) {\n    console.log(`⚠️ Nó ${nodeName} não encontrado ou não executado`);\n    return null;\n  }\n}\n\n// Coletar dados dos nós\nconst parseData = getNodeData('Parse New Webhook Format1');\nconst tagCreationData = getNodeData('Auto Create Tags');\nconst joinData = getNodeData('Join WhatsApp Group1');\nconst groupInfoData = getNodeData('Get Group Info');\nconst updateGroupData = getNodeData('Update Group With All Tags');\n\nconsole.log('🔍 Parse Data:', JSON.stringify(parseData, null, 2));\nconsole.log('🏷️ Tag Creation Data:', JSON.stringify(tagCreationData, null, 2));\nconsole.log('📱 Join Data:', JSON.stringify(joinData, null, 2));\nconsole.log('📊 Group Info Data:', JSON.stringify(groupInfoData, null, 2));\nconsole.log('💾 Update Group Data:', JSON.stringify(updateGroupData, null, 2));\n\n// Extrair dados básicos\nconst userInfo = parseData?.user || {};\nconst allTags = parseData?.all_tags || [];\nconst validTags = parseData?.valid_tags || [];\nconst invalidTags = parseData?.invalid_tags || [];\nconst inviteLink = parseData?.invite_link || '';\n\n// Dados de criação de tags\nconst tagResults = tagCreationData?.resultado || {};\nconst createdTags = tagResults.created_tags || [];\nconst createdCount = tagResults.created_count || 0;\n\nconsole.log('🔧 Dados extraídos:');\nconsole.log('👤 User Info:', userInfo);\nconsole.log('🏷️ All Tags:', allTags);\nconsole.log('✅ Valid Tags:', validTags);\nconsole.log('❌ Invalid Tags:', invalidTags);\nconsole.log('🔗 Invite Link:', inviteLink);\nconsole.log('📊 Tag Results:', tagResults);\n\n// Determinar se join foi bem-sucedido\nlet joinSuccess = false;\nlet groupData = null;\nlet participantsCount = 0;\nlet joinErrorMessage = null;\n\n// Verificar dados do join\nif (joinData) {\n  if (joinData.response === \"Group join successful\" && joinData.group) {\n    joinSuccess = true;\n    groupData = joinData.group;\n    participantsCount = groupData.Participants ? groupData.Participants.length : 0;\n  } else if (joinData.error) {\n    joinSuccess = false;\n    joinErrorMessage = joinData.error.message || 'Erro desconhecido no join';\n  }\n}\n\n// Fallback para Get Group Info se join falhou\nif (!joinSuccess && groupInfoData) {\n  groupData = groupInfoData;\n  participantsCount = groupData.Participants ? groupData.Participants.length : 0;\n  console.log('📋 Usando dados do Get Group Info como fallback');\n}\n\n// Extrair dados do grupo\nlet groupName = 'Grupo desconhecido';\nlet chatId = 'unknown';\nlet groupId = null;\n\nif (groupData) {\n  groupName = groupData.Name || 'Grupo sem nome';\n  chatId = groupData.JID ? groupData.JID.replace('@g.us', '') : 'unknown';\n}\n\n// Dados do Update Group (se disponível)\nlet updateResults = null;\nif (updateGroupData && updateGroupData.resultado) {\n  updateResults = updateGroupData.resultado;\n  groupId = updateResults.group?.id;\n}\n\n// Gerar mensagem de feedback inteligente\nlet message = '';\n\n// Header da mensagem\nif (joinSuccess) {\n  message += `✅ *Grupo \"${groupName}\" processado com sucesso!*\\n\\n`;\n} else {\n  message += `✅ *As configurações foram salvas.*\\n`;\n  if (joinErrorMessage) {\n    message += `*Erro:* ${joinErrorMessage}\\n`;\n  }\n  message += '\\n';\n}\n\n// Status das tags criadas\nif (createdCount > 0) {\n  message += `🏷️ *Tags novas criadas automaticamente:*\\n`;\n  createdTags.forEach(tag => {\n    message += `• #${tag}\\n`;\n  });\n  \n  message += `\\n⚠️ *ATENÇÃO:* Se alguma tag foi criada por engano, use:\\n`;\n  createdTags.forEach(tag => {\n    message += `\\`!tag_remove #${tag}\\`\\n`;\n  });\n  message += '\\n';\n} else {\n  message += `✅ *Todas as tags já existiam no sistema.*\\n\\n`;\n}\n\n// Tags inválidas (se houver)\nif (invalidTags && invalidTags.length > 0) {\n  message += `❌ *Tags inválidas encontradas:*\\n`;\n  invalidTags.forEach(tag => {\n    message += `• #${tag}\\n`;\n  });\n  message += '\\n';\n}\n\n// Resumo final\nmessage += `📊 *Resumo:*\\n`;\nmessage += `• Grupo: ${groupName}\\n`;\nmessage += `• Chat ID: ${chatId}\\n`;\nmessage += `• Tags vinculadas: ${validTags.join(', ')}\\n`;\nmessage += `• Tags criadas: ${createdCount}\\n`;\n\nif (participantsCount > 0) {\n  message += `• Participantes: ${participantsCount}\\n`;\n}\n\nif (updateResults) {\n  message += `• Operação BD: ${updateResults.operation || 'unknown'}\\n`;\n}\n\nmessage += `• Status Join: ${joinSuccess ? 'Sucesso' : 'Falhou'}\\n`;\n\n// Preparar resposta estruturada\nconst response = {\n  statusCode: joinSuccess ? 200 : 206, // 206 = Partial Content (join falhou mas dados salvos)\n  body: {\n    success: true,\n    join_success: joinSuccess,\n    message: message,\n    data: {\n      user: userInfo,\n      group: {\n        id: groupId,\n        chat_id: chatId,\n        group_name: groupName,\n        participants_count: participantsCount,\n        invite_link: inviteLink\n      },\n      tags: {\n        all_requested: allTags,\n        valid_tags: validTags,\n        invalid_tags: invalidTags,\n        created_tags: createdTags,\n        created_count: createdCount\n      },\n      operation: updateResults?.operation || null,\n      join_error: joinErrorMessage\n    }\n  }\n};\n\nconsole.log('✨ Resposta final formatada:', JSON.stringify(response, null, 2));\n\nreturn response;"
+      },
+      "id": "37e96099-6576-474a-90f9-97cf7e6e5014",
+      "name": "Format Smart Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        -624
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/group/join",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "inviteCode",
+              "value": "={{ $('Parse New Webhook Format1').item.json.invite_link }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b51bd50c-c19e-4338-b4b2-ada464d7f837",
+      "name": "Join WhatsApp Group1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        -624
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1536,
+        -624
+      ],
+      "id": "64eef10c-9ee4-4054-b5d9-9d4818519b28",
+      "name": "Success Response1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Função segura para acessar dados de nós\nfunction getNodeData(nodeName) {\n  try {\n    return $node[nodeName].json;\n  } catch (e) {\n    console.log(`⚠️ Nó ${nodeName} não encontrado ou não executado`);\n    return null;\n  }\n}\n\n// Tentar pegar dados dos nós de diferentes fontes\nlet joinData = null;\nlet groupData = null;\nlet members = [];\nlet groupId = null;\n\n// Verificar cada nó individualmente e escolher o que tem participants\nconsole.log('🔍 Verificando nós disponíveis...');\n\nconst joinWhatsappData = getNodeData('Join WhatsApp Group1');\nconst getGroupInfoData = getNodeData('Get Group Info');\n\nconsole.log('📱 Join WhatsApp Group1 data:', JSON.stringify(joinWhatsappData, null, 2));\nconsole.log('📱 Get Group Info data:', JSON.stringify(getGroupInfoData, null, 2));\n\n// Função para verificar se um objeto tem participants\nfunction hasParticipants(data) {\n  if (!data) return false;\n  \n  // Verificar várias estruturas possíveis\n  if (data.group && data.group.Participants) return true;\n  if (data.resultado && data.resultado.Participants) return true;\n  if (Array.isArray(data) && data[0] && data[0].Participants) return true;\n  if (data.Participants) return true;\n  \n  return false;\n}\n\n// Escolher fonte de dados baseada em quem tem participants\nif (hasParticipants(joinWhatsappData)) {\n  joinData = joinWhatsappData;\n  console.log('✅ Usando Join WhatsApp Group1 (tem participants)');\n} else if (hasParticipants(getGroupInfoData)) {\n  joinData = getGroupInfoData;\n  console.log('✅ Usando Get Group Info (tem participants)');\n} else {\n  console.log('⚠️ Nenhum nó tem participants válidos');\n  joinData = getGroupInfoData || joinWhatsappData; // Fallback\n}\n\n// Tentar pegar dados processados do grupo\ntry {\n  groupData = getNodeData('Process Join Response1');\n  console.log('📊 groupData:', JSON.stringify(groupData, null, 2));\n} catch (e) {\n  console.log('⚠️ Erro ao acessar dados do grupo processado');\n}\n\n// Extrair participantes com debug detalhado\nlet participantsData = null;\n\nif (joinData) {\n  console.log('✅ Temos joinData, analisando estrutura...');\n  \n  // Caso 1: Join WhatsApp Group1 - dados estão em joinData.group.Participants\n  if (joinData.group && joinData.group.Participants) {\n    participantsData = joinData.group.Participants;\n    console.log('📦 Caso 1: Usando dados do Join WhatsApp Group1');\n    console.log('👥 Participants encontrados:', participantsData.length);\n  }\n  // Caso 2: Get Group Info - dados estão em joinData.resultado.Participants\n  else if (joinData.resultado && joinData.resultado.Participants) {\n    participantsData = joinData.resultado.Participants;\n    console.log('📦 Caso 2: Usando dados do Get Group Info (resultado)');\n    console.log('👥 Participants encontrados:', participantsData.length);\n  }\n  // Caso 3: Array direto - dados estão em joinData[0].Participants\n  else if (Array.isArray(joinData) && joinData[0] && joinData[0].Participants) {\n    participantsData = joinData[0].Participants;\n    console.log('📦 Caso 3: Usando dados do array direto');\n    console.log('👥 Participants encontrados:', participantsData.length);\n  }\n  // Caso 4: Dados diretos em joinData.Participants\n  else if (joinData.Participants) {\n    participantsData = joinData.Participants;\n    console.log('📦 Caso 4: Usando dados diretos');\n    console.log('👥 Participants encontrados:', participantsData.length);\n  }\n  else {\n    console.log('❌ Nenhuma estrutura de Participants reconhecida');\n    console.log('🔍 Estrutura atual do joinData:', Object.keys(joinData));\n    if (joinData.resultado) {\n      console.log('🔍 Estrutura do resultado:', Object.keys(joinData.resultado));\n    }\n  }\n} else {\n  console.log('❌ Não temos joinData');\n}\n\n// Processar participantes\nif (participantsData && Array.isArray(participantsData)) {\n  console.log('🔄 Processando participantes...');\n  \n  members = participantsData.map((participant, index) => {\n    console.log(`👤 Processando participante ${index}:`, JSON.stringify(participant, null, 2));\n    \n    const whatsapp = participant.JID?.replace('@s.whatsapp.net', '') ??\n                     participant.PhoneNumber?.replace('@s.whatsapp.net', '') ??\n                     null;\n    \n    const displayName = participant.DisplayName?.trim() !== '' ?\n                        participant.DisplayName?.trim() :\n                        null;\n    \n    console.log(`📞 WhatsApp: ${whatsapp}, Nome: ${displayName}`);\n    \n    return {\n      whatsapp,\n      name: displayName\n    };\n  }).filter(member => member.whatsapp); // Filtrar membros com whatsapp válido\n  \n  console.log(`✅ ${members.length} membros extraídos`);\n  console.log('👥 Lista final de membros:', JSON.stringify(members, null, 2));\n} else {\n  console.log('⚠️ participantsData não é válido ou não é array');\n  console.log('🔍 Tipo de participantsData:', typeof participantsData);\n  console.log('🔍 É array?', Array.isArray(participantsData));\n}\n\n// Pegar group_id\ntry {\n  const updateGroupResult = getNodeData('Update Group With All Tags');\n  groupId = updateGroupResult?.resultado?.group?.id ?? null;\n} catch (e) {\n  console.log('⚠️ Erro ao acessar dados do Update Group');\n}\n\nconst result = {\n  members,\n  group_id: groupId,\n  chat_id: groupData?.chat_id ?? null,\n  group_name: groupData?.group_name ?? null\n};\n\nconsole.log('✨ Resultado final:', JSON.stringify(result, null, 2));\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        -496
+      ],
+      "id": "c29e635a-46c3-4728-a12f-f5d3e46279a7",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook Join').first().json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.body.message }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2048,
+        -736
+      ],
+      "id": "0bba8fee-2053-4dab-ae38-a5cdb7ce4ce9",
+      "name": "uazapi - send text6",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/lista_grupos",
+        "authentication": "basicAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        -1200
+      ],
+      "id": "3cc40a8b-248f-429c-aeac-626e1ba52346",
+      "name": "webhook - !lista_grupos",
+      "webhookId": "2fbcfd2d-5bfe-4576-bdda-28d6108e2740",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/join",
+        "authentication": "basicAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "890eb75c-9d37-4c2f-bf00-dc050e7a8097",
+      "name": "Webhook Join",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        -624
+      ],
+      "webhookId": "550e8400-e29b-41d4-a716-446655440002",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH \n-- 1. Preparar dados dos membros a partir do array\nmembers_data AS (\n  SELECT \n    (member_data->>'whatsapp')::text as whatsapp,\n    CASE \n      WHEN (member_data->>'name') IS NULL OR (member_data->>'name') = '' \n      THEN NULL \n      ELSE (member_data->>'name')::text \n    END as display_name\n  FROM jsonb_array_elements($1::jsonb) as member_data\n),\n\n-- 2. UPSERT membros (só insere novos, não atualiza names existentes)\nupserted_members AS (\n  INSERT INTO members (whatsapp, name)\n  SELECT \n    md.whatsapp,\n    md.display_name\n  FROM members_data md\n  WHERE NOT EXISTS (\n    SELECT 1 FROM members m WHERE m.whatsapp = md.whatsapp\n  )\n  ON CONFLICT (whatsapp) DO NOTHING\n  RETURNING id, whatsapp, name\n),\n\n-- 3. Buscar todos os member_ids (existentes + novos)\nall_member_ids AS (\n  SELECT \n    m.id as member_id,\n    m.whatsapp,\n    m.name\n  FROM members m\n  WHERE m.whatsapp IN (SELECT whatsapp FROM members_data)\n),\n\n-- 4. UPSERT relações member_groups\nupserted_relations AS (\n  INSERT INTO member_groups (member_id, group_id, is_active)\n  SELECT \n    ami.member_id,\n    $2::bigint,\n    true\n  FROM all_member_ids ami\n  ON CONFLICT (member_id, group_id) \n  DO UPDATE SET \n    is_active = true,\n    joined_at = CASE \n      WHEN member_groups.is_active = false THEN NOW() \n      ELSE member_groups.joined_at \n    END\n  RETURNING member_id, group_id\n),\n\n-- 5. Contar resultados\nstats AS (\n  SELECT \n    (SELECT COUNT(*) FROM upserted_members) as new_members_count,\n    (SELECT COUNT(*) FROM upserted_relations) as synced_relations_count,\n    (SELECT COUNT(*) FROM members_data) as total_participants\n)\n\n-- 6. Retorno consolidado\nSELECT json_build_object(\n  'success', true,\n  'group_id', $2::bigint,\n  'stats', json_build_object(\n    'total_participants', s.total_participants,\n    'new_members_created', s.new_members_count,\n    'relations_synced', s.synced_relations_count\n  ),\n  'members', (\n    SELECT json_agg(\n      json_build_object(\n        'member_id', ami.member_id,\n        'whatsapp', ami.whatsapp,\n        'name', ami.name\n      )\n    )\n    FROM all_member_ids ami\n  )\n) as resultado\nFROM stats s;",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify($json.members) }}, {{ $json.group_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2016,
+        -496
+      ],
+      "id": "bbca05f4-8dde-49bd-ad64-e11f2f17b374",
+      "name": "Insere/Att Members",
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mgm.uazapi.com/message/react",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Parse New Webhook Format1').item.json.source_chat_id }}@g.us"
+            },
+            {
+              "name": "text",
+              "value": "👍"
+            },
+            {
+              "name": "id",
+              "value": "={{ $('Webhook Join').item.json.body.message_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2256,
+        -736
+      ],
+      "id": "e95be554-323d-41d7-9d4a-a80f3dff9352",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/group/info",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "groupjid",
+              "value": "={{ $json.group?.JID || $('Parse New Webhook Format1').item.json.body.chat.chatId + \"@g.us\" }}"
+            },
+            {
+              "name": "getInviteLink",
+              "value": "={{true}}"
+            },
+            {
+              "name": "getRequestsParticipants",
+              "value": "={{false}}"
+            },
+            {
+              "name": "force",
+              "value": "={{false}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        800,
+        -624
+      ],
+      "id": "b55e2651-f35c-45de-b28f-f7152210300e",
+      "name": "Get Group Info",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Parse New Webhook Format1').item.json.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "=*Opa! Tive um problema ao cadastrar o grupo do link* {{ $('Parse New Webhook Format1').item.json.invite_link }}\n\nIsso pode ter acontecido porque ainda estou aguardando aprovação de um admin. Então quando ele aprovar, é só rodar *dentro do grupo* o comando !join com as #tags que vocês desejam.\n\nEx:\n!join #global #cs #play\n\n\n"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        784,
+        -432
+      ],
+      "id": "005ef25a-90ef-4d8b-bfc4-014b4d11417c",
+      "name": "uazapi - send text8",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "58c6a01e-bbe8-4f1a-a110-8aeeedd236d8",
+              "leftValue": "={{ $('Webhook Join').item.json.body.source_type }}",
+              "rightValue": "whatsapp_command",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1808,
+        -736
+      ],
+      "id": "2cbccbd9-81f0-450b-a894-bf1961c89e00",
+      "name": "If - whatsapp command1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6db82bf9-7d24-47c9-8fc8-83216890c3d2",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "1d7c748d-4d1e-4a42-b2a3-804bdde08c6c",
+              "name": "tags.requisited",
+              "value": "={{ $json.body.all_tags }}",
+              "type": "array"
+            },
+            {
+              "id": "135a2056-376a-4bd3-9b62-e08557db44c6",
+              "name": "tags.valid",
+              "value": "={{ $json.body.valid_tags }}",
+              "type": "array"
+            },
+            {
+              "id": "1cf3b0fb-7fb7-4a17-ac89-6d4fc2697a13",
+              "name": "tags.invalid",
+              "value": "={{ $json.body.invalid_tags }}",
+              "type": "array"
+            },
+            {
+              "id": "fe161ce5-de26-4559-a931-7fd5cdc0459e",
+              "name": "chat_ids",
+              "value": "={{ $json.body.chat_ids }}",
+              "type": "array"
+            },
+            {
+              "id": "c2f9a23d-fd3f-41c2-8553-fabc28e3c745",
+              "name": "groups_count",
+              "value": "={{ $json.body.groups_count }}",
+              "type": "number"
+            },
+            {
+              "id": "739be0f4-3738-452d-a501-479f53a17ae8",
+              "name": "tags.summary",
+              "value": "={{ $json.body.tags_summary }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        -1296
+      ],
+      "id": "8f553f6f-e62c-4897-88cd-29a832707427",
+      "name": "response"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Query para listar grupos com formatação personalizada\n-- Parâmetro $1: Array de tags (ex: '{\"furia\",\"cs\"}' ou '{\"all\"}' para todos)\n\nWITH tag_filter AS (\n  SELECT \n    CASE \n      WHEN $1::text[] = '{}' OR 'all' = ANY($1::text[]) THEN true\n      ELSE false \n    END as show_all_groups,\n    $1::text[] as requested_tags\n),\nfiltered_groups AS (\n  SELECT DISTINCT g.*\n  FROM groups g\n  LEFT JOIN group_tags gt ON g.id = gt.group_id\n  LEFT JOIN tags t ON gt.tag_id = t.id\n  CROSS JOIN tag_filter tf\n  WHERE \n    tf.show_all_groups = true \n    OR t.name = ANY(tf.requested_tags)\n),\ngroup_data AS (\n  SELECT \n    fg.id,\n    fg.chat_id,\n    fg.group_name,\n    fg.category,\n    fg.created_at,\n    COALESCE(\n      ARRAY_AGG(t.name) FILTER (WHERE t.name IS NOT NULL), \n      ARRAY[]::text[]\n    ) as tags\n  FROM filtered_groups fg\n  LEFT JOIN group_tags gt ON fg.id = gt.group_id\n  LEFT JOIN tags t ON gt.tag_id = t.id\n  GROUP BY fg.id, fg.chat_id, fg.group_name, fg.category, fg.created_at\n),\nsummary AS (\n  SELECT \n    COUNT(*) as total_groups,\n    STRING_AGG(DISTINCT gd.chat_id::text, ',' ORDER BY gd.chat_id::text) as chat_ids_list,\n    STRING_AGG(\n      gd.group_name || ' - ' || gd.chat_id || \n      CASE \n        WHEN array_length(gd.tags, 1) > 0 \n        THEN ' - ' || array_to_string(gd.tags, ', ')\n        ELSE ''\n      END, \n      E'\\n' \n      ORDER BY gd.group_name\n    ) as groups_list\n  FROM group_data gd\n)\nSELECT \n  json_build_object(\n    'status', 'success',\n    'total_encontrados', s.total_groups,\n    'filtro_tags', CASE \n      WHEN tf.show_all_groups THEN 'todas as tags'\n      ELSE array_to_string(tf.requested_tags, ', ')\n    END,\n    'mensagem_contexto', CASE \n      WHEN tf.show_all_groups THEN s.total_groups || ' grupos encontrados em todas as tags'\n      ELSE s.total_groups || ' grupos encontrados com as tags ' || \n           array_to_string(ARRAY(SELECT '#' || unnest(tf.requested_tags)), ', ')\n    END,\n    'lista_grupos', s.groups_list,\n    'chat_ids', '(' || s.chat_ids_list || ')'\n  ) as resultado\nFROM summary s\nCROSS JOIN tag_filter tf;",
+        "options": {
+          "queryReplacement": "={{ '{' + $json.body.all_tags + '}' }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        672,
+        -1520
+      ],
+      "id": "729c7d61-58a9-4467-9486-819eadc9ac5b",
+      "name": "Postgres - lista grupos1",
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6db82bf9-7d24-47c9-8fc8-83216890c3d2",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "1d7c748d-4d1e-4a42-b2a3-804bdde08c6c",
+              "name": "tags.requisited",
+              "value": "={{ $('If - all_groups').item.json.body.all_tags }}",
+              "type": "array"
+            },
+            {
+              "id": "135a2056-376a-4bd3-9b62-e08557db44c6",
+              "name": "tags.valid",
+              "value": "={{ $('If - all_groups').item.json.body.valid_tags }}",
+              "type": "array"
+            },
+            {
+              "id": "1cf3b0fb-7fb7-4a17-ac89-6d4fc2697a13",
+              "name": "tags.invalid",
+              "value": "={{ $('If - all_groups').item.json.body.invalid_tags }}",
+              "type": "array"
+            },
+            {
+              "id": "fe161ce5-de26-4559-a931-7fd5cdc0459e",
+              "name": "chat_ids",
+              "value": "={{ $json.resultado.chat_ids.replaceAll(\"(\",'').replaceAll(\")\",'').split(',') }}",
+              "type": "array"
+            },
+            {
+              "id": "c2f9a23d-fd3f-41c2-8553-fabc28e3c745",
+              "name": "groups_count",
+              "value": "={{ $json.resultado.total_encontrados }}",
+              "type": "number"
+            },
+            {
+              "id": "739be0f4-3738-452d-a501-479f53a17ae8",
+              "name": "tags.summary",
+              "value": "={{ $('If - all_groups').item.json.body.tags_summary }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        -1520
+      ],
+      "id": "60ae1a29-b297-4134-8967-1f55af750058",
+      "name": "response2"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.source_type }}",
+                    "rightValue": "api_rest",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "027c5656-d570-4a07-9d28-7dff8a909a31"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "api_rest"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c22fea8e-6f35-4e3e-9baf-8a549cf893c4",
+                    "leftValue": "={{ $json.body.source_type }}",
+                    "rightValue": "whatsapp_command",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "whatsapp_command"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        160,
+        -1200
+      ],
+      "id": "a134f841-e2f6-4af3-b8f6-78a15977b7a2",
+      "name": "Switch - source"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cc0d60fc-01a2-49fe-b644-bc2882a6a5fe",
+              "leftValue": "={{ $json.body.all_tags }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "c53fac85-2fcc-4e88-9a7f-650e6bfbd557",
+              "leftValue": "={{ $json.body.all_tags }}",
+              "rightValue": "all",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        -1408
+      ],
+      "id": "c3080da8-7213-4c2d-8160-0328a55ea9ef",
+      "name": "If - all_groups"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "command",
+              "value": "={{ $json.webhookUrl.split(\"/webhook/\")[1].replace(\"whatsapp-command/\",'') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        -1200
+      ],
+      "id": "dc16b83f-e378-40d8-a882-7bec7595e732",
+      "name": "save 'command' - lista_grupos",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "command",
+              "value": "={{ $json.webhookUrl.split(\"/webhook/\")[1].replace(\"whatsapp-command/\",'') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -624
+      ],
+      "id": "9bdead10-31ce-44c2-9b18-3c0e46874d5e",
+      "name": "save 'command' - join",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440010",
+              "name": "user",
+              "value": "={{ $json.body.user }}",
+              "type": "object"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440011",
+              "name": "all_tags",
+              "value": "={{ $json.body.all_tags }}",
+              "type": "array"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440012",
+              "name": "valid_tags",
+              "value": "={{ $json.body.valid_tags }}",
+              "type": "array"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440013",
+              "name": "invalid_tags",
+              "value": "={{ $json.body.invalid_tags }}",
+              "type": "array"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440014",
+              "name": "invite_link",
+              "value": "={{ $json.body.invite_link }}",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440015",
+              "name": "group_code",
+              "value": "={{ $json.body.group_code }}",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440016",
+              "name": "source_chat_id",
+              "value": "={{ $json.body.debug_info.workflow_execution || 'unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440017",
+              "name": "message_id",
+              "value": "={{ $json.body.media_info.message_id || 'unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440018",
+              "name": "execution_data",
+              "value": "={{ {\n  \"message_text\": $json.body.all_tags.map(tag => '#' + tag).join(' '),\n  \"tags_processed\": {\n    \"requested\": $json.body.all_tags,\n    \"valid\": $json.body.valid_tags,\n    \"invalid\": $json.body.invalid_tags,\n    \"used_all\": false\n  }\n} }}",
+              "type": "object"
+            },
+            {
+              "id": "8c5fd6df-cda4-48ea-9780-bfacf2f493f8",
+              "name": "body.chat",
+              "value": "={{ $json.body.chat }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9fed3353-4271-490f-b9e6-80347f65d53c",
+      "name": "Parse New Webhook Format1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        128,
+        -624
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/listar_todos_grupos",
+        "authentication": "basicAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        -1808
+      ],
+      "id": "1c841ffe-cfad-4721-86a8-172b42c04e31",
+      "name": "webhook - !lista_grupos1",
+      "webhookId": "2fbcfd2d-5bfe-4576-bdda-28d6108e2740",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "command",
+              "value": "={{ $json.webhookUrl.split(\"/webhook/\")[1].replace(\"whatsapp-command/\",'') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -1808
+      ],
+      "id": "435196dc-9a74-49f5-8ce2-2ea5e45e0dd6",
+      "name": "save 'command' - lista_grupos1",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "https://mgm.uazapi.com/group/list",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        176,
+        -1808
+      ],
+      "id": "5bb0acdb-b69a-4da2-a724-867d73da3df7",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrair dados dos grupos\nconst groupsData = $json.groups || [];\n\n// Processar informações básicas de cada grupo\nconst groupsInfo = groupsData.map(group => {\n  const chatId = group.JID.replace('@g.us', '');\n  const groupName = group.Name || 'Sem nome';\n  const membersCount = group.Participants ? group.Participants.length : 0;\n  \n  return {\n    chat_id: chatId,\n    group_name: groupName,\n    members_count: membersCount,\n    jid: group.JID\n  };\n});\n\n// Gerar mensagem de feedback para WhatsApp\nlet feedbackMessage = `📊 *Grupos encontrados: ${groupsInfo.length}*\\n\\n`;\n\ngroupsInfo.forEach((group, index) => {\n  feedbackMessage += `${index + 1}. *${group.group_name}* - ${group.chat_id} - ${group.members_count} membros\\n`;\n});\n\nif (groupsInfo.length === 0) {\n  feedbackMessage = '❌ *Nenhum grupo encontrado*\\n\\nVerifique se você tem acesso aos grupos ou se eles existem.';\n}\n\n// Preparar resposta estruturada\nconst response = {\n      total_groups: groupsInfo.length,\n      groups: groupsInfo.map(group => ({\n        chat_id: group.chat_id,\n        group_name: group.group_name,\n        members_count: group.members_count\n      }))\n};\n\nconsole.log('📊 Grupos processados:', groupsInfo.length);\nconsole.log('📝 Mensagem gerada:', feedbackMessage);\n\nreturn response;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        -1808
+      ],
+      "id": "e7cfd89f-309a-43eb-8e30-41c4dcdc9c15",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('webhook - !lista_grupos1').item.json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "=📊 *Status dos Grupos WhatsApp*\n>>> *Apenas os grupos que o Pantero está*\n\n📈 *Resumo:*\n- Total analisado: {{ $json.resultado.total_analyzed }}\n- Cadastrados: {{ $json.resultado.registered_count }}\n- Ativos: {{ $json.resultado.active_count }}\n- Inativos: {{ $json.resultado.inactive_count }}\n- Não cadastrados: {{ $json.resultado.unregistered_count }}\n\n📋 *Lista dos Grupos:*\n\n{{ $json.resultado.groups.map((group, index) => {\n  const statusEmoji = !group.is_registered ? 'X ' : \n                      group.is_active ? '🟢' : '🔴';\n  const status = !group.is_registered ? 'não cadastrado' : \n                 group.is_active ? 'ativo' : 'inativo';\n  const tags = group.tags && group.tags.length > 0 ? \n               `tags: ${group.tags.join(', ')}` : '';\n  \n  return `${statusEmoji} *${group.group_name}* - 👥 ${group.members_count}\n chat_id: ${group.chat_id}\\n${tags}`;\n}).join('\\n\\n') }}\n\n🔗 *Chat IDs Ativos:*\n{{ $json.resultado.groups.filter(g => g.is_registered && g.is_active).map(g => g.chat_id).join(',') }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1072,
+        -1712
+      ],
+      "id": "4ef7ac49-1d9d-4679-858c-7d52b76af53e",
+      "name": "uazapi - send text",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.resultado }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1072,
+        -1904
+      ],
+      "id": "22143ea2-3e20-41b8-adf5-84487e048702",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH \n-- 1. Extrair grupos do JSON de entrada\ninput_groups AS (\n  SELECT \n    (group_data->>'chat_id')::text as input_chat_id,\n    (group_data->>'group_name')::text as input_group_name,\n    (group_data->>'members_count')::integer as input_members_count\n  FROM jsonb_array_elements($1::jsonb) as group_data\n),\n\n-- 2. Verificar quais grupos existem no banco e buscar suas tags\ngroups_with_tags AS (\n  SELECT \n    ig.input_chat_id,\n    ig.input_group_name,\n    ig.input_members_count,\n    g.id as db_group_id,\n    g.group_name as db_group_name,\n    g.category,\n    g.active,\n    CASE WHEN g.id IS NOT NULL THEN true ELSE false END as is_registered,\n    COALESCE(array_agg(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL), '{}') as tags\n  FROM input_groups ig\n  LEFT JOIN groups g ON g.chat_id = ig.input_chat_id\n  LEFT JOIN group_tags gt ON gt.group_id = g.id\n  LEFT JOIN tags t ON t.id = gt.tag_id\n  GROUP BY ig.input_chat_id, ig.input_group_name, ig.input_members_count, \n           g.id, g.group_name, g.category, g.active\n)\n\n-- 3. Retornar resultado consolidado\nSELECT json_build_object(\n  'success', true,\n  'total_analyzed', COUNT(*),\n  'registered_count', COUNT(*) FILTER (WHERE is_registered = true),\n  'unregistered_count', COUNT(*) FILTER (WHERE is_registered = false),\n  'active_count', COUNT(*) FILTER (WHERE is_registered = true AND active = true),\n  'inactive_count', COUNT(*) FILTER (WHERE is_registered = true AND active = false),\n  'groups', json_agg(\n    json_build_object(\n      'chat_id', input_chat_id,\n      'group_name', input_group_name,\n      'members_count', input_members_count,\n      'is_registered', is_registered,\n      'is_active', CASE WHEN is_registered THEN active ELSE null END,\n      'db_group_name', CASE WHEN is_registered THEN db_group_name ELSE null END,\n      'category', CASE WHEN is_registered THEN category ELSE null END,\n      'tags', tags,\n      'tags_count', array_length(tags, 1)\n    ) ORDER BY is_registered DESC, active DESC NULLS LAST, input_group_name\n  )\n) as resultado\nFROM groups_with_tags;",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify($json.groups) }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        624,
+        -1808
+      ],
+      "id": "7eb3a1d2-a501-4d54-8320-0661e2468b27",
+      "name": "Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/auth/v1/token",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "password"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2ZmdpaHhqb25hb3d1YmxkdnltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAyMjk5MjUsImV4cCI6MjA0NTgwNTkyNX0.2ujO8rU0lvVV2TfvJJc9IzUSvJjm5cVdpTmUojMz1NA"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "contato.luizhms@gmail.com"
+            },
+            {
+              "name": "password",
+              "value": "152928Lu!"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -864,
+        -2144
+      ],
+      "id": "4dcbaaf7-82b5-4d26-af2e-8d44aad1c03d",
+      "name": "JWT create"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/ativar",
+        "authentication": "basicAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "e20ce69d-3d6c-453f-87ed-e3cb11c38f1c",
+      "name": "Webhook ativar",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        64
+      ],
+      "webhookId": "550e8400-e29b-41d4-a716-446655440002",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "command",
+              "value": "={{ $json.webhookUrl.split(\"/webhook/\")[1].replace(\"whatsapp-command/\",'') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        64
+      ],
+      "id": "b0ee1f00-c1e7-49a1-a135-93ee029d86f6",
+      "name": "save 'command' - join1",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/group/info",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "groupjid",
+              "value": "={{ $json.body.messag.text }}@g.us"
+            },
+            {
+              "name": "getInviteLink",
+              "value": "={{true}}"
+            },
+            {
+              "name": "getRequestsParticipants",
+              "value": "={{false}}"
+            },
+            {
+              "name": "force",
+              "value": "={{false}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        176,
+        64
+      ],
+      "id": "97fd9243-a675-4975-bde8-330b92b7b920",
+      "name": "Get Group Info1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH \n-- 1. UPSERT do grupo (criar ou atualizar)\ngroup_upsert AS (\n  INSERT INTO groups (chat_id, group_name, category)\n  VALUES ($1::text, $2::text, $3::text)\n  ON CONFLICT (chat_id) \n  DO UPDATE SET \n    group_name = EXCLUDED.group_name,\n    category = CASE \n      WHEN groups.category IS NULL THEN EXCLUDED.category \n      ELSE groups.category \n    END\n  RETURNING id as group_id, chat_id, group_name, category\n),\n\n-- 2. Preparar array de TODAS as tags (agora todas existem)\ntags_array AS (\n  SELECT unnest($4::text[]) AS tag_name\n),\n\n-- 3. Buscar IDs de TODAS as tags\nall_tags AS (\n  SELECT t.id as tag_id, t.name as tag_name\n  FROM tags_array ta\n  JOIN tags t ON t.name = ta.tag_name\n),\n\n-- 4. Remover associações antigas que não estão nas novas tags\ncleanup_old_tags AS (\n  DELETE FROM group_tags gt\n  WHERE gt.group_id = (SELECT group_id FROM group_upsert)\n    AND gt.tag_id NOT IN (SELECT tag_id FROM all_tags)\n  RETURNING tag_id as removed_tag_id\n),\n\n-- 5. Inserir novas associações (ignorar duplicatas)\ninsert_new_tags AS (\n  INSERT INTO group_tags (group_id, tag_id)\n  SELECT \n    (SELECT group_id FROM group_upsert),\n    at.tag_id\n  FROM all_tags at\n  ON CONFLICT (group_id, tag_id) DO NOTHING\n  RETURNING tag_id as added_tag_id\n)\n\n-- 6. Retornar resultado consolidado\nSELECT json_build_object(\n  'success', true,\n  'group', json_build_object(\n    'id', gu.group_id,\n    'chat_id', gu.chat_id,\n    'group_name', gu.group_name,\n    'category', gu.category\n  ),\n  'tags', json_build_object(\n    'all_tags', COALESCE(array_agg(DISTINCT at.tag_name), '{}'),\n    'added_count', (SELECT COUNT(*) FROM insert_new_tags),\n    'removed_count', (SELECT COUNT(*) FROM cleanup_old_tags)\n  ),\n  'operation', CASE \n    WHEN EXISTS(SELECT 1 FROM groups WHERE chat_id = $1) THEN 'updated'\n    ELSE 'created'\n  END\n) as groups_result\nFROM group_upsert gu\nLEFT JOIN all_tags at ON true\nGROUP BY gu.group_id, gu.chat_id, gu.group_name, gu.category;",
+        "options": {
+          "queryReplacement": "={{(() => {\n  const data = $json;\n  const tags = $('Webhook ativar').item.json.body.all_tags;\n  const chatId = data.JID.split(\"@\")[0];\n  const groupName = data.Name;\n  const category = tags?.[0] ?? null;\n  const allTags = tags || []; // TODAS as tags\n\n  return [chatId, groupName, category, allTags];\n})()}}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        624,
+        -32
+      ],
+      "id": "cfceab03-e25b-4cab-a27e-d59ae621a59b",
+      "name": "Update Group With All Tags1",
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH \n-- 1. Buscar o group_id a partir do chat_id\ngroup_info AS (\n  SELECT id as group_id\n  FROM groups \n  WHERE chat_id = $2::text\n),\n-- 2. Preparar dados dos membros (aceita array de strings ou objetos)\nmembers_data AS (\n  SELECT DISTINCT\n    CASE \n      -- Se é um objeto JSON com campo 'whatsapp'\n      WHEN jsonb_typeof(member_data) = 'object' AND member_data ? 'whatsapp' \n      THEN (member_data->>'whatsapp')::text\n      -- Se é uma string simples\n      WHEN jsonb_typeof(member_data) = 'string' \n      THEN member_data #>> '{}'\n      ELSE NULL\n    END as whatsapp\n  FROM jsonb_array_elements($1::jsonb) as member_data\n),\n-- 2.1. Filtrar apenas números válidos\nmembers_clean AS (\n  SELECT whatsapp\n  FROM members_data \n  WHERE whatsapp IS NOT NULL \n    AND whatsapp != ''\n    AND length(whatsapp) >= 10  -- Validação básica de telefone\n),\n-- 3. UPSERT membros (só insere novos com whatsapp apenas)\nupserted_members AS (\n  INSERT INTO members (whatsapp)\n  SELECT mc.whatsapp\n  FROM members_clean mc\n  WHERE NOT EXISTS (\n    SELECT 1 FROM members m WHERE m.whatsapp = mc.whatsapp\n  )\n  ON CONFLICT (whatsapp) DO NOTHING\n  RETURNING id, whatsapp\n),\n-- 4. Buscar todos os member_ids (existentes + novos)\nall_member_ids AS (\n  SELECT \n    m.id as member_id,\n    m.whatsapp\n  FROM members m\n  WHERE m.whatsapp IN (SELECT whatsapp FROM members_clean)\n),\n-- 5. UPSERT relações member_groups (usando o group_id correto)\nupserted_relations AS (\n  INSERT INTO member_groups (member_id, group_id, is_active)\n  SELECT \n    ami.member_id,\n    gi.group_id,\n    true\n  FROM all_member_ids ami\n  CROSS JOIN group_info gi\n  ON CONFLICT (member_id, group_id) \n  DO UPDATE SET \n    is_active = true,\n    joined_at = CASE \n      WHEN member_groups.is_active = false THEN NOW() \n      ELSE member_groups.joined_at \n    END\n  RETURNING member_id, group_id\n),\n-- 6. Contar resultados\nstats AS (\n  SELECT \n    (SELECT COUNT(*) FROM upserted_members) as new_members_count,\n    (SELECT COUNT(*) FROM upserted_relations) as synced_relations_count,\n    (SELECT COUNT(*) FROM members_clean) as total_participants,\n    (SELECT group_id FROM group_info) as group_id\n)\n-- 7. Retorno consolidado com debug\nSELECT json_build_object(\n  'success', true,\n  'group_id', s.group_id,\n  'chat_id', $2::text,\n  'debug', json_build_object(\n    'input_array_length', jsonb_array_length($1::jsonb),\n    'processed_numbers', (\n      SELECT json_agg(whatsapp) FROM members_clean\n    ),\n    'group_found', (SELECT CASE WHEN group_id IS NOT NULL THEN true ELSE false END FROM group_info)\n  ),\n  'stats', json_build_object(\n    'total_participants', s.total_participants,\n    'new_members_created', s.new_members_count,\n    'relations_synced', s.synced_relations_count\n  ),\n  'members', (\n    SELECT json_agg(\n      json_build_object(\n        'member_id', ami.member_id,\n        'whatsapp', ami.whatsapp\n      )\n    )\n    FROM all_member_ids ami\n  )\n) as members_result\nFROM stats s;",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify($json.phoneNumbers) }}, {{ $('Get Group Info1').item.json.JID.split(\"@\")[0] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        624,
+        160
+      ],
+      "id": "8f0af490-d171-4fb1-aa3b-0cb7ce3e5e21",
+      "name": "Insere/Att Members1",
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        848,
+        64
+      ],
+      "id": "64b4a317-3fe3-4ddd-a9dc-33493a0948a8",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const group = $input.item.json;\nconst participants = group.Participants || [];\n\nconst phoneNumbers = participants.map(p => p.PhoneNumber.replace('@s.whatsapp.net', ''));\n\nreturn [\n  {\n    json: {\n      phoneNumbers\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        160
+      ],
+      "id": "f8fb2dbd-a028-4797-bf4b-30460d63b1f4",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1072,
+        64
+      ],
+      "id": "564cac25-bd49-48cd-a4d1-2923b8eeb04b",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "11de1502-d27a-4313-990b-eb6be812355a",
+              "leftValue": "={{ $('Webhook ativar').item.json.body.source_type }}",
+              "rightValue": "=whatsapp_command",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1296,
+        64
+      ],
+      "id": "ec440a9e-2784-4f12-9bd5-925b288c2a1b",
+      "name": "If - whatsapp command"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook ativar').first().json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.feedback_message }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1744,
+        64
+      ],
+      "id": "4a2f3ab0-a55f-4694-9383-c3fcb759ae6c",
+      "name": "uazapi - send text7",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code Node para gerar feedback do comando !ativar\nconst data = $input.all()[0];\nconst result = data.json;\n\n// Extrair informações dos resultados\nconst groupsResult = result.groups_result;\nconst membersResult = result.members_result;\n\n// Verificar se ambas operações foram bem-sucedidas\nconst overallSuccess = groupsResult.success && membersResult.success;\n\nlet feedbackMessage = \"\";\n\nif (overallSuccess) {\n  // ✅ Sucesso - Montar mensagem positiva\n  const groupName = groupsResult.group.group_name;\n  const operation = groupsResult.operation === \"created\" ? \"criado\" : \"atualizado\";\n  const tagsCount = groupsResult.tags.added_count;\n  const membersCount = membersResult.stats.total_participants;\n  const newMembers = membersResult.stats.new_members_created;\n  \n  // Emoji baseado na operação\n  const operationEmoji = groupsResult.operation === \"created\" ? \"🆕\" : \"✅\";\n  \n  feedbackMessage = `${operationEmoji} Boa! em nossa base, o grupo *${groupName}* foi ${operation} com sucesso!\\n\\n` +\n                   `🏷️ Tags: ${tagsCount} adicionada${tagsCount > 1 ? 's' : ''}\\n` +\n                   `👥 Membros: ${membersCount} sincronizado${membersCount > 1 ? 's' : ''}`;\n  \n  // Adicionar info sobre novos membros se houver\n  if (newMembers > 0) {\n    feedbackMessage += `\\n🆕 ${newMembers} novo${newMembers > 1 ? 's' : ''} membro${newMembers > 1 ? 's' : ''} cadastrado${newMembers > 1 ? 's' : ''}`;\n  }\n  \n  // Adicionar tags específicas se não for muitas\n  if (tagsCount > 0 && tagsCount <= 3) {\n    const tagsList = groupsResult.tags.all_tags.map(tag => `#${tag}`).join(' ');\n    feedbackMessage += `\\n\\nTags: ${tagsList}`;\n  }\n  \n} else {\n  // ❌ Erro - Montar mensagem de erro\n  feedbackMessage = \"❌ Erro ao processar comando !ativar\\n\\n\";\n  \n  if (!groupsResult.success) {\n    feedbackMessage += \"🏷️ Falha na criação/atualização do grupo\\n\";\n  }\n  \n  if (!membersResult.success) {\n    feedbackMessage += \"👥 Falha na sincronização de membros\\n\";\n  }\n  \n  feedbackMessage += \"\\n🔄 Tente novamente ou contate o suporte.\";\n}\n\n// Adicionar rodapé com timestamp\nconst now = new Date();\nconst timestamp = now.toLocaleTimeString('pt-BR', { \n  hour: '2-digit', \n  minute: '2-digit' \n});\n\nfeedbackMessage += `\\n\\n⏰ ${timestamp}`;\n\n// Retornar resultado\nreturn [{\n  json: {\n    success: overallSuccess,\n    feedback_message: feedbackMessage,\n    group_info: {\n      id: groupsResult.group?.id,\n      name: groupsResult.group?.group_name,\n      chat_id: groupsResult.group?.chat_id,\n      operation: groupsResult.operation\n    },\n    stats: {\n      tags_added: groupsResult.tags?.added_count || 0,\n      members_synced: membersResult.stats?.total_participants || 0,\n      new_members: membersResult.stats?.new_members_created || 0\n    }\n  }\n}];"
+      },
+      "id": "f7d96401-d256-4a23-a56c-0ceb31e6007c",
+      "name": "Generate Feedback Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "body.chat_ids",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        624
+      ],
+      "id": "a8b7e27c-e025-4efd-9635-a0011bd47f2b",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "body.chat_ids",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        1232
+      ],
+      "id": "ce740a42-dd99-4556-aab4-13f4f3204ee5",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/mass_abrir",
+        "authentication": "basicAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "eb305d6c-d497-4b27-bea8-7145110ba452",
+      "name": "Webhook mass abrir",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        624
+      ],
+      "webhookId": "550e8400-e29b-41d4-a716-446655440002",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/mass_fechar",
+        "authentication": "basicAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "fabbadf2-5e9c-426a-9df5-478c6e1d9d51",
+      "name": "Webhook mass fechar",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        1232
+      ],
+      "webhookId": "550e8400-e29b-41d4-a716-446655440002",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        144,
+        624
+      ],
+      "id": "e759fcda-17de-48d2-b9c0-78d128351167",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/group/updateAnnounce",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "groupjid",
+              "value": "={{ $('Split Out').item.json[\"body.chat_ids\"] }}@g.us"
+            },
+            {
+              "name": "announce",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "b08604b3-6a7e-477b-8099-14c849253533",
+      "name": "HTTP Request - abre grupo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        416,
+        720
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        144,
+        1232
+      ],
+      "id": "e05eb76a-d0cc-4a19-9e74-1d983de9420a",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        720
+      ],
+      "id": "726d8f8a-5c54-4cc7-9897-acbf9151426f",
+      "name": "Wait",
+      "webhookId": "815e7101-938d-4f88-9aa8-352079e01399"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/group/updateAnnounce",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "groupjid",
+              "value": "={{ $('Split Out1').item.json[\"body.chat_ids\"] }}@g.us"
+            },
+            {
+              "name": "announce",
+              "value": "={{ true }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "2d586758-f51e-402e-ac4c-58919909281e",
+      "name": "HTTP Request - abre grupo1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        416,
+        1328
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        656,
+        1344
+      ],
+      "id": "4894d2c1-65ab-4ec2-b8f1-1ccb78bb9591",
+      "name": "Wait1",
+      "webhookId": "815e7101-938d-4f88-9aa8-352079e01399"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook mass abrir').first().json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.feedbackMessage }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2176,
+        512
+      ],
+      "id": "2631916b-2800-4ebd-828e-2b5bef4200cf",
+      "name": "uazapi - send text9",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        1136
+      ],
+      "id": "f4af9c4e-e362-45f9-bbf5-375e3bb25001",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar resultados do loop de abertura/fechamento de grupos\nconst items = $input.all();\nlet successCount = 0;\nlet errorCount = 0;\nlet errorGroups = [];\nlet totalProcessed = 0;\nlet operationType = 'abertura';\n\n// Processar cada item do resultado do loop\nitems.forEach(item => {\n  const data = item.json;\n  totalProcessed++;\n  \n  // Verificar se é um erro (tem propriedade 'error')\n  if (data.error) {\n    errorCount++;\n    \n    // Extrair chat_id do erro - usar \"body.chat_ids\" como chave direta\n    let chatId = 'Desconhecido';\n    if (data[\"body.chat_ids\"]) {\n      chatId = data[\"body.chat_ids\"];\n    }\n    \n    // Processar mensagem de erro\n    let errorMessage = 'Erro desconhecido';\n    let errorCode = '';\n    \n    if (data.error && data.error.message) {\n      const fullErrorMessage = data.error.message;\n      \n      // Detectar diferentes tipos de erro\n      if (fullErrorMessage.includes('401') && fullErrorMessage.includes('not-authorized')) {\n        errorMessage = 'Não autorizado (não está no grupo ou sem permissões)';\n        errorCode = '401';\n      } else if (fullErrorMessage.includes('403') && fullErrorMessage.includes('forbidden')) {\n        errorMessage = 'Sem permissão (não é administrador do grupo)';\n        errorCode = '403';\n      } else if (fullErrorMessage.includes('404')) {\n        errorMessage = 'Grupo não encontrado';\n        errorCode = '404';\n      } else if (fullErrorMessage.includes('429')) {\n        errorMessage = 'Muitas requisições (rate limit)';\n        errorCode = '429';\n      } else if (fullErrorMessage.includes('500')) {\n        errorMessage = 'Erro interno do servidor WhatsApp';\n        errorCode = '500';\n      } else {\n        errorMessage = 'Erro na operação';\n        errorCode = 'unknown';\n      }\n    }\n    \n    errorGroups.push({\n      chatId: chatId,\n      error: errorMessage,\n      errorCode: errorCode\n    });\n    \n  } else if (data.group && data.response) {\n    // É um sucesso - apenas contamos\n    successCount++;\n    \n    // Determinar tipo de operação baseado na resposta\n    if (data.response.includes('disabled')) {\n      operationType = 'abertura';\n    } else if (data.response.includes('enabled')) {\n      operationType = 'fechamento';\n    }\n  }\n});\n\n// Extrair chat_ids únicos dos erros para buscar no banco\nconst errorChatIds = errorGroups\n  .map(error => error.chatId)\n  .filter(chatId => chatId !== 'Desconhecido');\n\n// Preparar resultado\nconst result = {\n  summary: {\n    total: totalProcessed,\n    success: successCount,\n    errors: errorCount,\n    successRate: totalProcessed > 0 ? Math.round((successCount / totalProcessed) * 100) : 0,\n    operationType: operationType\n  },\n  errorGroups: errorGroups,\n  errorChatIds: errorChatIds,\n  hasErrors: errorCount > 0,\n  timestamp: new Date().toISOString()\n};\n\nreturn [result];"
+      },
+      "id": "46f1a07c-d6a5-45e1-8b83-eac3d53dbd25",
+      "name": "Processar Resultados Loop",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440003",
+              "leftValue": "={{ $json.hasErrors }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "eaf8aeac-1763-4b5a-96ec-859e3611a1dc",
+      "name": "IF - Tem Erros?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT chat_id, group_name, category\nFROM groups\nWHERE chat_id = ANY(\n  SELECT jsonb_array_elements_text($1::jsonb)\n);",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify($('Processar Resultados Loop').item.json.errorChatIds) }}"
+        }
+      },
+      "id": "5c1fe637-4838-418f-9758-451d3ea2ba73",
+      "name": "Buscar Nomes dos Grupos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1104,
+        400
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combinar dados dos erros com nomes dos grupos\nconst processedData = $('Processar Resultados Loop').item.json;\nconst groupsData = $input.all().map(item => item.json);\n\n// Criar mapa de chat_id -> group_name\nconst groupNamesMap = {};\ngroupsData.forEach(group => {\n  if (group.chat_id && group.group_name) {\n    groupNamesMap[group.chat_id] = {\n      name: group.group_name,\n      category: group.category || 'Sem categoria'\n    };\n  }\n});\n\n// Enriquecer grupos com erro com os nomes\nconst enrichedErrorGroups = processedData.errorGroups.map(error => {\n  const groupInfo = groupNamesMap[error.chatId];\n  return {\n    ...error,\n    groupName: groupInfo ? groupInfo.name : 'Nome não encontrado',\n    category: groupInfo ? groupInfo.category : 'Categoria desconhecida'\n  };\n});\n\n// Gerar mensagem de feedback com nomes dos grupos\nlet feedbackMessage = `📊 *Resultado da ${processedData.summary.operationType} em massa*\\n\\n`;\nfeedbackMessage += `✅ *Sucessos:* ${processedData.summary.success}/${processedData.summary.total}\\n`;\nfeedbackMessage += `❌ *Erros:* ${processedData.summary.errors}/${processedData.summary.total}\\n`;\nfeedbackMessage += `📈 *Taxa de sucesso:* ${processedData.summary.successRate}%\\n`;\n\n// Mostrar detalhes dos erros com nomes dos grupos\nif (processedData.summary.errors > 0) {\n  feedbackMessage += `\\n*⚠️ Grupos com falha:*\\n`;\n  \n  // Agrupar erros por tipo\n  const errorsByType = {};\n  enrichedErrorGroups.forEach(error => {\n    if (!errorsByType[error.errorCode]) {\n      errorsByType[error.errorCode] = [];\n    }\n    errorsByType[error.errorCode].push(error);\n  });\n  \n  // Mostrar erros agrupados por tipo\n  Object.keys(errorsByType).forEach(errorCode => {\n    const errors = errorsByType[errorCode];\n    feedbackMessage += `\\n*${errors[0].error}:*\\n`;\n    errors.forEach((error) => {\n      feedbackMessage += `• **${error.groupName}**\\n`;\n      feedbackMessage += `  📱 ${error.chatId.replace('@g.us', '')}\\n`;\n      if (error.category && error.category !== 'Categoria desconhecida') {\n        feedbackMessage += `  🏷️ ${error.category}\\n`;\n      }\n    });\n  });\n  \n  feedbackMessage += `\\n*💡 Dicas para resolver:*\\n`;\n  feedbackMessage += `• **401**: Verifique se você está no grupo\\n`;\n  feedbackMessage += `• **403**: Você precisa ser administrador\\n`;\n  feedbackMessage += `• **404**: Grupo pode ter sido excluído\\n`;\n} else {\n  feedbackMessage += `\\n🎉 *Todos os grupos foram processados com sucesso!*`;\n}\n\n// Preparar resultado final\nconst result = {\n  summary: processedData.summary,\n  errorGroups: enrichedErrorGroups,\n  errorsByType: enrichedErrorGroups.reduce((acc, error) => {\n    if (!acc[error.errorCode]) acc[error.errorCode] = 0;\n    acc[error.errorCode]++;\n    return acc;\n  }, {}),\n  feedbackMessage: feedbackMessage,\n  timestamp: new Date().toISOString()\n};\n\nreturn [result];"
+      },
+      "id": "02135e3c-4b16-4c17-a91e-dd726a7580c7",
+      "name": "Gerar Feedback Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerar feedback quando não há erros\nconst processedData = $('Processar Resultados Loop').item.json;\n\nlet feedbackMessage = `📊 *Resultado da ${processedData.summary.operationType} em massa*\\n\\n`;\nfeedbackMessage += `✅ *Sucessos:* ${processedData.summary.success}/${processedData.summary.total}\\n`;\nfeedbackMessage += `❌ *Erros:* ${processedData.summary.errors}/${processedData.summary.total}\\n`;\nfeedbackMessage += `📈 *Taxa de sucesso:* ${processedData.summary.successRate}%\\n`;\nfeedbackMessage += `\\n🎉 *Todos os grupos foram processados com sucesso!*`;\n\nconst result = {\n  summary: processedData.summary,\n  errorGroups: [],\n  errorsByType: {},\n  feedbackMessage: feedbackMessage,\n  timestamp: new Date().toISOString()\n};\n\nreturn [result];"
+      },
+      "id": "64f424d0-7576-4a9f-b3a7-69244ae9de3e",
+      "name": "Gerar Feedback Sem Erros",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        608
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "8ea608d6-c2f2-4aea-9798-0d7dd7270cd5",
+      "name": "Merge - Combinar Resultados",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1552,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar resultados do loop de fechamento de grupos\nconst items = $input.all();\nlet successCount = 0;\nlet errorCount = 0;\nlet errorGroups = [];\nlet totalProcessed = 0;\nlet operationType = 'fechamento';\n\n// Processar cada item do resultado do loop\nitems.forEach(item => {\n  const data = item.json;\n  totalProcessed++;\n  \n  // Verificar se é um erro (tem propriedade 'error')\n  if (data.error) {\n    errorCount++;\n    \n    // Extrair chat_id do erro - usar \"body.chat_ids\" como chave direta\n    let chatId = 'Desconhecido';\n    if (data.body && data.body.chat_ids) {\n      chatId = data.body.chat_ids;\n    }\n    \n    // Processar mensagem de erro\n    let errorMessage = 'Erro desconhecido';\n    let errorCode = '';\n    \n    if (data.error && data.error.message) {\n      const fullErrorMessage = data.error.message;\n      \n      // Detectar diferentes tipos de erro\n      if (fullErrorMessage.includes('401') && fullErrorMessage.includes('not-authorized')) {\n        errorMessage = 'Não autorizado (não está no grupo ou sem permissões)';\n        errorCode = '401';\n      } else if (fullErrorMessage.includes('403') && fullErrorMessage.includes('forbidden')) {\n        errorMessage = 'Sem permissão (não é administrador do grupo)';\n        errorCode = '403';\n      } else if (fullErrorMessage.includes('404')) {\n        errorMessage = 'Grupo não encontrado';\n        errorCode = '404';\n      } else if (fullErrorMessage.includes('429')) {\n        errorMessage = 'Muitas requisições (rate limit)';\n        errorCode = '429';\n      } else if (fullErrorMessage.includes('500')) {\n        errorMessage = 'Erro interno do servidor WhatsApp';\n        errorCode = '500';\n      } else {\n        errorMessage = 'Erro na operação';\n        errorCode = 'unknown';\n      }\n    }\n    \n    errorGroups.push({\n      chatId: chatId,\n      error: errorMessage,\n      errorCode: errorCode\n    });\n    \n  } else if (data.group && data.response) {\n    // É um sucesso - apenas contamos\n    successCount++;\n    \n    // Determinar tipo de operação baseado na resposta\n    // Para fechar: \"Group announce enabled successfully\" = fechamento\n    // Para abrir: \"Group announce disabled successfully\" = abertura\n    if (data.response.includes('enabled')) {\n      operationType = 'fechamento';\n    } else if (data.response.includes('disabled')) {\n      operationType = 'abertura';\n    }\n  }\n});\n\n// Extrair chat_ids únicos dos erros para buscar no banco\nconst errorChatIds = errorGroups\n  .map(error => error.chatId)\n  .filter(chatId => chatId !== 'Desconhecido');\n\n// Preparar resultado\nconst result = {\n  summary: {\n    total: totalProcessed,\n    success: successCount,\n    errors: errorCount,\n    successRate: totalProcessed > 0 ? Math.round((successCount / totalProcessed) * 100) : 0,\n    operationType: operationType\n  },\n  errorGroups: errorGroups,\n  errorChatIds: errorChatIds,\n  hasErrors: errorCount > 0,\n  timestamp: new Date().toISOString()\n};\n\nreturn [result];"
+      },
+      "id": "7455d292-bea9-4569-9c20-f378b50e970e",
+      "name": "Processar Resultados Loop Fechar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        1136
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440013",
+              "leftValue": "={{ $json.hasErrors }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5c15cee5-6c28-4083-b36b-20c8c3867c0b",
+      "name": "IF - Tem Erros Fechar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        1136
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT chat_id, group_name, category\nFROM groups\nWHERE chat_id = ANY(\n  SELECT jsonb_array_elements_text($1::jsonb)\n);",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify($('Processar Resultados Loop Fechar').item.json.errorChatIds) }}"
+        }
+      },
+      "id": "755e60c9-0b36-4b3a-9221-66c62b56b82c",
+      "name": "Buscar Nomes Grupos Fechar",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1072,
+        1024
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combinar dados dos erros com nomes dos grupos para fechamento\nconst processedData = $('Processar Resultados Loop Fechar').item.json;\nconst groupsData = $input.all().map(item => item.json);\n\n// Criar mapa de chat_id -> group_name\nconst groupNamesMap = {};\ngroupsData.forEach(group => {\n  if (group.chat_id && group.group_name) {\n    groupNamesMap[group.chat_id] = {\n      name: group.group_name,\n      category: group.category || 'Sem categoria'\n    };\n  }\n});\n\n// Enriquecer grupos com erro com os nomes\nconst enrichedErrorGroups = processedData.errorGroups.map(error => {\n  const groupInfo = groupNamesMap[error.chatId];\n  return {\n    ...error,\n    groupName: groupInfo ? groupInfo.name : 'Nome não encontrado',\n    category: groupInfo ? groupInfo.category : 'Categoria desconhecida'\n  };\n});\n\n// Determinar ícones baseado no tipo de operação\nconst operationIcon = processedData.summary.operationType === 'fechamento' ? '🔒' : '🔓';\nconst actionText = processedData.summary.operationType === 'fechamento' ? 'fechados' : 'abertos';\n\n// Gerar mensagem de feedback com nomes dos grupos\nlet feedbackMessage = `📊 *Resultado do ${processedData.summary.operationType} em massa*\\n\\n`;\nfeedbackMessage += `✅ *Sucessos:* ${processedData.summary.success}/${processedData.summary.total}\\n`;\nfeedbackMessage += `❌ *Erros:* ${processedData.summary.errors}/${processedData.summary.total}\\n`;\nfeedbackMessage += `📈 *Taxa de sucesso:* ${processedData.summary.successRate}%\\n`;\n\n// Mostrar detalhes dos erros com nomes dos grupos\nif (processedData.summary.errors > 0) {\n  feedbackMessage += `\\n*⚠️ Grupos que não puderam ser ${actionText}:*\\n`;\n  \n  // Agrupar erros por tipo\n  const errorsByType = {};\n  enrichedErrorGroups.forEach(error => {\n    if (!errorsByType[error.errorCode]) {\n      errorsByType[error.errorCode] = [];\n    }\n    errorsByType[error.errorCode].push(error);\n  });\n  \n  // Mostrar erros agrupados por tipo\n  Object.keys(errorsByType).forEach(errorCode => {\n    const errors = errorsByType[errorCode];\n    feedbackMessage += `\\n*${errors[0].error}:*\\n`;\n    errors.forEach((error) => {\n      feedbackMessage += `${operationIcon} **${error.groupName}**\\n`;\n      feedbackMessage += `  📱 ${error.chatId.replace('@g.us', '')}\\n`;\n      if (error.category && error.category !== 'Categoria desconhecida') {\n        feedbackMessage += `  🏷️ ${error.category}\\n`;\n      }\n    });\n  });\n  \n  feedbackMessage += `\\n*💡 Dicas para resolver:*\\n`;\n  feedbackMessage += `• **401**: Verifique se você está no grupo\\n`;\n  feedbackMessage += `• **403**: Você precisa ser administrador\\n`;\n  feedbackMessage += `• **404**: Grupo pode ter sido excluído\\n`;\n  \n  // Adicionar dica específica para fechamento\n  if (processedData.summary.operationType === 'fechamento') {\n    feedbackMessage += `\\n*ℹ️ Sobre fechamento:*\\n`;\n    feedbackMessage += `• Grupos fechados só permitem mensagens de admins\\n`;\n    feedbackMessage += `• Membros comuns não conseguem enviar mensagens\\n`;\n  }\n} else {\n  feedbackMessage += `\\n🎉 *Todos os grupos foram ${actionText} com sucesso!*`;\n  \n  if (processedData.summary.operationType === 'fechamento') {\n    feedbackMessage += `\\n${operationIcon} *Grupos agora restritos apenas para admins*`;\n  }\n}\n\n// Preparar resultado final\nconst result = {\n  summary: processedData.summary,\n  errorGroups: enrichedErrorGroups,\n  errorsByType: enrichedErrorGroups.reduce((acc, error) => {\n    if (!acc[error.errorCode]) acc[error.errorCode] = 0;\n    acc[error.errorCode]++;\n    return acc;\n  }, {}),\n  feedbackMessage: feedbackMessage,\n  timestamp: new Date().toISOString()\n};\n\nreturn [result];"
+      },
+      "id": "ef8313d8-5f5f-471d-91b9-2de3c8f20ca4",
+      "name": "Gerar Feedback Final Fechar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gerar feedback quando não há erros no fechamento\nconst processedData = $('Processar Resultados Loop Fechar').item.json;\n\n// Determinar ícones e textos baseado no tipo de operação\nconst operationIcon = processedData.summary.operationType === 'fechamento' ? '🔒' : '🔓';\nconst actionText = processedData.summary.operationType === 'fechamento' ? 'fechados' : 'abertos';\n\nlet feedbackMessage = `📊 *Resultado do ${processedData.summary.operationType} em massa*\\n\\n`;\nfeedbackMessage += `✅ *Sucessos:* ${processedData.summary.success}/${processedData.summary.total}\\n`;\nfeedbackMessage += `❌ *Erros:* ${processedData.summary.errors}/${processedData.summary.total}\\n`;\nfeedbackMessage += `📈 *Taxa de sucesso:* ${processedData.summary.successRate}%\\n`;\nfeedbackMessage += `\\n🎉 *Todos os grupos foram ${actionText} com sucesso!*`;\n\nif (processedData.summary.operationType === 'fechamento') {\n  feedbackMessage += `\\n${operationIcon} *Grupos agora restritos apenas para admins*`;\n  feedbackMessage += `\\n\\n*ℹ️ Lembre-se:*\\n`;\n  feedbackMessage += `• Apenas administradores podem enviar mensagens\\n`;\n  feedbackMessage += `• Membros comuns não conseguem mais escrever\\n`;\n  feedbackMessage += `• Use !mass_abrir para reabrir quando necessário`;\n} else {\n  feedbackMessage += `\\n${operationIcon} *Grupos agora abertos para todos os membros*`;\n}\n\nconst result = {\n  summary: processedData.summary,\n  errorGroups: [],\n  errorsByType: {},\n  feedbackMessage: feedbackMessage,\n  timestamp: new Date().toISOString()\n};\n\nreturn [result];"
+      },
+      "id": "f280d26a-507b-4311-81a1-539444928484",
+      "name": "Gerar Feedback Sem Erros Fechar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        1232
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "687259ec-defb-4456-92ec-4e818231580a",
+      "name": "Merge - Combinar Resultados Fechar",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1520,
+        1136
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Webhook mass fechar').first().json.body.instance_info.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook mass fechar').first().json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.feedbackMessage }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2128,
+        1136
+      ],
+      "id": "b2d37760-b544-435b-bc0d-bf7fbbb488a5",
+      "name": "uazapi - send text10",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://mgm.uazapi.com/group/list",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "force",
+              "value": "true"
+            },
+            {
+              "name": "noparticipants",
+              "value": "false"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -544,
+        -2336
+      ],
+      "id": "08b2de6a-60c1-4aa7-9aaa-9b8cfcc3f114",
+      "name": "HTTP Request2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jdwlqsedvjeieqlkajob.supabase.co/functions/v1/sync-pantero-groups",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Format Smart Response').item.json.body.data.group.chat_id }}"
+            },
+            {
+              "name": "group_name",
+              "value": "={{ $('Format Smart Response').item.json.body.data.group.group_name }}"
+            },
+            {
+              "name": "is_active",
+              "value": "true"
+            },
+            {
+              "name": "operation",
+              "value": "create"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2224,
+        -496
+      ],
+      "id": "56dfaaf3-4206-4f19-a62a-2f210621cf42",
+      "name": "Att - Groups MGM"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jdwlqsedvjeieqlkajob.supabase.co/functions/v1/sync-pantero-groups",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('Generate Feedback Message').item.json.group_info.chat_id }}"
+            },
+            {
+              "name": "group_name",
+              "value": "={{ $('Generate Feedback Message').item.json.group_info.name }}"
+            },
+            {
+              "name": "is_active",
+              "value": "true"
+            },
+            {
+              "name": "operation",
+              "value": "create"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1968,
+        64
+      ],
+      "id": "1b51513a-e7c9-4e1f-8279-cd83280264f5",
+      "name": "Att - Groups MGM1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fJWL4ysRZDvI3R7U",
+          "name": "MGM - att group"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Comando !lista_grupos\n\n**Funcionalidade:** Lista grupos WhatsApp filtrados por tags\n\n**Fluxo:**\n1. Recebe webhook com comando !lista_grupos + tags\n2. Consulta PostgreSQL para buscar grupos\n3. Filtra por tags específicas ou mostra todos (tag 'all')\n4. Formata mensagem com lista organizada\n5. Envia resposta para o usuário solicitante\n\n**Saída inclui:**\n- Nome do grupo + Chat ID + Tags\n- Lista de Chat IDs copiáveis\n- Resumo por tags (quando 'all')\n- Contagem total de grupos\n\n**Casos de uso:**\n- Verificar grupos disponíveis\n- Obter Chat IDs para outros comandos\n- Auditar distribuição de tags\n- Validar configuração de grupos",
+        "height": 500,
+        "width": 580,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        -1200
+      ],
+      "id": "ba57e49c-c863-4244-8e4a-6b4181f81096",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Comando !join\n\n**Funcionalidade:** Entrar automaticamente em grupos WhatsApp\n\n**Fluxo:**\n1. Extrai invite link e tags da mensagem\n2. Faz join no grupo via API do WhatsApp\n3. Obtém informações do grupo (nome, chat_id)\n4. Registra grupo no PostgreSQL com tags associadas\n5. Gerencia relacionamentos grupo-tags automaticamente\n\n**Formato esperado:**\n- `#tag1 #tag2 https://chat.whatsapp.com/CODIGO`\n\n**Processamento:**\n- Extração: regex para invite link + parsing de tags\n- Join: API call para entrar no grupo\n- Persistência: UPSERT do grupo + sync de tags\n- Cleanup: remove tags antigas não presentes\n\n**Saída do banco:**\n- Tabela groups: chat_id, group_name, category\n- Tabela group_tags: relacionamento N:N com tags\n- Controle de conflitos e atualizações\n\n**Casos de uso:**\n- Automação de entrada em grupos\n- Categorização automática por tags\n- Sincronização de metadados de grupos",
+        "height": 436,
+        "width": 580
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        -624
+      ],
+      "id": "09fb967d-2572-4987-935f-14bf25d3e17e",
+      "name": "Sticky - Join"
+    },
+    {
+      "parameters": {
+        "content": "## Comando !lista_todos_grupos\n\n**Funcionalidade:** Lista TODOS os grupos WhatsApp da instância\n\n**Fluxo:**\n1. Recebe webhook para listar todos os grupos\n2. Consulta API do WhatsApp para obter lista completa\n3. Cruza dados com PostgreSQL para verificar status\n4. Identifica grupos cadastrados vs não cadastrados\n5. Mostra status ativo/inativo de cada grupo\n\n**Saída inclui:**\n- Status de cada grupo (cadastrado/não cadastrado)\n- Indicador ativo/inativo para grupos cadastrados\n- Nome do grupo + Chat ID + Contagem de membros\n- Tags associadas (quando cadastrado)\n- Resumo estatístico geral\n\n**Casos de uso:**\n- Auditoria completa de grupos\n- Identificar grupos não cadastrados\n- Verificar status de ativação\n- Relatório de cobertura do sistema",
+        "height": 532,
+        "width": 580,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        -1808
+      ],
+      "id": "6bf978eb-583d-466b-8b5c-4fc9b01758e0",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Comando !ativar\n\n**Funcionalidade:** Ativar grupo específico já existente no WhatsApp\n\n**Fluxo:**\n1. Recebe chat_id do grupo a ser ativado\n2. Busca informações do grupo via API WhatsApp\n3. Cadastra/atualiza grupo no PostgreSQL\n4. Associa tags fornecidas ao grupo\n5. Sincroniza lista completa de membros\n6. Ativa grupo no sistema\n\n**Formato esperado:**\n- `!ativar #tag1 #tag2` (executado dentro do grupo)\n- ou `!ativar CHAT_ID #tag1 #tag2`\n\n**Processamento:**\n- Group Info: busca metadados via API\n- Database: UPSERT com tags e ativação\n- Members: extração e sincronização completa\n- Feedback: confirmação de ativação\n\n**Casos de uso:**\n- Ativar grupos existentes no WhatsApp\n- Aplicar tags a grupos já criados\n- Sincronizar membros de grupos ativos\n- Cadastro manual de grupos específicos",
+        "height": 484,
+        "width": 580,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        64
+      ],
+      "id": "22f5d44f-feef-42cf-a432-48a4fba97a7e",
+      "name": "Sticky Note - Ativar"
+    },
+    {
+      "parameters": {
+        "content": "## Comando !mass_abrir\n\n**Funcionalidade:** Abrir grupos em massa (permitir todos enviarem)\n\n**Fluxo:**\n1. Recebe tags para filtrar grupos\n2. Busca todos os grupos com as tags especificadas\n3. Executa operação de abertura em lote\n4. Remove restrição \"somente admins\" de cada grupo\n5. Processa erros e sucessos individualmente\n6. Gera relatório detalhado com resultados\n\n**Formato esperado:**\n- `!mass_abrir #tag1 #tag2`\n\n**Processamento:**\n- Filter: busca grupos por tags no PostgreSQL\n- Batch: processa grupos em lotes com delay\n- API Call: updateAnnounce com announce=false\n- Error Handling: categoriza erros por tipo\n- Feedback: relatório com nomes dos grupos\n\n**Casos de uso:**\n- Abrir grupos para promoções\n- Permitir interação geral em eventos\n- Operações em massa por categoria\n- Gestão de permissões em lote",
+        "height": 484,
+        "width": 580,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        624
+      ],
+      "id": "10f9b8df-eb9d-40fc-9264-fe14a39c27bc",
+      "name": "Sticky Note - Mass Abrir"
+    },
+    {
+      "parameters": {
+        "content": "## Comando !mass_fechar\n\n**Funcionalidade:** Fechar grupos em massa (somente admins enviam)\n\n**Fluxo:**\n1. Recebe tags para filtrar grupos\n2. Busca todos os grupos com as tags especificadas\n3. Executa operação de fechamento em lote\n4. Ativa restrição \"somente admins\" em cada grupo\n5. Processa erros e sucessos individualmente\n6. Gera relatório detalhado com resultados\n\n**Formato esperado:**\n- `!mass_fechar #tag1 #tag2`\n\n**Processamento:**\n- Filter: busca grupos por tags no PostgreSQL\n- Batch: processa grupos em lotes com delay\n- API Call: updateAnnounce com announce=true\n- Error Handling: categoriza erros por tipo\n- Feedback: relatório com nomes dos grupos\n\n**Casos de uso:**\n- Restringir grupos para admins apenas\n- Controle de spam em lote\n- Moderação de grupos por categoria\n- Operações de segurança em massa",
+        "height": 484,
+        "width": 580,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        1232
+      ],
+      "id": "8fee4de1-f6f3-4182-ac0a-41243f6f97d3",
+      "name": "Sticky Note - Mass Fechar"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1760,
+        512
+      ],
+      "id": "cbcd6717-d3fc-49f8-917b-c938c082532e",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1728,
+        1136
+      ],
+      "id": "1866ea26-6894-41e2-b0a1-3d5f35bd1bb8",
+      "name": "Respond to Webhook4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-source-type",
+              "leftValue": "={{ $('webhook - !lista_grupos1').first().json.body.source_type }}",
+              "rightValue": "api_rest",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        848,
+        -1808
+      ],
+      "id": "37eafec7-b0db-4423-ae98-0d4f6a9dc47f",
+      "name": "Check Response Type"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1296,
+        -1712
+      ],
+      "id": "8cd8a61e-c1af-41ee-820d-a7f41737b519",
+      "name": "WhatsApp Response Complete"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pantero-n8n-webhook.respondeaqui.com.br/webhook/groups/list",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Inptd1ZiMFJtcEJESWhYUzMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3Z2ZmdpaHhqb25hb3d1YmxkdnltLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJhMmNiMTJhZC0xNjNlLTQ4OWYtOWI2OS00OTJiMTRkYjZiYzMiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzU1MzE0MDM2LCJpYXQiOjE3NTUzMTA0MzYsImVtYWlsIjoiY29udGF0by5sdWl6aG1zQGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWxfdmVyaWZpZWQiOnRydWV9LCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDEiLCJhbXIiOlt7Im1ldGhvZCI6InBhc3N3b3JkIiwidGltZXN0YW1wIjoxNzU1MzEwNDM2fV0sInNlc3Npb25faWQiOiI2MGZhYmRlMy04NThkLTQ5NDktOGNjMC1iY2YwNjEzMzMxMWUiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.kzlo4jIPd3ARp-eGSiOK8GjJdweQIzYkMeON52W6byw"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -672,
+        -2144
+      ],
+      "id": "f0ebed90-b695-49e0-8da2-a7e204abd2ec",
+      "name": "test rest"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        992,
+        -352
+      ],
+      "id": "c8b3450c-d4ad-4a08-ad8b-88ee6e008096",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0e199760-75ec-466c-8ebc-801419e447b9",
+              "leftValue": "={{ $('Webhook mass abrir').first().json.body.source_type }}",
+              "rightValue": "whatsapp_command",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1968,
+        512
+      ],
+      "id": "ae637ac6-58e5-4ec7-a3e7-b1f038a417a9",
+      "name": "If - whatsapp_command"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0e199760-75ec-466c-8ebc-801419e447b9",
+              "leftValue": "={{ $('Webhook mass fechar').first().json.body.source_type }}",
+              "rightValue": "whatsapp_command",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1936,
+        1136
+      ],
+      "id": "7fb93ffc-e526-48e8-a28e-26ce05cf0232",
+      "name": "If - whatsapp_command1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/listar_grupos",
+        "authentication": "basicAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        -1376
+      ],
+      "id": "5963e4f5-6f08-4e5b-9e16-4557c3d77e58",
+      "name": "webhook - !lista_grupos2",
+      "webhookId": "2fbcfd2d-5bfe-4576-bdda-28d6108e2740",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Postgres - lista grupos": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auto Create Tags": {
+      "main": [
+        [
+          {
+            "node": "Join WhatsApp Group1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Group With All Tags": {
+      "main": [
+        [
+          {
+            "node": "Format Smart Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Smart Response": {
+      "main": [
+        [
+          {
+            "node": "Success Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Join WhatsApp Group1": {
+      "main": [
+        [
+          {
+            "node": "Get Group Info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Group Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Response1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If - whatsapp command1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Insere/Att Members",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "uazapi - send text6": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "webhook - !lista_grupos": {
+      "main": [
+        [
+          {
+            "node": "save 'command' - lista_grupos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Join": {
+      "main": [
+        [
+          {
+            "node": "save 'command' - join",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Group Info": {
+      "main": [
+        [
+          {
+            "node": "Update Group With All Tags",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "uazapi - send text8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - whatsapp command1": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "uazapi - send text8": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "response": {
+      "main": [
+        []
+      ]
+    },
+    "Postgres - lista grupos1": {
+      "main": [
+        [
+          {
+            "node": "response2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - source": {
+      "main": [
+        [
+          {
+            "node": "If - all_groups",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres - lista grupos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - all_groups": {
+      "main": [
+        [
+          {
+            "node": "Postgres - lista grupos1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse New Webhook Format1": {
+      "main": [
+        [
+          {
+            "node": "Auto Create Tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "webhook - !lista_grupos1": {
+      "main": [
+        [
+          {
+            "node": "save 'command' - lista_grupos1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Postgres": {
+      "main": [
+        [
+          {
+            "node": "Check Response Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook ativar": {
+      "main": [
+        [
+          {
+            "node": "save 'command' - join1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Group Info1": {
+      "main": [
+        [
+          {
+            "node": "Update Group With All Tags1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Update Group With All Tags1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insere/Att Members1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Insere/Att Members1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook2": {
+      "main": [
+        [
+          {
+            "node": "If - whatsapp command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - whatsapp command": {
+      "main": [
+        [
+          {
+            "node": "Generate Feedback Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Feedback Message": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook mass abrir": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook mass fechar": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Processar Resultados Loop",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request - abre grupo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request - abre grupo1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - abre grupo": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - abre grupo1": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Resultados Loop": {
+      "main": [
+        [
+          {
+            "node": "IF - Tem Erros?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Tem Erros?": {
+      "main": [
+        [
+          {
+            "node": "Buscar Nomes dos Grupos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gerar Feedback Sem Erros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Nomes dos Grupos": {
+      "main": [
+        [
+          {
+            "node": "Gerar Feedback Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Feedback Final": {
+      "main": [
+        [
+          {
+            "node": "Merge - Combinar Resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Feedback Sem Erros": {
+      "main": [
+        [
+          {
+            "node": "Merge - Combinar Resultados",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge - Combinar Resultados": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Resultados Loop Fechar": {
+      "main": [
+        [
+          {
+            "node": "IF - Tem Erros Fechar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Tem Erros Fechar?": {
+      "main": [
+        [
+          {
+            "node": "Buscar Nomes Grupos Fechar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gerar Feedback Sem Erros Fechar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Nomes Grupos Fechar": {
+      "main": [
+        [
+          {
+            "node": "Gerar Feedback Final Fechar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Feedback Final Fechar": {
+      "main": [
+        [
+          {
+            "node": "Merge - Combinar Resultados Fechar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Feedback Sem Erros Fechar": {
+      "main": [
+        [
+          {
+            "node": "Merge - Combinar Resultados Fechar",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Processar Resultados Loop Fechar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Combinar Resultados Fechar": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insere/Att Members": {
+      "main": [
+        [
+          {
+            "node": "Att - Groups MGM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "uazapi - send text7": {
+      "main": [
+        [
+          {
+            "node": "Att - Groups MGM1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Att - Groups MGM1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook3": {
+      "main": [
+        [
+          {
+            "node": "If - whatsapp_command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook4": {
+      "main": [
+        [
+          {
+            "node": "If - whatsapp_command1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Response Type": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "uazapi - send text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "uazapi - send text": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Response Complete",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WhatsApp Response Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save 'command' - lista_grupos1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save 'command' - lista_grupos": {
+      "main": [
+        [
+          {
+            "node": "Switch - source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save 'command' - join": {
+      "main": [
+        [
+          {
+            "node": "Parse New Webhook Format1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save 'command' - join1": {
+      "main": [
+        [
+          {
+            "node": "Get Group Info1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - whatsapp_command": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - whatsapp_command1": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "webhook - !lista_grupos2": {
+      "main": [
+        [
+          {
+            "node": "save 'command' - lista_grupos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "230ce77c-9c9d-4e98-86f2-da4700b6a6fc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "6XY9Fm1xd2ZdE8hf",
+  "tags": []
+}

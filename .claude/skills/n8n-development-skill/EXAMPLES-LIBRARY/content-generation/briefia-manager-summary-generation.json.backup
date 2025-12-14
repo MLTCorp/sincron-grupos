@@ -1,0 +1,560 @@
+{
+  "name": "[Resumo Gestor] - Geração do resumo gestor",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -928,
+        -1856
+      ],
+      "id": "c9891f8a-eb3c-492d-9353-7d113444feb8",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar dados para o resumo do gestor\nconst resultado = $json.resultado;\nconst empresaInfo = $('Code - Separar Empresas').item.json;\nconst dataHoje = new Date().toLocaleDateString('pt-BR');\n\n// IMPORTANTE: Verificar se há gestores válidos\nif (!empresaInfo.gestores || empresaInfo.gestores.length === 0) {\n    // Sem gestores = não processar\n    return {\n        json: {\n            skip: true,\n            reason: 'no_managers_configured'\n        }\n    };\n}\n\n// Se não há resultado ou não há resumos, CRIAR REGISTRO CANCELADO\nif (!resultado || (resultado.total_resumos_ontem === 0 && resultado.total_resumos_hoje === 0)) {\n    // SEMPRE criar registro para evitar loop infinito!\n    return {\n        json: {\n            skip: false,  // NÃO pular - criar registro cancelado\n            empresa_id: empresaInfo.empresa_id,\n            empresa_nome: empresaInfo.nome_empresa,\n            total_resumos: 0,\n            total_mensagens: 0,\n            total_grupos_pendentes: 0,\n            resumos_ids: [],\n            gestores: empresaInfo.gestores,\n            mensagem_whatsapp: `✨ *RESUMO EXECUTIVO*\\n${empresaInfo.nome_empresa} • ${dataHoje}\\n\\n📌 *Status Geral (até o momento)*\\nSem atividades para reportar\\n\\n---\\n🗨 _Organizado por Briefia – Conversa que vira entrega_`,\n            timestamp_processamento: new Date().toISOString(),\n            deve_cancelar: true  // Flag para marcar como cancelado\n        }\n    };\n}\n\n// Identificar grupos que já têm resumo hoje\nconst gruposComResumoHoje = new Set();\nif (resultado.resumos_hoje && resultado.resumos_hoje.length > 0) {\n    resultado.resumos_hoje.forEach(resumo => {\n        gruposComResumoHoje.add(resumo.grupo_nome);\n    });\n}\n\n// Filtrar resumos de ontem para excluir grupos que já têm resumo hoje\nconst resumosOntemFiltrados = resultado.resumos_ontem \n    ? resultado.resumos_ontem.filter(resumo => !gruposComResumoHoje.has(resumo.grupo_nome))\n    : [];\n\n// Recalcular totais\nconst totalResumos = resumosOntemFiltrados.length + (resultado.resumos_hoje ? resultado.resumos_hoje.length : 0);\nconst totalMensagensOntem = resumosOntemFiltrados.reduce((acc, r) => acc + r.total_mensagens, 0);\nconst totalMensagensHoje = resultado.resumos_hoje \n    ? resultado.resumos_hoje.reduce((acc, r) => acc + r.total_mensagens, 0)\n    : 0;\nconst totalMensagens = totalMensagensOntem + totalMensagensHoje;\n\n// Se após filtrar não sobrou nada, CRIAR REGISTRO CANCELADO\nif (totalResumos === 0) {\n    return {\n        json: {\n            skip: false,  // NÃO pular - criar registro cancelado\n            empresa_id: resultado.empresa_id,\n            empresa_nome: empresaInfo.nome_empresa,\n            total_resumos: 0,\n            total_mensagens: 0,\n            total_grupos_pendentes: resultado.total_grupos_pendentes || 0,\n            resumos_ids: [],\n            gestores: empresaInfo.gestores,\n            mensagem_whatsapp: `✨ *RESUMO EXECUTIVO*\\n${empresaInfo.nome_empresa} • ${dataHoje}\\n\\n📌 *Status Geral (até o momento)*\\nSem resumos para processar\\n\\n---\\n🗨 _Organizado por Briefia – Conversa que vira entrega_`,\n            timestamp_processamento: new Date().toISOString(),\n            deve_cancelar: true\n        }\n    };\n}\n\n// CONSTRUIR MENSAGEM SEGUINDO O TEMPLATE\nlet mensagem = `✨ *RESUMO EXECUTIVO*\\n`;\nmensagem += `${empresaInfo.nome_empresa} • ${dataHoje}\\n\\n`;\n\n// Status Geral\nmensagem += `📌 *Status Geral (até o momento)*\\n`;\nmensagem += `${totalResumos} grupo(s) ativo(s)\\n`;\nmensagem += `${totalMensagens} mensagens capturadas\\n\\n`;\nmensagem += `---\\n`;\n\n// HOJE - Resumos de hoje\nif (resultado.resumos_hoje && resultado.resumos_hoje.length > 0) {\n    mensagem += `📅 *HOJE*\\n\\n`;\n    \n    resultado.resumos_hoje.forEach((resumo) => {\n        mensagem += `*${resumo.grupo_nome}*\\n`;\n        mensagem += `Resumo (${resumo.total_mensagens} msgs)\\n`;\n        \n        // Limpar e formatar conteúdo\n        let conteudo = resumo.conteudo || '';\n        conteudo = conteudo\n            .replace(/\\*\\*/g, '')\n            .replace(/📋.*?grupo.*?\\n/gi, '')\n            .replace(/Resumo das conversas.*?\\n/gi, '')\n            .replace(/^\\*.*?\\*\\n/, '')\n            .trim();\n        \n        // Adicionar aspas no conteúdo\n        if (conteudo.length > 2500) {\n            conteudo = conteudo.substring(0, 2500) + '...';\n        }\n        \n        mensagem += `\"${conteudo}\"\\n\\n`;\n    });\n}\n\n// ONTEM - Resumos de ontem (apenas se não foram processados hoje)\nif (resumosOntemFiltrados.length > 0) {\n    if (resultado.resumos_hoje && resultado.resumos_hoje.length > 0) {\n        mensagem += `\\n`;\n    }\n    mensagem += `📆 *ONTEM*\\n\\n`;\n    \n    resumosOntemFiltrados.forEach((resumo) => {\n        mensagem += `*${resumo.grupo_nome}*\\n`;\n        mensagem += `Resumo (${resumo.total_mensagens} msgs)\\n`;\n        \n        // Limpar e formatar conteúdo\n        let conteudo = resumo.conteudo || '';\n        conteudo = conteudo\n            .replace(/\\*\\*/g, '')\n            .replace(/📋.*?grupo.*?\\n/gi, '')\n            .replace(/Resumo das conversas.*?\\n/gi, '')\n            .replace(/^\\*.*?\\*\\n/, '')\n            .trim();\n        \n        // Adicionar aspas no conteúdo\n        if (conteudo.length > 2500) {\n            conteudo = conteudo.substring(0, 2500) + '...';\n        }\n        \n        mensagem += `\"${conteudo}\"\\n\\n`;\n    });\n}\n\nmensagem += `---\\n`;\n\n// AGENDADOS - Grupos pendentes\nif (resultado.grupos_pendentes && resultado.grupos_pendentes.length > 0) {\n    mensagem += `⏰ *AGENDADOS*\\n\\n`;\n    resultado.grupos_pendentes.forEach(g => {\n        mensagem += `${g.grupo_nome} → ${g.horario.substring(0, 5)}\\n`;\n    });\n    mensagem += `\\nResumos completos estarão disponíveis na plataforma conforme os horários acima.\\n\\n`;\n    mensagem += `---\\n`;\n}\n\n// Assinatura\nmensagem += `🗨 _Organizado por Briefia – Conversa que vira entrega_`;\n\n// Retornar dados formatados\nreturn {\n    json: {\n        skip: false,  // NUNCA pular quando há gestores\n        empresa_id: resultado.empresa_id,\n        empresa_nome: empresaInfo.nome_empresa,\n        total_resumos: totalResumos,\n        total_mensagens: totalMensagens,\n        total_grupos_pendentes: resultado.total_grupos_pendentes || 0,\n        grupos_duplicados_removidos: resultado.resumos_ontem ? resultado.resumos_ontem.length - resumosOntemFiltrados.length : 0,\n        resumos_ids: resultado.resumos_ids || [],\n        gestores: empresaInfo.gestores,\n        mensagem_whatsapp: mensagem,\n        timestamp_processamento: new Date().toISOString(),\n        deve_cancelar: false  // Tem conteúdo válido\n    }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        -1808
+      ],
+      "id": "377a86c4-f12b-400f-8461-dfcb19045ad2",
+      "name": "Code - Formatar Mensagem Gestor"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c8177c45-e1a2-4a6f-8733-78a2fc434834",
+              "leftValue": "={{ $('Code - Formatar Mensagem Gestor').item.json.total_resumos }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        272,
+        -1808
+      ],
+      "id": "c69210cd-5776-41dd-9ad6-b70ee84c6e75",
+      "name": "Verificar se há resumos"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Separar array de empresas para processar individualmente\nconst empresas = $input.first().json.resultado.empresas;\n\nreturn empresas.map((empresa, index) => ({\n  json: {\n    empresa_id: empresa.empresa_id,\n    nome_empresa: empresa.nome_empresa,\n    fuso_horario: empresa.fuso_horario,\n    horario_resumo: empresa.horario_resumo,\n    tipo_processamento: empresa.tipo_processamento,\n    gestores: empresa.gestores,\n    index: index\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        -1856
+      ],
+      "id": "70d708c0-9397-4e80-ab2a-c6390fdee29e",
+      "name": "Code - Separar Empresas"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- BUSCAR RESUMOS PARA GESTOR - VERSÃO CORRIGIDA\nWITH resumos_ontem AS (\n    SELECT \n        rd.id,\n        rd.id_grupo,\n        rd.resumo_conteudo,\n        rd.total_mensagens,\n        rd.dt_create,\n        g.nome as grupo_nome,\n        cl.nome as cliente_nome\n    FROM resumos_diarios rd\n    INNER JOIN grupos g ON rd.id_grupo = g.id\n    INNER JOIN clientes cl ON g.id_cliente = cl.id\n    WHERE cl.id_empresa = $1::INTEGER\n      AND rd.dt_create::date = CURRENT_DATE - INTERVAL '1 day'\n      AND COALESCE(rd.processado_gestor, FALSE) = FALSE  -- CORRIGIDO\n      AND g.ativo = true\n      AND rd.total_mensagens > 0  -- ADICIONADO: Ignorar resumos vazios\n),\nresumos_hoje AS (\n    SELECT \n        rd.id,\n        rd.id_grupo,\n        rd.resumo_conteudo,\n        rd.total_mensagens,\n        rd.dt_create,\n        g.nome as grupo_nome,\n        cl.nome as cliente_nome\n    FROM resumos_diarios rd\n    INNER JOIN grupos g ON rd.id_grupo = g.id\n    INNER JOIN clientes cl ON g.id_cliente = cl.id\n    WHERE cl.id_empresa = $1::INTEGER\n      AND rd.dt_create::date = CURRENT_DATE\n      AND COALESCE(rd.processado_gestor, FALSE) = FALSE  -- CORRIGIDO\n      AND g.ativo = true\n      AND rd.total_mensagens > 0  -- ADICIONADO: Ignorar resumos vazios\n)\n-- IMPORTANTE: Só retornar resultado se houver resumos\nSELECT \n    CASE \n        WHEN (SELECT COUNT(*) FROM resumos_ontem) + (SELECT COUNT(*) FROM resumos_hoje) = 0 \n        THEN NULL  -- Retornar NULL se não há resumos\n        ELSE json_build_object(\n            'empresa_id', $1::INTEGER,\n            'total_resumos_ontem', (SELECT COUNT(*) FROM resumos_ontem),\n            'total_resumos_hoje', (SELECT COUNT(*) FROM resumos_hoje),\n            'total_mensagens_ontem', (SELECT COALESCE(SUM(total_mensagens), 0) FROM resumos_ontem),\n            'total_mensagens_hoje', (SELECT COALESCE(SUM(total_mensagens), 0) FROM resumos_hoje),\n            'resumos_ids', (\n                SELECT COALESCE(array_agg(id), ARRAY[]::integer[]) \n                FROM (\n                    SELECT id FROM resumos_ontem\n                    UNION ALL\n                    SELECT id FROM resumos_hoje\n                ) todos_resumos\n            ),\n            'resumos_ontem', (SELECT COALESCE(json_agg(\n                json_build_object(\n                    'id', id,\n                    'grupo_nome', grupo_nome,\n                    'cliente_nome', cliente_nome,\n                    'total_mensagens', total_mensagens,\n                    'conteudo', resumo_conteudo,\n                    'data_hora', TO_CHAR(dt_create, 'DD/MM HH24:MI')\n                )\n            ), '[]'::json) FROM resumos_ontem),\n            'resumos_hoje', (SELECT COALESCE(json_agg(\n                json_build_object(\n                    'id', id,\n                    'grupo_nome', grupo_nome,\n                    'cliente_nome', cliente_nome,\n                    'total_mensagens', total_mensagens,\n                    'conteudo', resumo_conteudo,\n                    'data_hora', TO_CHAR(dt_create, 'DD/MM HH24:MI')\n                )\n            ), '[]'::json) FROM resumos_hoje)\n        )\n    END as resultado;",
+        "options": {
+          "queryReplacement": "={{ $json.empresa_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -208,
+        -1808
+      ],
+      "id": "8ff83940-5b07-450c-8d88-e6eda1cc9b91",
+      "name": "Query - Buscar resumos e grupos pendentes",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Marcar resumos como processados (com proteção para array vazio)\nUPDATE resumos_diarios\nSET \n    processado_gestor = true,\n    dt_update = NOW()\nWHERE \n    CASE \n        WHEN '{{ $('Code - Formatar Mensagem Gestor').item.json.resumos_ids.join(',') }}' = ''\n        THEN FALSE\n        ELSE id IN ({{ $('Code - Formatar Mensagem Gestor').item.json.resumos_ids.join(',') }})\n    END\nRETURNING *;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        992,
+        -1808
+      ],
+      "id": "c10e25e5-c17f-4064-9cc0-3995fb56c129",
+      "name": "Query - Marcar resumos como processados1",
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -480,
+        -1808
+      ],
+      "id": "013354a3-ed04-42e6-9ce2-9f7f4087dd8c",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "content": "## 📊 Resumo Executivo para Gestores\n\n**Objetivo**: Consolidar resumos dos grupos em um único relatório executivo diário para os gestores\n\n**Quando executa**: Chamado por outro workflow\n\n**O que faz**:\n- Consolida resumos de ontem e hoje não processados\n- Identifica grupos com horário agendado futuro\n- Gera relatório formatado para WhatsApp\n- Salva na tabela `resumos_diarios_gestor`",
+        "height": 152,
+        "width": 400,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -976,
+        -2048
+      ],
+      "id": "7da08126-e59e-474f-b369-79ae6af3dd3d",
+      "name": "Sticky Note - Título"
+    },
+    {
+      "parameters": {
+        "content": "## 🔄 Fluxo de Processamento\n\n**1. Trigger**: Execute Workflow Trigger\n**2. Loop**: Processa uma empresa por vez\n**3. Separação**: Divide empresas para processamento individual\n**4. Busca Resumos**:\n   - Resumos de ontem não processados\n   - Resumos de hoje não processados  \n   - Grupos pendentes (horário futuro)\n**5. Formatação**:\n   - Métricas consolidadas (grupos/mensagens)\n   - Conteúdo limpo e resumido (máx 250 chars)\n   - Lista de grupos agendados\n**6. Salvamento**: Grava em `resumos_diarios_gestor`\n**7. Atualização**: Marca resumos como `processado_gestor = true`\n\n**Formato WhatsApp**:\n- 📊 Resumo executivo com data\n- 📈 Métricas totais\n- 📆 Resumos de ontem (se houver)\n- 🎯 Resumos de hoje\n- ⏰ Grupos agendados",
+        "height": 576,
+        "width": 400,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -976,
+        -1680
+      ],
+      "id": "d4b247d8-fae5-4daa-85f6-97dfa324d42f",
+      "name": "Sticky Note - Detalhes"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "26c02c50-53ad-48ed-88cc-2bfd4f05c36f",
+              "name": "mensagem_whatsapp",
+              "value": "={{ $json.mensagem_whatsapp }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        -1808
+      ],
+      "id": "c5523fd3-cc9d-4392-bde0-22ba488c837e",
+      "name": "Mensagem resumo"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "status",
+              "value": "={{ $json.resultado ? 'sucesso' : 'sem_resumos' }}"
+            },
+            {
+              "key": "empresa",
+              "value": "={{ $('Code - Formatar Mensagem Gestor').first().json.empresa_nome }}"
+            },
+            {
+              "key": "total_resumos",
+              "value": "={{ $('Code - Formatar Mensagem Gestor').first().json.total_resumos }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        1216,
+        -1808
+      ],
+      "id": "4f7d38d1-e949-45d9-af2c-a2344c3fb378",
+      "name": "Consolidar resultados"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "status",
+              "value": "sem_resumos"
+            },
+            {
+              "key": "empresa",
+              "value": "={{ $('Code - Formatar Mensagem Gestor').first().json.empresa_nome }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        768,
+        -1584
+      ],
+      "id": "ccd5e373-43d3-4541-b9e2-d5244e7ebbe8",
+      "name": "Consolidar resultados1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Criar resumo cancelado APENAS se não existe ainda hoje\nINSERT INTO resumos_diarios_gestor (\n    id_colaborador,\n    resumo_conteudo,\n    status,\n    qtd_resumos,\n    dt_create\n)\nSELECT \n    $1::INTEGER,\n    'Sem resumos de grupos para processar',\n    'cancelada',\n    0,\n    NOW()\nWHERE NOT EXISTS (\n    SELECT 1 \n    FROM resumos_diarios_gestor \n    WHERE id_colaborador = $1::INTEGER\n      AND dt_create::date = CURRENT_DATE\n      AND status = 'cancelada'\n)\nRETURNING *;",
+        "options": {
+          "queryReplacement": "={{ $json.gestores[0].id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        544,
+        -1584
+      ],
+      "id": "cd586ffc-760e-4566-bfca-05edd71dc060",
+      "name": "Query - Salvar entrada sem resumo",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "resumos_diarios_gestor",
+          "mode": "list",
+          "cachedResultName": "resumos_diarios_gestor"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "resumo_conteudo": "={{ $json.mensagem_whatsapp }}",
+            "status": "programada",
+            "id_colaborador": "={{ $('Code - Formatar Mensagem Gestor').item.json.gestores[0].id }}",
+            "qtd_resumos": "={{ $('Code - Formatar Mensagem Gestor').item.json.total_resumos }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "dt_create",
+              "displayName": "dt_create",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "dt_update",
+              "displayName": "dt_update",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "resumo_conteudo",
+              "displayName": "resumo_conteudo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": [
+                {
+                  "name": "programada",
+                  "value": "programada"
+                },
+                {
+                  "name": "agendada",
+                  "value": "agendada"
+                },
+                {
+                  "name": "enviando",
+                  "value": "enviando"
+                },
+                {
+                  "name": "enviada",
+                  "value": "enviada"
+                },
+                {
+                  "name": "erro",
+                  "value": "erro"
+                },
+                {
+                  "name": "cancelada",
+                  "value": "cancelada"
+                }
+              ],
+              "removed": false
+            },
+            {
+              "id": "id_colaborador",
+              "displayName": "id_colaborador",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "qtd_resumos",
+              "displayName": "qtd_resumos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        768,
+        -1808
+      ],
+      "id": "82c1c894-b387-4478-bdc3-6dd54b8335c1",
+      "name": "Insert - salvar resumo do gestor",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Code - Separar Empresas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Formatar Mensagem Gestor": {
+      "main": [
+        [
+          {
+            "node": "Verificar se há resumos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar se há resumos": {
+      "main": [
+        [
+          {
+            "node": "Mensagem resumo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Query - Salvar entrada sem resumo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Separar Empresas": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query - Buscar resumos e grupos pendentes": {
+      "main": [
+        [
+          {
+            "node": "Code - Formatar Mensagem Gestor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query - Marcar resumos como processados1": {
+      "main": [
+        [
+          {
+            "node": "Consolidar resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Query - Buscar resumos e grupos pendentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem resumo": {
+      "main": [
+        [
+          {
+            "node": "Insert - salvar resumo do gestor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidar resultados": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidar resultados1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query - Salvar entrada sem resumo": {
+      "main": [
+        [
+          {
+            "node": "Consolidar resultados1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert - salvar resumo do gestor": {
+      "main": [
+        [
+          {
+            "node": "Query - Marcar resumos como processados1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f6a05e83-7c41-47cc-839d-36eb218e587c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "xPyO6MdSQT3m76bL",
+  "tags": []
+}

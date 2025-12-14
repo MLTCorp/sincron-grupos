@@ -1,0 +1,511 @@
+{
+  "name": "[CRON]",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -288,
+        96
+      ],
+      "id": "2a089850-9c21-40f2-afe7-194c7119aa9e",
+      "name": "Schedule Trigger3"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar empresas que precisam gerar resumo de gestor\n-- CORRIGIDO: Processa 10 minutos ANTES do horário configurado\nWITH empresas_resumo AS (\n    SELECT \n        e.id as empresa_id,\n        e.nome_empresa,\n        e.fuso,\n        cr.data_envio,\n        cr.ativo,\n        CASE \n            WHEN cr.data_envio <= CURRENT_TIME::time THEN 'atrasado'\n            ELSE 'proximo'\n        END as tipo_processamento\n    FROM empresas e\n    INNER JOIN configuracoes_resumo cr ON e.id = cr.id_empresa\n    WHERE cr.ativo = true\n      AND e.status = 'ativa'\n      AND (\n          -- CORREÇÃO: Processar quando estamos 10 minutos antes do horário OU já passou\n          (\n              CURRENT_TIME::time >= (cr.data_envio - INTERVAL '10 minutes')\n              AND NOT EXISTS (\n                  SELECT 1 \n                  FROM resumos_diarios_gestor rdg\n                  INNER JOIN colaboradores c ON rdg.id_colaborador = c.id\n                  WHERE c.id_empresa = e.id\n                    AND rdg.dt_create::date = CURRENT_DATE\n                    AND rdg.status IN ('programada', 'enviada', 'enviando', 'cancelada')\n              )\n          )\n          OR\n          -- Resumos de ONTEM que não foram processados\n          (\n              NOT EXISTS (\n                  SELECT 1 \n                  FROM resumos_diarios_gestor rdg\n                  INNER JOIN colaboradores c ON rdg.id_colaborador = c.id\n                  WHERE c.id_empresa = e.id\n                    AND rdg.dt_create::date = CURRENT_DATE - INTERVAL '1 day'\n                    AND rdg.status IN ('programada', 'enviada', 'enviando', 'cancelada')\n              )\n              AND EXISTS (\n                  SELECT 1\n                  FROM resumos_diarios rd\n                  INNER JOIN grupos g ON rd.id_grupo = g.id\n                  INNER JOIN clientes cl ON g.id_cliente = cl.id\n                  WHERE cl.id_empresa = e.id\n                    AND rd.dt_create::date = CURRENT_DATE - INTERVAL '1 day'\n                    AND (rd.processado_gestor IS FALSE OR rd.processado_gestor IS NULL)\n              )\n          )\n      )\n),\ngestores_empresa AS (\n    SELECT \n        c.id as gestor_id,\n        c.nome as gestor_nome,\n        c.email as gestor_email,\n        c.telefone as gestor_telefone,\n        c.id_empresa\n    FROM colaboradores c\n    INNER JOIN perfis_permissao pp ON c.id_perfil_permissao = pp.id\n    WHERE (pp.nome ILIKE '%gestor%' OR pp.nome ILIKE '%admin%' OR c.eh_admin = true)\n      AND c.status = 'ativo'\n      AND c.excluido = false\n)\nSELECT \n    json_build_object(\n        'status', CASE \n            WHEN COUNT(er.empresa_id) > 0 THEN 'companies_ready' \n            ELSE 'no_summaries' \n        END,\n        'total_empresas', COUNT(er.empresa_id),\n        'empresas', COALESCE(\n            json_agg(\n                json_build_object(\n                    'empresa_id', er.empresa_id,\n                    'nome_empresa', er.nome_empresa,\n                    'fuso_horario', er.fuso,\n                    'horario_resumo', er.data_envio::text,\n                    'tipo_processamento', er.tipo_processamento,\n                    'gestores', (\n                        SELECT json_agg(\n                            json_build_object(\n                                'id', ge.gestor_id,\n                                'nome', ge.gestor_nome,\n                                'email', ge.gestor_email,\n                                'telefone', ge.gestor_telefone\n                            )\n                        )\n                        FROM gestores_empresa ge \n                        WHERE ge.id_empresa = er.empresa_id\n                    )\n                )\n                ORDER BY er.tipo_processamento, er.data_envio\n            ) FILTER (WHERE er.empresa_id IS NOT NULL),\n            '[]'::json\n        )\n    ) as resultado\nFROM empresas_resumo er;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -16,
+        96
+      ],
+      "id": "b7b16128-a7d9-4498-8ee5-961e1772f8cd",
+      "name": "Query - Buscar empresas prontas3",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar resumos de gestor prontos para envio\n-- CORRIGIDO: Processa 10 minutos antes ou horários passados\nWITH resumos_para_enviar AS (\n    SELECT \n        rdg.id as resumo_id,\n        rdg.id_colaborador,\n        rdg.resumo_conteudo,\n        rdg.qtd_resumos,\n        rdg.dt_create,\n        rdg.status,\n        c.id_empresa,\n        c.nome as gestor_nome,\n        c.email as gestor_email,\n        c.telefone as gestor_telefone,\n        c.status as colaborador_status,\n        c.excluido,\n        e.nome_empresa,\n        e.status as empresa_status,\n        cr.data_envio as horario_configurado,\n        -- Calcular se está no momento de enviar\n        CASE \n            -- Resumos de hoje: verificar janela de envio\n            WHEN rdg.dt_create::date = CURRENT_DATE THEN\n                CASE\n                    -- Está na janela de -10 minutos a +5 minutos do horário\n                    WHEN CURRENT_TIME::time BETWEEN \n                         (COALESCE(cr.data_envio, '18:30:00'::time) - INTERVAL '10 minutes')\n                         AND \n                         (COALESCE(cr.data_envio, '18:30:00'::time) + INTERVAL '5 minutes')\n                    THEN 'enviar_agora'\n                    -- Já passou do horário (atrasado)\n                    WHEN CURRENT_TIME::time > (COALESCE(cr.data_envio, '18:00:00'::time) + INTERVAL '5 minutes')\n                    THEN 'enviar_atrasado'\n                    -- Ainda não chegou a hora\n                    ELSE 'aguardar'\n                END\n            -- Resumos de ontem: enviar se estiver na janela do horário de hoje\n            WHEN rdg.dt_create::date = CURRENT_DATE - INTERVAL '1 day' THEN\n                CASE\n                    WHEN CURRENT_TIME::time >= (COALESCE(cr.data_envio, '18:00:00'::time) - INTERVAL '10 minutes')\n                    THEN 'enviar_ontem'\n                    ELSE 'aguardar_ontem'\n                END\n            ELSE 'ignorar'\n        END as status_envio\n    FROM resumos_diarios_gestor rdg\n    INNER JOIN colaboradores c ON rdg.id_colaborador = c.id\n    INNER JOIN empresas e ON c.id_empresa = e.id\n    LEFT JOIN configuracoes_resumo cr ON e.id = cr.id_empresa AND cr.ativo = true\n    WHERE rdg.status = 'programada'\n      AND rdg.dt_create::date >= CURRENT_DATE - INTERVAL '1 day'\n      AND c.status = 'ativo'\n      AND c.excluido = false\n      AND e.status = 'ativa'\n)\n-- Primeiro: Cancelar resumos vazios\n, resumos_cancelados AS (\n    UPDATE resumos_diarios_gestor\n    SET \n        status = 'cancelada',\n        dt_update = NOW()\n    WHERE id IN (\n        SELECT resumo_id \n        FROM resumos_para_enviar \n        WHERE COALESCE(qtd_resumos, 0) = 0\n    )\n    RETURNING id\n)\n-- Depois: Retornar apenas os que devem ser enviados agora\nSELECT \n    json_build_object(\n        'status', CASE \n            WHEN COUNT(*) > 0 THEN 'resumos_pendentes' \n            ELSE 'nenhum_resumo' \n        END,\n        'total_cancelados', (SELECT COUNT(*) FROM resumos_cancelados),\n        'resumos', COALESCE(\n            json_agg(\n                json_build_object(\n                    'resumo_id', resumo_id,\n                    'colaborador_id', id_colaborador,\n                    'empresa_id', id_empresa,\n                    'empresa_nome', nome_empresa,\n                    'gestor', json_build_object(\n                        'id', id_colaborador,\n                        'nome', gestor_nome,\n                        'email', gestor_email,\n                        'telefone', gestor_telefone\n                    ),\n                    'mensagem_whatsapp', resumo_conteudo,\n                    'dt_create', dt_create,\n                    'status_atual', status,\n                    'qtd_resumos', qtd_resumos,\n                    'horario_configurado', horario_configurado::text,\n                    'status_envio', status_envio\n                ) ORDER BY dt_create\n            ) FILTER (WHERE resumo_id IS NOT NULL),\n            '[]'::json\n        )\n    ) as resultado\nFROM resumos_para_enviar\nWHERE status_envio IN ('enviar_agora', 'enviar_atrasado', 'enviar_ontem')\n  AND COALESCE(qtd_resumos, 0) > 0;  -- Não incluir resumos vazios",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -16,
+        352
+      ],
+      "id": "6247f77c-0623-4860-864b-37e92819972d",
+      "name": "Query - Buscar resumos do gestor",
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0572e897-03d1-4786-9ce1-a9427b964927",
+              "leftValue": "={{ $json.resultado.status }}",
+              "rightValue": "no_summaries",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        192,
+        96
+      ],
+      "id": "1e49e5d1-3655-4f52-a42a-ecd6443b9908",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d142a99a-65e9-49e8-be93-ffa165a694fa",
+              "leftValue": "={{ $json.resultado.status }}",
+              "rightValue": "nenhum_resumo",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        176,
+        352
+      ],
+      "id": "22c1ff63-52ec-4a0e-82cc-300555a1f19c",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- BUSCAR GRUPOS QUE PRECISAM DE RESUMO DIÁRIO\n-- Versão corrigida para evitar mensagens antigas e respeitar janelas de horário\n\nWITH configuracoes AS (\n    SELECT \n        NOW() as agora,\n        CURRENT_DATE as hoje,\n        CURRENT_DATE - INTERVAL '1 day' as ontem,\n        CURRENT_TIME as hora_atual\n),\ngrupos_para_resumo AS (\n    SELECT DISTINCT\n        g.id,\n        g.nome,\n        g.chat_id_whatsapp,\n        COALESCE(gc.hr_resumo, '18:30:00'::time) as horario_resumo,\n        -- CRÍTICO: Contar apenas mensagens RECENTES não processadas (hoje e ontem)\n        (\n            SELECT COUNT(*) \n            FROM mensagens_whatsapp mw \n            WHERE mw.id_grupo = g.id \n            AND mw.marcada_resumo = false\n            AND mw.conteudo_texto IS NOT NULL\n            AND LENGTH(TRIM(mw.conteudo_texto)) > 0\n            -- NOVO: Apenas mensagens de hoje e ontem\n            AND DATE(mw.dt_create) >= (SELECT ontem FROM configuracoes)\n        ) as total_mensagens_nao_processadas,\n        -- Contar membros ativos (apenas de mensagens recentes)\n        (\n            SELECT COUNT(DISTINCT mw.id_membro) \n            FROM mensagens_whatsapp mw \n            WHERE mw.id_grupo = g.id \n            AND mw.marcada_resumo = false\n            AND mw.id_membro IS NOT NULL\n            -- NOVO: Apenas mensagens de hoje e ontem\n            AND DATE(mw.dt_create) >= (SELECT ontem FROM configuracoes)\n        ) as membros_ativos_nao_processados,\n        -- NOVO: Data da mensagem mais antiga não processada\n        (\n            SELECT MIN(DATE(mw.dt_create))\n            FROM mensagens_whatsapp mw \n            WHERE mw.id_grupo = g.id \n            AND mw.marcada_resumo = false\n            AND DATE(mw.dt_create) >= (SELECT ontem FROM configuracoes)\n        ) as data_primeira_msg\n    FROM grupos g\n    LEFT JOIN grupos_configuracoes gc ON g.id = gc.id_grupo\n    WHERE g.id_cliente IS NOT NULL\n        AND g.ativo = true\n        -- Verificar se tem mensagens RECENTES não processadas (mínimo 1)\n        AND (\n            SELECT COUNT(*) \n            FROM mensagens_whatsapp mw \n            WHERE mw.id_grupo = g.id \n            AND mw.marcada_resumo = false\n            AND mw.conteudo_texto IS NOT NULL\n            AND LENGTH(TRIM(mw.conteudo_texto)) > 0\n            -- CRÍTICO: Apenas mensagens de hoje e ontem\n            AND DATE(mw.dt_create) >= (SELECT ontem FROM configuracoes)\n        ) >= 1\n        \n        -- SIMPLIFICADO: Processar grupos em 2 situações principais\n        AND (\n            -- Situação 1: Dentro da janela de horário (±15 minutos)\n            (\n                CURRENT_TIME BETWEEN \n                    (COALESCE(gc.hr_resumo, '18:30:00'::time) - INTERVAL '10 minutes')\n                    AND \n                    (COALESCE(gc.hr_resumo, '18:30:00'::time) + INTERVAL '2 minutes')\n                AND NOT EXISTS (\n                    SELECT 1 FROM resumos_diarios rd \n                    WHERE rd.id_grupo = g.id \n                    AND DATE(rd.dt_create) = CURRENT_DATE\n                )\n            )\n            OR\n            -- Situação 2: Horário já passou e ainda não tem resumo hoje\n            -- MAS só se passou há menos de 3 horas (evita processar tudo de uma vez)\n            (\n                CURRENT_TIME > COALESCE(gc.hr_resumo, '18:30:00'::time)\n                AND CURRENT_TIME < (COALESCE(gc.hr_resumo, '18:30:00'::time) + INTERVAL '3 hours')\n                AND NOT EXISTS (\n                    SELECT 1 FROM resumos_diarios rd \n                    WHERE rd.id_grupo = g.id \n                    AND DATE(rd.dt_create) = CURRENT_DATE\n                )\n                -- E tem mensagens não processadas de hoje\n                AND EXISTS (\n                    SELECT 1 FROM mensagens_whatsapp mw\n                    WHERE mw.id_grupo = g.id\n                    AND mw.marcada_resumo = false\n                    AND DATE(mw.dt_create) = CURRENT_DATE\n                )\n            )\n        )\n)\nSELECT \n    json_build_object(\n        'status', CASE WHEN COUNT(*) > 0 THEN 'groups_found' ELSE 'no_groups_found' END,\n        'execution_info', json_build_object(\n            'timestamp', (SELECT agora FROM configuracoes),\n            'current_date', (SELECT hoje FROM configuracoes),\n            'current_time', (SELECT hora_atual FROM configuracoes),\n            'total_groups', COUNT(*)\n        ),\n        'groups', COALESCE(\n            json_agg(\n                json_build_object(\n                    'group_id', id,\n                    'chat_id', chat_id_whatsapp,\n                    'name', nome,\n                    'total_messages', total_mensagens_nao_processadas,\n                    'active_members', membros_ativos_nao_processados,\n                    'scheduled_time', horario_resumo::text,\n                    'summary_date', (SELECT hoje FROM configuracoes),\n                    'oldest_message_date', data_primeira_msg,\n                    'ready_for_summary', true,\n                    'destination', json_build_object(\n                        'type', 'group',\n                        'value', chat_id_whatsapp\n                    ),\n                    'activity_stats', json_build_object(\n                        'total_messages', total_mensagens_nao_processadas,\n                        'active_members', membros_ativos_nao_processados,\n                        'has_activity', total_mensagens_nao_processadas > 0\n                    )\n                ) ORDER BY horario_resumo, nome\n            ) FILTER (WHERE id IS NOT NULL),\n            '[]'::json\n        )\n    ) as resultado\nFROM grupos_para_resumo;",
+        "options": {}
+      },
+      "id": "e7719fb3-e522-4461-b6b6-90df72bbc157",
+      "name": "PostgreSQL - Buscar Grupos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -16,
+        -192
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440003",
+              "leftValue": "={{ $json.resultado.status }}",
+              "rightValue": "groups_found",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4e8555a5-6741-4197-a545-b68506254abe",
+      "name": "IF - Tem grupos para processar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        192,
+        -192
+      ]
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "resumo_grupo",
+              "value": "sim"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        -208
+      ],
+      "id": "5e990e75-a44a-430d-b9ca-bb67a95adbe9",
+      "name": "Execution Data"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "resumo_gestor",
+              "value": "sim"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        80
+      ],
+      "id": "60b4d621-58ac-452a-89d6-c4c7a61cd6db",
+      "name": "Execution Data1"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "enviar_resumo_gestor",
+              "value": "sim"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        336
+      ],
+      "id": "d9c888f5-413f-47ad-800b-3f35d232d808",
+      "name": "Execution Data2"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "3OfPHPeSC4z95Q2v",
+          "mode": "list",
+          "cachedResultName": "[Resumos Grupos] - Geração de resumos grupos"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        656,
+        -208
+      ],
+      "id": "418d3de5-59e0-4cb8-8e74-cac86942c167",
+      "name": "Execute - gerar resumo grupo",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "xPyO6MdSQT3m76bL",
+          "mode": "list",
+          "cachedResultName": "[Resumo Gestor] - Geração do resumo"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        656,
+        80
+      ],
+      "id": "2c1e3d49-ae80-4607-84a0-0c47d62b8169",
+      "name": "Execute - gerar resumo de gestor",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "7G7CIKujDhl6wHvI",
+          "mode": "list",
+          "cachedResultName": "[Resumo do Gestor] - Enviar resumos"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        656,
+        336
+      ],
+      "id": "5cdb9881-5e4f-4c54-9c67-b420055ecc77",
+      "name": "Execute - enviar resumo gestor"
+    },
+    {
+      "parameters": {
+        "content": "## 📊 Resumo Executivo para Gestores\n\n**Objetivo**: Consolidar resumos dos grupos em um único relatório executivo diário para os gestores\n\n**Quando executa**: Chamado por outro workflow\n\n**O que faz**:\n- Consolida resumos de ontem e hoje não processados\n- Identifica grupos com horário agendado futuro\n- Gera relatório formatado para WhatsApp\n- Salva na tabela `resumos_diarios_gestor`",
+        "height": 152,
+        "width": 400,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        880,
+        64
+      ],
+      "id": "4bc48194-2f86-4130-adfd-f8684ef8da36",
+      "name": "Sticky Note - Título"
+    },
+    {
+      "parameters": {
+        "content": "## 📋 Geração de Resumos de Grupos\n\n**Objetivo**: Processar mensagens do WhatsApp e gerar resumos diários inteligentes por grupo\n\n**Quando executa**: Chamado por outro workflow\n\n**O que faz**:\n- Processa grupos com atividade recente\n- Analisa mensagens não resumidas\n- Gera resumo com IA (GPT-4.1-mini)\n- Salva na tabela `resumos_diarios`",
+        "height": 152,
+        "width": 400,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        880,
+        -224
+      ],
+      "id": "1b8382f1-9add-4881-bd73-1c50af22f957",
+      "name": "Sticky Note - Título1"
+    },
+    {
+      "parameters": {
+        "content": "## 📤 Envio de Resumos para Gestores\n\n**Objetivo**: Enviar resumos executivos consolidados via WhatsApp para os gestores\n\n**Quando executa**: Chamado por outro workflow\n\n**O que faz**:\n- Recebe resumos prontos para envio\n- Envia via WhatsApp (uazapi)\n- Marca como enviado no banco\n- Controla intervalo entre envios",
+        "height": 152,
+        "width": 400,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        880,
+        320
+      ],
+      "id": "bbf3196b-e695-4cd7-9f22-77e4d2028361",
+      "name": "Sticky Note - Título2"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger3": {
+      "main": [
+        [
+          {
+            "node": "Query - Buscar empresas prontas3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Query - Buscar resumos do gestor",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PostgreSQL - Buscar Grupos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query - Buscar empresas prontas3": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query - Buscar resumos do gestor": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Execution Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Execution Data2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Buscar Grupos": {
+      "main": [
+        [
+          {
+            "node": "IF - Tem grupos para processar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Tem grupos para processar?": {
+      "main": [
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution Data1": {
+      "main": [
+        [
+          {
+            "node": "Execute - gerar resumo de gestor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution Data2": {
+      "main": [
+        [
+          {
+            "node": "Execute - enviar resumo gestor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution Data": {
+      "main": [
+        [
+          {
+            "node": "Execute - gerar resumo grupo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "be4fb620-da50-4d2a-81de-4993bcd797a7",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "TBe20xCIJt04ILjy",
+  "tags": []
+}

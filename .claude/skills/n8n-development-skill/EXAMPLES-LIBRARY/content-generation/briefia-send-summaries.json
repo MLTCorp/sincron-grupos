@@ -1,0 +1,314 @@
+{
+  "name": "[Resumo do Gestor] - Enviar resumos",
+  "nodes": [
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        176,
+        144
+      ],
+      "id": "45d237af-6857-402f-bdc7-395a0d146295",
+      "name": "Wait2",
+      "webhookId": "15ae1804-19c7-43f8-901d-f7e0272b74e8"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Marcar resumo do gestor como enviado\nUPDATE resumos_diarios_gestor \nSET status = 'enviada',\n    dt_update = NOW()\nWHERE id = $1::INTEGER\nRETURNING \n    json_build_object(\n        'status', 'resumo_enviado',\n        'resumo_id', id,\n        'colaborador_id', id_colaborador,\n        'dt_update', dt_update\n    ) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $('Dados Execução').item.json.resumo_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -128,
+        32
+      ],
+      "id": "d6ebd0fc-a7f4-4484-a37f-0d8b5c229fd6",
+      "name": "Query - Marcar resumos como processados1",
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "resultado.resumos",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1120,
+        112
+      ],
+      "id": "04564690-9c4e-41ef-9d44-3c3eddcfa5ce",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -896,
+        112
+      ],
+      "id": "afc2330b-0079-4ded-97b7-2c78fd100f7a",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "resumo_id",
+              "value": "={{ $json.resumo_id }}"
+            },
+            {
+              "key": "colaborador_id",
+              "value": "={{ $json.colaborador_id }}"
+            },
+            {
+              "key": "empresa_id",
+              "value": "={{ $json.empresa_id }}"
+            },
+            {
+              "key": "empresa_nome",
+              "value": "={{ $json.empresa_nome }}"
+            },
+            {
+              "key": "gestor_id",
+              "value": "={{ $json.gestor.id }}"
+            },
+            {
+              "key": "gestor_whatsapp",
+              "value": "={{ $json.gestor.telefone }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -656,
+        128
+      ],
+      "id": "71f90986-bbd7-428e-9e39-4e905929b983",
+      "name": "Dados Execução",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://briefia.uazapi.com/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.gestor.telefone }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.mensagem_whatsapp }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            },
+            {
+              "name": "readchat",
+              "value": "={{ true }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -432,
+        128
+      ],
+      "id": "ef269bb1-96ef-4b6a-9b45-33d7b9eab581",
+      "name": "uazapi - send gestor resumo",
+      "executeOnce": true,
+      "retryOnFail": true,
+      "notesInFlow": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZtFXzJZKhheInQBf",
+          "name": "Uazapi - Briefia"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1296,
+        112
+      ],
+      "id": "ff511dc5-11e9-4551-88b9-daa85b264b51",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "content": "## 📤 Envio de Resumos para Gestores\n\n**Objetivo**: Enviar resumos executivos consolidados via WhatsApp para os gestores\n\n**Quando executa**: Chamado por outro workflow\n\n**O que faz**:\n- Recebe resumos prontos para envio\n- Envia via WhatsApp (uazapi)\n- Marca como enviado no banco\n- Controla intervalo entre envios",
+        "height": 152,
+        "width": 400,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1360,
+        -80
+      ],
+      "id": "1493c295-97d6-440a-a01b-f0868ceace77",
+      "name": "Sticky Note - Título"
+    },
+    {
+      "parameters": {
+        "content": "## 🔄 Fluxo de Envio\n\n**1. Trigger**: Execute Workflow Trigger\n**2. Separação**: Split Out divide resumos individuais\n**3. Loop**: Processa um resumo por vez\n**4. Dados Execução**:\n   - Salva IDs (resumo, colaborador, empresa)\n   - Preserva dados do gestor\n   - Mantém contexto para atualização\n**5. Envio WhatsApp (uazapi)**:\n   - Endpoint: /send/text\n   - Número do gestor\n   - Mensagem formatada\n   - Retry em caso de erro\n**6. Atualização Status**:\n   - UPDATE `resumos_diarios_gestor`\n   - SET status = 'enviada'\n   - Registra timestamp\n**7. Wait**: 2 segundos entre envios\n\n**Controles**:\n- ✅ Retry automático em falhas\n- ✅ Continua em caso de erro\n- ✅ Intervalo entre mensagens\n- ✅ Rastreamento de status",
+        "height": 576,
+        "width": 400,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1360,
+        288
+      ],
+      "id": "58456a13-1838-40a9-ab7d-6bc92d2e6919",
+      "name": "Sticky Note - Detalhes"
+    }
+  ],
+  "connections": {
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query - Marcar resumos como processados1": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Dados Execução",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados Execução": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send gestor resumo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "uazapi - send gestor resumo": {
+      "main": [
+        [
+          {
+            "node": "Query - Marcar resumos como processados1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "44db0f25-ece7-48df-bab0-414c888cd3ab",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "7G7CIKujDhl6wHvI",
+  "tags": []
+}

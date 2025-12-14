@@ -1,0 +1,132 @@
+{
+  "name": "[WEBHOOK] Atualiza Status Mensagem Programada",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "briefia-tracker/sender",
+        "options": {}
+      },
+      "id": "a621ac06-4aed-4bbc-8fc5-663fdc8d5cb5",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -96,
+        -144
+      ],
+      "webhookId": "3d853676-2cd8-4b99-b015-05d0a876b979"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "mensagens_programadas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "agendamento_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.body.folderID }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "dt_enviada",
+              "fieldValue": "={{ DateTime.fromMillis($json.body.completedAt).toFormat('yyyy-MM-dd HH:mm:ss') }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "enviada"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        384,
+        -160
+      ],
+      "id": "37a789f5-1227-40d0-a6db-98f201caca9b",
+      "name": "Atualiza Status",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s4stma8E9rLogINA",
+          "name": "Supabase - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2cbc8457-08f7-45ec-aec6-546cfdc33c5f",
+              "leftValue": "={{ $json.body.status }}",
+              "rightValue": "done",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        112,
+        -144
+      ],
+      "id": "c512d04a-1822-4efc-8eab-5180bd0c6a61",
+      "name": "If"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Atualiza Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "Sjd5x4DDIjqnsxyQ"
+  },
+  "versionId": "5ba5ea18-fe0b-401b-98f3-ba99bf5436d5",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "IwLwUqzrVrHwzgi6",
+  "tags": []
+}

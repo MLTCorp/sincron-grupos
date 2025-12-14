@@ -1,0 +1,1185 @@
+{
+  "name": "Pantero - Tracker",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Gatilho do fluxo via API de Whatsapp\nE guarda as variáveis para consulta do fluxo",
+        "height": 309,
+        "width": 469
+      },
+      "id": "c7ca8bc7-8ca6-42be-80e0-fbca7398120b",
+      "name": "Sticky Note18",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2192,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Checa possivel comando \"!...\"\nE checa se a mensagem é particular",
+        "height": 260,
+        "width": 212,
+        "color": 7
+      },
+      "id": "0a15708c-d57a-4c49-bed4-90880dd9b7e1",
+      "name": "Sticky Note28",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -992,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Checa mensagem particular\nCaso seja DM\n",
+        "height": 246,
+        "width": 194,
+        "color": 7
+      },
+      "id": "961d2a54-b1f9-44ad-acff-79eed930ed52",
+      "name": "Sticky Note11",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -752,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "abacf0b5-5c4b-4893-8294-02b7ca1c0a07",
+              "leftValue": "={{ $json.variaveis.message.text.split(\"\")[0] }}",
+              "rightValue": "!",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6facf677-4cda-40ff-a641-d5a5d1a0b542",
+      "name": "Se !...",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "d01c4e51-3f44-43ea-81a0-0f7510bd25b1",
+                    "leftValue": "={{ $('If').item.json.body.message.chatid.split(\"@\")[1] }}",
+                    "rightValue": "=g.us",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "grupo"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('If').item.json.body.message.chatid.split(\"@\")[1] }}",
+                    "rightValue": "s.whatsapp.net",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "particular"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c8b5a1f1-6f38-4ac1-a871-89f070ead4f3",
+      "name": "Switch1",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -704,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('variaveis').item.json.body.event.Join[0] }}",
+                    "rightValue": "add",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "add user"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "b65eb6e9-d147-40ef-a48d-021d5d4222e1",
+                    "leftValue": "={{ $json.variaveis.message.text }}",
+                    "rightValue": "Pantero",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Pantero"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "034437f5-d1f1-4b2e-a2a2-6a1223f5db2d",
+                    "leftValue": "={{ $json.variaveis.message.text }}",
+                    "rightValue": "@552139551220",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "ignoreCase": true
+        }
+      },
+      "id": "1c81f6e7-c54a-481f-a929-bff28342dfbc",
+      "name": "Switch7",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -704,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e10f2ed5-1bde-4105-92d2-91d588999dc4",
+              "leftValue": "={{ $json.body.message.fromMe }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1376,
+        704
+      ],
+      "id": "19ec4483-15a8-4abd-b518-9a45cfcac0c2",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "eba4f22a-e13c-4c8f-a225-82593bf23af9",
+              "name": "variaveis.chat.chatId",
+              "value": "={{ $json.body.message.chatid.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "dd69a97c-046c-4948-869c-9568fb4ab5fb",
+              "name": "variaveis.chat.groupName",
+              "value": "={{ $json.body.message.groupName }}",
+              "type": "string"
+            },
+            {
+              "id": "6a3fc213-3e9f-4124-a1b8-5a249f15660a",
+              "name": "variaveis.user.whatsapp",
+              "value": "={{ $json.body.message.sender_pn.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "bedd9dfe-2cef-4708-afe6-65739e1fc30b",
+              "name": "variaveis.message.text",
+              "value": "={{ $json.body.message.content.text || $json.body.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "4b8332ca-d18a-4e1d-b79c-864dbc961d36",
+              "name": "variaveis.message.id",
+              "value": "={{ $json.body.message.messageid }}",
+              "type": "string"
+            },
+            {
+              "id": "9346d8da-22f3-42c9-a139-4db62a8062bb",
+              "name": "variaveis.message.fromMe",
+              "value": "={{ $json.body.message.fromMe }}",
+              "type": "boolean"
+            },
+            {
+              "id": "3e48fd29-63ca-4879-9d9c-9bff97a6e02a",
+              "name": "variaveis.message.type",
+              "value": "={{ $json.body.message.type == 'text' ? $json.body.message.type : $json.body.message.messageType.split(\"M\")[0].replace(\"Extended\",\"\") }}",
+              "type": "string"
+            },
+            {
+              "id": "4d61bada-3911-4565-959b-702f96b39bac",
+              "name": "variaveis.message.responded.whatsapp",
+              "value": "={{ $json.body.message.content.contextInfo?.participant.split(\"@\")[0] || $json.body.message.content.key.participant.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "d88bcf78-a460-4369-8072-b18b8fb7ab99",
+              "name": "variaveis.message.responded.text",
+              "value": "={{ $json.body.message.content.contextInfo.quotedMessage.conversation || $json.body.message.content.contextInfo.quotedMessage.extendedTextMessage.text }}",
+              "type": "string"
+            },
+            {
+              "id": "7a3b8be7-14d6-4981-a27d-3f1f2082aecb",
+              "name": "variaveis.message.responded.id",
+              "value": "={{ $json.body.message.content.contextInfo?.stanzaID || $json.body.message.quoted || $json.body.message.content.key.ID }}",
+              "type": "string"
+            },
+            {
+              "id": "f8175cd6-8828-4705-b5cc-7ae2853541ff",
+              "name": "variaveis.message.timestamp",
+              "value": "={{ $json.body.message.messageTimestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "343b33a6-d094-40ec-8656-bb32a65352e0",
+              "name": "variaveis.message.media.url",
+              "value": "={{ $json.body.message.content.URL }}",
+              "type": "string"
+            },
+            {
+              "id": "df04ea52-e9fa-43ea-aba3-e2f0b18d86c0",
+              "name": "variaveis.message.media.base64",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "acde62fb-5e0e-42d1-8246-0a798cf908e2",
+              "name": "variaveis.message.media.type",
+              "value": "={{ $json.body.message.messageType }}",
+              "type": "string"
+            },
+            {
+              "id": "bcf93453-6b54-419d-8885-61d22512a04c",
+              "name": "variaveis.instance.number",
+              "value": "={{ $json.body.owner }}",
+              "type": "string"
+            },
+            {
+              "id": "2872a011-4489-45e8-9ad0-d58987ea5084",
+              "name": "variaveis.event.type",
+              "value": "={{ $json.body.event?.Join[0]?.split(\"@\")[0] || $json.body.event?.Leave[0].split(\"@\")[0] || $json.body.EventType }}",
+              "type": "string"
+            },
+            {
+              "id": "56d64047-d557-4599-93b3-4b9adb315314",
+              "name": "variaveis.event.whatsapp",
+              "value": "={{ $json.body.event.Join[0]?.split(\"@\")[0] || $json.body.event.Leave[0].split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "07d3132e-98cf-4083-b1cc-f10af99fee9e",
+              "name": "variaveis.chat.isGroup",
+              "value": "={{ $json.body.message.isGroup }}",
+              "type": "boolean"
+            },
+            {
+              "id": "5a2e6b41-967e-4b74-9c9e-3c063b44a8ed",
+              "name": "variaveis.instance.token",
+              "value": "={{ $json.body.token }}",
+              "type": "string"
+            },
+            {
+              "id": "72b87e46-2def-4452-a118-2de787e739e2",
+              "name": "variaveis.instance.host",
+              "value": "https://mgm.uazapi.com",
+              "type": "string"
+            },
+            {
+              "id": "bfe2a37c-acfd-4d09-bf7e-39fb0db914ad",
+              "name": "variaveis.message.responded.type",
+              "value": "={{ $json.body.message.content.contextInfo.quotedMessage.audioMessage ? 'audio' : ($json.body.message.content.contextInfo.quotedMessage.imageMessage ? 'image' : ($json.body.message.content.contextInfo.quotedMessage.videoMessage ? 'video' : 'text')) }}",
+              "type": "string"
+            },
+            {
+              "id": "41b4adef-1648-4194-a94a-602d3f377228",
+              "name": "variaveis.message.responded.mediaurl",
+              "value": "={{ $json.body.message.content.contextInfo.quotedMessage.audioMessage?.URL || $json.body.message.content.contextInfo.quotedMessage.imageMessage?.URL || $json.body.message.content.contextInfo.quotedMessage.videoMessage.URL}}",
+              "type": "string"
+            },
+            {
+              "id": "b3bbb725-f6fa-4bb0-80ec-64db1c7ef8f8",
+              "name": "variaveis.user.name",
+              "value": "={{ $json.body.message.senderName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {
+          "ignoreConversionErrors": false
+        }
+      },
+      "id": "0a50ab09-c956-430f-bab6-14a9c38fdf1a",
+      "name": "variaveis",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -1152,
+        704
+      ],
+      "alwaysOutputData": false,
+      "notesInFlow": true,
+      "notes": "Uazapi"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pantero-n8n-webhook.respondeaqui.com.br/webhook/v2/pantero/groups",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "getParticipants",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.variaveis }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -480,
+        416
+      ],
+      "id": "2fc0f73d-0d86-46c5-aa0a-bc7c42a83484",
+      "name": "call Pantero - groups",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        },
+        "httpHeaderAuth": {
+          "id": "GaOznV2Qpovea8iN",
+          "name": "Pantero - system"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pantero-n8n-webhook.respondeaqui.com.br/webhook/pantero/IA",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -480,
+        800
+      ],
+      "id": "9a43f1a8-e39f-4784-a19f-44b50a30d226",
+      "name": "call Pantero - IA",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/group/info",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "groupjid",
+              "value": "={{ $json.group.chat_id }}"
+            },
+            {
+              "name": "getInviteLink",
+              "value": "={{true}}"
+            },
+            {
+              "name": "getRequestsParticipants",
+              "value": "={{false}}"
+            },
+            {
+              "name": "force",
+              "value": "={{false}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1152,
+        352
+      ],
+      "id": "b2f547e9-977f-4acd-a10f-24eb77b57365",
+      "name": "Get Group Info",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d42b7911-bae8-4600-9cf0-aafc26f8b8a0",
+              "name": "group.name",
+              "value": "={{ $json.body.event.Name }}",
+              "type": "string"
+            },
+            {
+              "id": "4d8ddbf6-6ac4-4734-be7a-6fc1ba614bec",
+              "name": "group.chat_id",
+              "value": "={{ $json.body.event.JID }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1376,
+        352
+      ],
+      "id": "9ce7c0f4-a6ac-43db-b6d1-c25f374072db",
+      "name": "group info"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "v2/pantero-tracker2",
+        "options": {}
+      },
+      "id": "45e75d8f-5978-4a5d-b0c3-c6a845733b84",
+      "name": "Webhook Direto",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -1840,
+        688
+      ],
+      "webhookId": "3d853676-2cd8-4b99-b015-05d0a876b979"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "type",
+              "value": "={{ $json.body.event.Reason || $json.body.type.toLowerCase() }}"
+            },
+            {
+              "key": "chat_id",
+              "value": "={{ $json.body.message.chatid.split(\"@\")[0] }}"
+            },
+            {
+              "key": "whatsapp",
+              "value": "={{ $json.body.message.sender.split(\"@\")[0] }}"
+            },
+            {
+              "key": "text",
+              "value": "={{ $json.body.message.content.text || $json.body.message.text }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -1568,
+        512
+      ],
+      "id": "2a57ffa9-2395-4e53-806d-6bdda1a6c886",
+      "name": "Execution Data"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  CASE \n    WHEN EXISTS(\n      SELECT 1 FROM groups \n      WHERE chat_id = '{{ $('variaveis').item.json.variaveis.chat.chatId }}' AND active = true\n    ) THEN true\n    ELSE false\n  END as access_granted,\n  \n  COALESCE(\n    (SELECT group_name FROM groups WHERE chat_id = '{{ $('variaveis').item.json.variaveis.chat.chatId }}' AND active = true),\n    'Grupo não encontrado ou inativo'\n  ) as group_name,\n  \n  CASE \n    WHEN EXISTS(\n      SELECT 1 FROM groups \n      WHERE chat_id = '{{ $('variaveis').item.json.variaveis.chat.chatId }}' AND active = true\n    ) THEN 'Acesso liberado para o grupo'\n    WHEN EXISTS(\n      SELECT 1 FROM groups \n      WHERE chat_id = '{{ $('variaveis').item.json.variaveis.chat.chatId }}' AND active = false\n    ) THEN 'Grupo existe mas está inativo'\n    ELSE 'Grupo não está cadastrado no sistema'\n  END as message",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -480,
+        992
+      ],
+      "id": "6e1ec068-f12c-4a95-b0c8-fff24f149a08",
+      "name": "Validar Grupo Ativo",
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8nwebhook.respondeaqui.com.br/webhook/pre-tracker",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Webhook Direto').first().json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        992
+      ],
+      "id": "44ead8d6-25be-4d1a-b736-a2072e7d232f",
+      "name": "Send to MGM Tracker"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9e2d2633-03e7-43f7-b310-e9e8ba621a52",
+              "leftValue": "={{ $json.body.type }}",
+              "rightValue": "JoinedGroup",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1568,
+        688
+      ],
+      "id": "552d5b24-5161-4015-8085-3f04cd81007e",
+      "name": "If Join Group"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://mgm.uazapi.com/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "=5521979373322"
+            },
+            {
+              "name": "text",
+              "value": "=🆕 Opaa! \n\nO Pantero acaba de entrar no grupo *{{ $('Get Group Info').item.json.Name }}*\nchat_id: {{ $('Get Group Info').item.json.JID.split(\"@\")[0] }}\n\n{{ $('Select rows from a table').item.json.active === true ? $json.active : $json.inactive }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -496,
+        112
+      ],
+      "id": "e5477f5e-7b0e-416c-b7c0-ff6c43668270",
+      "name": "uazapi - avisa Yuri",
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e92548f2-fd21-4f0d-a49d-72b920a75f08",
+              "leftValue": "={{ $('variaveis').first().json.variaveis.user.whatsapp }}",
+              "rightValue": "5519994317797",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -480,
+        608
+      ],
+      "id": "637eba51-8e2f-41cd-a17d-f3052cf2bf72",
+      "name": "If - Luiz Teste?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pantero-n8n-webhook.respondeaqui.com.br/webhook/v2/pantero/private/v2",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.variaveis }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -256,
+        512
+      ],
+      "id": "045aff95-9ae8-45d7-920b-d418cb13f834",
+      "name": "call Pantero - private v2 BETA",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pantero-n8n-webhook.respondeaqui.com.br/webhook/v2/pantero/private",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.variaveis }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -256,
+        704
+      ],
+      "id": "9bf32f90-e7e7-407e-81aa-e735555de2d8",
+      "name": "call Pantero - private V1",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "20674a7e-cd1d-4056-8080-ceee3e7edcb9",
+              "leftValue": "={{ $json.access_granted }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -272,
+        992
+      ],
+      "id": "7d139829-5680-449a-9e11-e78c6ad16b69",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "groups",
+          "mode": "list",
+          "cachedResultName": "groups"
+        },
+        "limit": 1,
+        "where": {
+          "values": [
+            {
+              "column": "chat_id",
+              "value": "={{ $json.JID.split(\"@\")[0] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -944,
+        112
+      ],
+      "id": "abcc8f63-c576-41ff-954f-625216c844ba",
+      "name": "Select rows from a table",
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "87cb27f6-6979-4848-9836-811a9cca371d",
+              "name": "active",
+              "value": "✅ *O grupo já está cadastrado e ativo no sistema*",
+              "type": "string"
+            },
+            {
+              "id": "dbd8431e-71a3-4e6b-ba85-cdfac5f2f46d",
+              "name": "inactive",
+              "value": "=❌ *O Grupo não está cadastrado.*\n>>> quer ativar o grupo? execute o comando !ativar #tag1 #tag2 {{ $('Get Group Info').item.json.JID.split(\"@\")[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -720,
+        112
+      ],
+      "id": "1c6886c6-c10a-4ea0-a40e-56273504e06a",
+      "name": "Edit Fields"
+    }
+  ],
+  "connections": {
+    "Se !...": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "call Pantero - groups",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If - Luiz Teste?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch7": {
+      "main": [
+        [],
+        [
+          {
+            "node": "call Pantero - IA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "call Pantero - IA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Validar Grupo Ativo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validar Grupo Ativo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "variaveis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "variaveis": {
+      "main": [
+        [
+          {
+            "node": "Se !...",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Group Info": {
+      "main": [
+        [
+          {
+            "node": "Select rows from a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "group info": {
+      "main": [
+        [
+          {
+            "node": "Get Group Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Direto": {
+      "main": [
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If Join Group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Grupo Ativo": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Join Group": {
+      "main": [
+        [
+          {
+            "node": "group info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Luiz Teste?": {
+      "main": [
+        [
+          {
+            "node": "call Pantero - private v2 BETA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "call Pantero - private v2 BETA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send to MGM Tracker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "uazapi - avisa Yuri",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "saveDataSuccessExecution": "all"
+  },
+  "versionId": "4e0004a5-8f48-4492-b8e6-da578eb8ceda",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "qlRMtNlYOSb0DPzd",
+  "tags": [
+    {
+      "createdAt": "2025-03-01T19:53:57.613Z",
+      "updatedAt": "2025-03-01T19:53:57.613Z",
+      "id": "yfZBovSU78ejR9Uo",
+      "name": "v2"
+    },
+    {
+      "createdAt": "2025-03-01T19:53:57.616Z",
+      "updatedAt": "2025-03-01T19:53:57.616Z",
+      "id": "yfIje2YrPNg0mcIl",
+      "name": "Pantero"
+    }
+  ]
+}

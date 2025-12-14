@@ -1,0 +1,452 @@
+{
+  "name": "Tool - Análise de videos Youtube",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "11fa65e2-01e7-433f-98b5-bf80c845a5c1",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        352,
+        -144
+      ],
+      "id": "e07200ab-5150-4805-8f67-93ab38d5e289",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, test_maker_id, URL, source, title, transcript, video_length, created_at \nFROM content_video \nWHERE URL = $1 \nORDER BY created_at DESC \nLIMIT 1;",
+        "options": {
+          "queryReplacement": "={{ $json.video_id ? ('https://www.youtube.com/watch?v=' + $json.video_id) : $json.video_url }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        128,
+        -144
+      ],
+      "id": "1e50802c-7ffa-495a-8bd9-2acc2f8d4925",
+      "name": "get - video content",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "SRbBuiGN9bR0qhkI",
+          "name": "Postgres - manytest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega dados do vídeo e transcrição dos nós anteriores\nconst videoInfo = $('get video_info API').first().json;\nconst transcriptData = $('get transcript API').first().json;\n\n// Função para converter segundos em formato \"Xm Ys\"\nfunction formatDuration(seconds) {\n  const totalSeconds = parseInt(seconds);\n  const minutes = Math.floor(totalSeconds / 60);\n  const remainingSeconds = totalSeconds % 60;\n  return `${minutes}m${remainingSeconds}s`;\n}\n\n// Função para converter offset (milissegundos) em formato \"Xm Ys\"\nfunction formatTimestamp(offsetMs) {\n  const totalSeconds = Math.floor(offsetMs / 1000);\n  const minutes = Math.floor(totalSeconds / 60);\n  const seconds = totalSeconds % 60;\n  return `${minutes}m${seconds}s`;\n}\n\n// Processa a transcrição\nlet transcript = \"\";\nconst content = transcriptData.content || [];\n\n// Monta a transcrição no formato: \"0m0s - texto\"\ncontent.forEach(item => {\n  const time = formatTimestamp(item.offset);\n  const cleanText = item.text.trim();\n  transcript += `${time} - ${cleanText}\\n`;\n});\n\n// Remove a última quebra de linha\ntranscript = transcript.trim();\n\n// Monta o objeto final\nreturn [{\n  video: {\n    id: videoInfo.id,\n    title: videoInfo.title,\n    description: videoInfo.description,\n    lenght: formatDuration(videoInfo.lengthSeconds),\n    channel: {\n      title: videoInfo.channelTitle,\n      id: videoInfo.channelId\n    },\n    transcript: transcript\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        -144
+      ],
+      "id": "0603799c-26f3-4834-a968-6910db913112",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "content_video",
+          "mode": "list",
+          "cachedResultName": "content_video"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "source": "youtube",
+            "url": "=https://www.youtube.com/watch?v={{ $('Code').first().json.video.id }}",
+            "title": "={{ $('Code').first().json.video.title }}",
+            "transcript": "={{ $('Code').first().json.video.transcript }}",
+            "test_maker_id": "={{ $('tool_analisar_video_youtube').item.json.user_info.id }}",
+            "video_length": "={{ $json.video.lenght }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "test_maker_id",
+              "displayName": "test_maker_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "transcript",
+              "displayName": "transcript",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "video_length",
+              "displayName": "video_length",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "active",
+              "displayName": "active",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1232,
+        -144
+      ],
+      "id": "01478194-e7d1-40b4-aeec-b00b64c7a367",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "SRbBuiGN9bR0qhkI",
+          "name": "Postgres - manytest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "type",
+              "value": "analise_video"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        -144
+      ],
+      "id": "6215fb35-2760-4a8c-81b2-32be07d8f3a2",
+      "name": "Execution Data1"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "video_id"
+            },
+            {
+              "name": "video_url"
+            },
+            {
+              "name": "user_info",
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -336,
+        -144
+      ],
+      "id": "72b4438e-b997-4618-83f1-c8152f060341",
+      "name": "tool_analisar_video_youtube"
+    },
+    {
+      "parameters": {
+        "url": "https://yt-api.p.rapidapi.com/video/info",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $('tool_analisar_video_youtube').item.json.video_id.split(\"?\")[0] }}"
+            },
+            {
+              "name": "audios",
+              "value": "={{ false }}"
+            },
+            {
+              "name": "videos",
+              "value": "={{ false }}"
+            },
+            {
+              "name": "=subtitles",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "yt-api.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "7ec1e52098msh44f6062ec155202p1b7468jsn8a69257736f6"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        608,
+        -144
+      ],
+      "id": "5e5adeb6-7bb1-46ce-a0d5-a6f3c138691c",
+      "name": "get video_info API"
+    },
+    {
+      "parameters": {
+        "url": "https://youtube-transcripts.p.rapidapi.com/youtube/transcript",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "=https://www.youtube.com/watch?v={{ $json.id.split(\"?\")[0] }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "youtube-transcripts.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "7ec1e52098msh44f6062ec155202p1b7468jsn8a69257736f6"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        800,
+        -144
+      ],
+      "id": "6794be2e-0a34-4d53-87c8-068eb6ced05e",
+      "name": "get transcript API"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        608,
+        64
+      ],
+      "id": "a70ab74d-850d-4754-96f3-b7bcd5189cb8",
+      "name": "Response"
+    }
+  ],
+  "connections": {
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "get video_info API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get - video content": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        []
+      ]
+    },
+    "Execution Data1": {
+      "main": [
+        [
+          {
+            "node": "get - video content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tool_analisar_video_youtube": {
+      "main": [
+        [
+          {
+            "node": "Execution Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get video_info API": {
+      "main": [
+        [
+          {
+            "node": "get transcript API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get transcript API": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "12862660-e8a6-44a2-8ae4-5cf01e7d5934",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "nJdEKFn4IUoFP6IW",
+  "tags": []
+}

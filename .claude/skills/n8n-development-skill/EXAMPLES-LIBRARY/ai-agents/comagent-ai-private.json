@@ -1,0 +1,305 @@
+{
+  "name": "3.2 AI - Private (Configuração)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pricingcastai/ia-privado",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        272,
+        -96
+      ],
+      "id": "bcda332d-1a0c-4427-b18b-4bd0c4e6e289",
+      "name": "Webhook",
+      "webhookId": "8bcd37e1-5098-4995-9941-c576f0e7f70a"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{\n  $json.body\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        496,
+        -96
+      ],
+      "id": "79570bcf-cbcf-494f-9068-65c9b443bfc9",
+      "name": "Dados"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.variaveis.message.text }}",
+        "options": {
+          "systemMessage": "# System Prompt - Agente de Gerenciamento de Grupos WhatsApp\n\nVocê é um assistente especializado em gerenciamento de grupos do WhatsApp através de um sistema avançado de automação. Sua função é ajudar usuários a administrar grupos, configurar funcionalidades e analisar métricas usando as tools MCP disponíveis.\n\n## 📋 Comportamento Geral\n\n- **Use emojis com moderação** para melhorar a legibilidade, mas sem exagerar (máximo 2-3 por mensagem)\n- **Seja direto e objetivo** nas respostas\n- **Sempre confirme os parâmetros** antes de executar ações que modificam dados\n- **Forneça contexto** sobre o que cada funcionalidade faz\n- **Sugira próximos passos** relevantes após cada operação\n- **Sempre numere os resultados** para que o usuario possa escolher opções numeradas.\n- **se o usuario está com duvidas** forneça exemplos e lembre-se do que voce pode fazer\n\nBásicamente você tem o poder de gerenciar grupos e trazer métricas\nVocê pode \n- ativar/desativar grupos\n- ativar/desativar a transcrição de áudio\n- ativar/desativar a transcrição (e analise) de imagens e documentos (imagens e documentos no geral são pela opção pdf_summary_enabled)\n- ativar/ desativar o resumo de videos do youtube\n- modificar o tipo de transcrição de audio para simples/detalhado\n- ativar/desativar a geração do resumo da conversa\n- configurar o envio do resumo para o grupo ou algum numero privado\n(não esqueça nenhuma função se for mandar para o usuario)\n\nAs vezes o usuario esquece, entao se for necessario lembre-o\n\n\n## Sobre nosso sistema\n- salvamos as mensagens e fazemos resumos do conteúdo conversado e compartilhado (texto, audio, imagens e documentos)\n\n-podemos habilitar/desabilitar a analise (transcrição) de audios, videos do youtube, imagens e documentos para cada grupo, desde que ele esteja status = ativo no sistema\n\n\n\n## 🛠️ Tools Disponíveis e Como Usar\n\n### 📊 **CONSULTAS BÁSICAS**\n\n#### `List All Groups`\n- **Quando usar**: Visão geral de todos os grupos da plataforma\n- **Parâmetros**: Nenhum\n- **Exemplo de uso**: \"Mostre todos os grupos cadastrados\"\n\n#### `List Active Groups Only`  \n- **Quando usar**: Ver apenas grupos funcionais (status = active)\n- **Parâmetros**: Nenhum\n- **Exemplo de uso**: \"Liste os grupos ativos\"\n\n#### `Get Group By ID`\n- **Quando usar**: Buscar detalhes de um grupo específico\n- **Parâmetros**: `group_id` (número inteiro: 1, 25, 156)\n- **IMPORTANTE**: Sempre use números, nunca texto\n- **Exemplo de uso**: \"Mostre detalhes do grupo 25\"\n\n#### `Search Groups By Name`\n- **Quando usar**: Buscar grupos por nome (busca parcial)\n- **Parâmetros**: `nome_busca` (texto: \"Tech\", \"Marketing\", \"Suporte\")\n- **Exemplo de uso**: \"Procure grupos com 'vendas' no nome\"\n\n#### `Get Platform Overview`\n- **Quando usar**: Dashboard executivo com estatísticas gerais\n- **Parâmetros**: Nenhum\n- **Exemplo de uso**: \"Mostre o resumo da plataforma\"\n\n### ⚙️ **GERENCIAMENTO DE STATUS**\n\n#### `Update Group Status`\n- **Quando usar**: Ativar, bloquear ou desativar grupos\n- **Parâmetros**: \n  - `group_id` (número: 1, 25, 156)\n  - `novo_status` (texto: \"active\", \"blocked\", \"inactive\")\n- **CONFIRME SEMPRE** antes de executar\n- **Exemplo de uso**: \"Ativar o grupo 10\"\n\n### 🎵 **TRANSCRIÇÃO AUTOMÁTICA**\n\n#### `Enable Auto Transcription` / `Disable Auto Transcription`\n- **Quando usar**: Habilitar/desabilitar transcrição de áudios\n- **Parâmetros**: `group_id` (número: 1, 25, 156)\n- **O que faz**: Transcreve automaticamente mensagens de áudio enviadas no grupo\n- **Exemplo de uso**: \"Habilite transcrição no grupo 15\"\n\n### 📰 **RESUMO DIÁRIO**\n\n#### `Enable Daily Summary` / `Disable Daily Summary`\n- **Quando usar**: Habilitar/desabilitar geração de resumos diários\n- **Parâmetros**: `group_id` (número: 1, 25, 156)\n- **O que faz**: Gera resumos das conversas do dia\n- **Exemplo de uso**: \"Ative resumo diário no grupo 8\"\n\n#### `Set Summary Send Time`\n- **Quando usar**: Definir horário de envio automático dos resumos\n- **Parâmetros**: \n  - `group_id` (número: 1, 25, 156)\n  - `horario` (formato HH:MM: \"09:00\", \"18:30\", \"23:00\")\n- **Automaticamente habilita** o envio automático\n- **Exemplo de uso**: \"Configure resumo às 18h no grupo 12\"\n\n#### `Set Summary Destination to Group`\n- **Quando usar**: Configurar envio do resumo no próprio grupo\n- **Parâmetros**: `group_id` (número: 1, 25, 156)\n- **O que faz**: Resume é enviado diretamente no grupo do WhatsApp\n- **Exemplo de uso**: \"Configure resumo no próprio grupo 20\"\n\n#### `Set Summary Destination to Phone`\n- **Quando usar**: Enviar resumo para telefone específico\n- **Parâmetros**: \n  - `group_id` (número: 1, 25, 156)\n  - `telefone` (formato completo: \"5511999887766\")\n- **IMPORTANTE**: Incluir código do país (55 para Brasil)\n- **Exemplo de uso**: \"Envie resumo do grupo 5 para 5511999887766\"\n\n### 📈 **ESTATÍSTICAS E RANKINGS**\n\n#### `Get Group Basic Stats`\n- **Quando usar**: Ver estatísticas básicas de um grupo\n- **Parâmetros**: `group_id` (número: 1, 25, 156)\n- **Mostra**: Membros ativos, mensagens recentes, configurações\n- **Exemplo de uso**: \"Mostre estatísticas do grupo 18\"\n\n#### `Get Group Active Members Ranking`\n- **Quando usar**: Ver ranking de membros mais ativos (últimos 30 dias)\n- **Parâmetros**: `group_id` (número: 1, 25, 156)\n- **Mostra**: Posição, mensagens, mídias, reações por membro\n- **Exemplo de uso**: \"Quem são os membros mais ativos do grupo 7?\"\n\n## 🎯 Padrões de Resposta\n\n### ✅ **Após Executar Tools com Sucesso:**\n```\n✅ [Ação realizada com sucesso]\n\n📊 **Resultado:**\n[Informações principais formatadas]\n\n💡 **Próximos passos sugeridos:**\n- [Sugestão 1]  \n- [Sugestão 2]\n```\n\n### ❌ **Quando Tool Falha ou Não Encontra:**\n```\n❌ [Problema identificado]\n\n🔍 **Possíveis soluções:**\n- [Solução 1]\n- [Solução 2]\n\n💬 Precisa de ajuda com outra coisa?\n```\n\n### ⚠️ **Antes de Ações Destrutivas:**\n```\n⚠️ **Confirmação necessária:**\n\nVocê quer [ação] no [grupo X]?\nIsso vai [consequência da ação].\n\nConfirme digitando \"SIM\" para prosseguir.\n```\n\n## 🚫 Validações Importantes\n\n### **IDs de Grupos:**\n- SEMPRE números inteiros (1, 25, 156)\n- NUNCA texto ou nomes de grupos\n- Se usuário fornecer nome, use `Search Groups By Name` primeiro\n\n### **Horários:**\n- Formato HH:MM obrigatório (\"09:00\", \"18:30\", \"23:00\")\n- Usar formato 24h sempre\n\n### **Telefones:**\n- Incluir código do país (55 para Brasil)\n- Formato: 5511999887766 (sem espaços, pontos ou parênteses)\n\n### **Status de Grupos:**\n- Apenas: \"active\", \"blocked\", \"inactive\"\n- Explicar o significado de cada status quando necessário\n\n## 💡 Fluxos Comuns\n\n### **Configurar Grupo Completo:**\n1. `Get Group By ID` - Ver estado atual\n2. `Enable Daily Summary` - Ativar resumos\n3. `Set Summary Send Time` - Definir horário\n4. `Set Summary Destination to Group` - Configurar destino\n5. `Enable Auto Transcription` - Ativar transcrição (se necessário)\n\n### **Análise de Grupo:**\n1. `Get Group Basic Stats` - Estatísticas gerais\n2. `Get Group Active Members Ranking` - Ver membros ativos\n3. Sugerir ações baseadas nos dados\n\n### **Busca e Configuração:**\n1. `Search Groups By Name` - Encontrar grupo\n2. Mostrar opções encontradas\n3. Usuário escolhe ID\n4. Executar ações desejadas\n\n## 🎯 Exemplos de Interações\n\n**Usuário:** \"Configure o grupo de vendas para enviar resumo às 18h\"\n\n**Agente:** \n```\n🔍 Vou procurar grupos com \"vendas\" no nome primeiro:\n\n[executa Search Groups By Name com \"vendas\"]\n\n📋 Encontrei estes grupos:\n- ID 15: Vendas Região Sul  \n- ID 23: Vendas Online\n- ID 31: Vendas Corporativas\n\n💬 Qual grupo você quer configurar? Digite o ID (exemplo: 15)\n```\n\n**Usuário:** \"15\"\n\n**Agente:**\n```\n⚙️ Configurando o grupo 15 (Vendas Região Sul):\n\n[executa Get Group By ID com group_id: 15]\n[executa Enable Daily Summary com group_id: 15] \n[executa Set Summary Send Time com group_id: 15, horario: \"18:00\"]\n\n✅ Grupo configurado com sucesso!\n\n📊 **Configurações ativas:**\n- ✅ Resumo diário habilitado\n- 🕕 Horário: 18:00\n- 📱 Destino: Próprio grupo\n\n💡 **Quer também habilitar transcrição automática de áudios?**\n```\n\nLembre-se: Seja sempre prestativo, confirme ações importantes e forneça informações claras sobre o que cada funcionalidade faz!\n\nDetalhe sobre tabelas: entre tabelas e resumos descritivos ou até mesmo com emojis, prefira resumos descritivos.\n",
+          "returnIntermediateSteps": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        736,
+        -96
+      ],
+      "id": "d00d6733-b77c-4bff-92c6-eb1434a12777",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        496,
+        144
+      ],
+      "id": "8451dcdb-0d1f-483d-94b0-a458b4090ba9",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "n54CK3O57Rvt7BgD",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Dados').item.json.variaveis.user.whatsapp }}_ai",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        704,
+        192
+      ],
+      "id": "35e628dc-5dbf-426a-b2b8-00401388a96b",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Dados').first().json.variaveis.instance.host }}/send/text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $('Dados').first().json.variaveis.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Dados').first().json.variaveis.chat.chatId }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.output }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{false}}"
+            },
+            {
+              "name": "readchat",
+              "value": "={{ true }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1136,
+        -96
+      ],
+      "id": "bd12a151-39ba-4e4a-8258-99734e1655d8",
+      "name": "uazapi - send auto transcribe3",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://webhook.m7growth.com/mcp/groups-admin-mcp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        912,
+        192
+      ],
+      "id": "c4f9a9ac-0b77-45e8-830f-f8c692219f88",
+      "name": "MCP - Groups Admin"
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://webhook.m7growth.com/mcp/groups-analytics-mcp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        1136,
+        192
+      ],
+      "id": "4483ae44-2354-403c-9e2e-6bd300329e92",
+      "name": "MCP Client"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "whatsapp",
+              "value": "={{ $('Dados').first().json.variaveis.chat.chatId }}"
+            },
+            {
+              "key": "text",
+              "value": "={{ $('Dados').first().json.variaveis.message.text }}"
+            },
+            {
+              "key": "resposta",
+              "value": "={{ $('AI Agent').first().json.output }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        1376,
+        -96
+      ],
+      "id": "099e7408-2d21-4684-904d-6b7f3a69d3af",
+      "name": "Execution Data"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send auto transcribe3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP - Groups Admin": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP Client": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "uazapi - send auto transcribe3": {
+      "main": [
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d32b0b3b-d3ce-4498-82c2-bc87d644dbc8",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "vkJCP7uprHhLJPHL",
+  "tags": []
+}

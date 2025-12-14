@@ -1,0 +1,1193 @@
+{
+  "name": "Tools Uazapi - Whatsapp",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "whatsapp/group/list",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        -960
+      ],
+      "id": "f2437314-3984-4cce-97b1-4bc2ffba2860",
+      "name": "Webhook - Listar Grupos",
+      "webhookId": "list-groups-webhook-id",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0mYqiHSHmkShkCTx",
+          "name": "FURIA - pessoal da furia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://mgm.uazapi.com/group/list",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        -960
+      ],
+      "id": "81987a62-01d2-4437-930e-1ddb02dbd974",
+      "name": "Listar Todos os Grupos",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp/group/updateParticipants",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        -496
+      ],
+      "id": "73068fdf-8e3c-4937-bf0b-7fc2470bbabd",
+      "name": "Webhook - Gerenciar Membros",
+      "webhookId": "manage-members-webhook-id",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0mYqiHSHmkShkCTx",
+          "name": "FURIA - pessoal da furia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mgm.uazapi.com/group/updateParticipants",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        -496
+      ],
+      "id": "413857a8-a62f-45b6-8f4f-04d4e6c12d08",
+      "name": "Aprovar/Rejeitar Membros",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp/group/info",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        -32
+      ],
+      "id": "e5c7abbf-84b7-4297-8953-1dc9b1033da0",
+      "name": "Webhook - Info do Grupo",
+      "webhookId": "group-info-webhook-id",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0mYqiHSHmkShkCTx",
+          "name": "FURIA - pessoal da furia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mgm.uazapi.com/group/info",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        -32
+      ],
+      "id": "8964154e-02bd-4ffc-a8f4-cad9c00bd95d",
+      "name": "Buscar Info Completa do Grupo",
+      "executeOnce": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp/community/manage",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        480
+      ],
+      "id": "be947cc1-f69a-4b00-a812-e107af33af36",
+      "name": "Webhook - Gerenciar Comunidade",
+      "webhookId": "community-groups-webhook-id",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0mYqiHSHmkShkCTx",
+          "name": "FURIA - pessoal da furia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mgm.uazapi.com/community/editgroups",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        480
+      ],
+      "id": "4bf4ddad-f7dd-4caa-9229-690f39e37106",
+      "name": "Adicionar/Remover Grupos da Comunidade",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "path": "v2/whatsapp/group/list",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        -768
+      ],
+      "id": "b4aba391-74c8-411d-aa88-de07acf752f0",
+      "name": "Webhook - Listar Grupos1",
+      "webhookId": "list-groups-webhook-id"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "v2/whatsapp/group/updateParticipants",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        -288
+      ],
+      "id": "033656cd-5b43-4712-ac9b-a676548ccb92",
+      "name": "Webhook - Gerenciar Membros1",
+      "webhookId": "manage-members-webhook-id"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "v2/whatsapp/group/info",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        160
+      ],
+      "id": "5d853fcc-6de8-4132-823e-6fb663ce1c81",
+      "name": "Webhook - Info do Grupo1",
+      "webhookId": "group-info-webhook-id"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "v2/whatsapp/community/manage",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        672
+      ],
+      "id": "7f6e456a-09f5-433a-8632-55764293d1f6",
+      "name": "Webhook - Gerenciar Comunidade1",
+      "webhookId": "community-groups-webhook-id"
+    },
+    {
+      "parameters": {
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/auth/v1/user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2ZmdpaHhqb25hb3d1YmxkdnltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAyMjk5MjUsImV4cCI6MjA0NTgwNTkyNX0.2ujO8rU0lvVV2TfvJJc9IzUSvJjm5cVdpTmUojMz1NA"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "b78eaca3-df76-4493-8bfa-9b0bb7d38a69",
+      "name": "Validar JWT Supabase6",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        -768
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9afa9c56-5a41-4e3c-981a-2a6a68c2a3af",
+              "leftValue": "={{ $json.aud }}",
+              "rightValue": "authenticated",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        -768
+      ],
+      "id": "b08cb0d8-e77d-4958-aade-1159dc1db332",
+      "name": "If - Authenticated6"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "error-response",
+              "name": "status",
+              "value": "error",
+              "type": "string"
+            },
+            {
+              "id": "invalid-flag",
+              "name": "jwt_valid",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error-message",
+              "name": "message",
+              "value": "JWT inválido ou expirado - Acesso negado",
+              "type": "string"
+            },
+            {
+              "id": "status-code",
+              "name": "http_status",
+              "value": "={{ $json.statusCode }}",
+              "type": "number"
+            },
+            {
+              "id": "error-detail",
+              "name": "error_detail",
+              "value": "={{ $json.body?.error_description || $json.body?.message || 'Token não autorizado' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7faba4c9-272b-4d4a-8686-385a169b4b4c",
+      "name": "JWT Inválido - Erro1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        688,
+        -768
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e3716bef-ae68-416d-b57e-f6ad8610bcc5",
+              "name": "body",
+              "value": "={{ $('Webhook - Listar Grupos1').item.json.body }}",
+              "type": "object"
+            },
+            {
+              "id": "5200b8cf-b296-4242-800d-382eca9120c4",
+              "name": "webhookUrl",
+              "value": "={{ $('Webhook - Listar Grupos1').item.json.webhookUrl.split(\".br/\")[1] }}",
+              "type": "string"
+            },
+            {
+              "id": "7837586e-d89a-41e6-a788-104cb868d872",
+              "name": "aud",
+              "value": "={{ $json.aud }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        -768
+      ],
+      "id": "58f80c34-9f3d-42b3-8f9b-4b97f9356503",
+      "name": "Normalização"
+    },
+    {
+      "parameters": {
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/auth/v1/user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2ZmdpaHhqb25hb3d1YmxkdnltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAyMjk5MjUsImV4cCI6MjA0NTgwNTkyNX0.2ujO8rU0lvVV2TfvJJc9IzUSvJjm5cVdpTmUojMz1NA"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "f33e10ec-f0e2-48b6-8c27-9d262c45db99",
+      "name": "Validar JWT Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -16,
+        -288
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9afa9c56-5a41-4e3c-981a-2a6a68c2a3af",
+              "leftValue": "={{ $json.aud }}",
+              "rightValue": "authenticated",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        -288
+      ],
+      "id": "4bbbbcf8-a7b7-4b7f-8a6d-c09bd294bfd2",
+      "name": "If - Authenticated"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "error-response",
+              "name": "status",
+              "value": "error",
+              "type": "string"
+            },
+            {
+              "id": "invalid-flag",
+              "name": "jwt_valid",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error-message",
+              "name": "message",
+              "value": "JWT inválido ou expirado - Acesso negado",
+              "type": "string"
+            },
+            {
+              "id": "status-code",
+              "name": "http_status",
+              "value": "={{ $json.statusCode }}",
+              "type": "number"
+            },
+            {
+              "id": "error-detail",
+              "name": "error_detail",
+              "value": "={{ $json.body?.error_description || $json.body?.message || 'Token não autorizado' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "bf8005bf-336f-4cf5-bd54-8b53d2be3ccb",
+      "name": "JWT Inválido - Erro",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        -288
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e3716bef-ae68-416d-b57e-f6ad8610bcc5",
+              "name": "body",
+              "value": "={{ $('Webhook - Gerenciar Membros1').item.json.body }}",
+              "type": "object"
+            },
+            {
+              "id": "5200b8cf-b296-4242-800d-382eca9120c4",
+              "name": "webhookUrl",
+              "value": "={{ $('Webhook - Gerenciar Membros1').item.json.webhookUrl.split(\".br/\")[1] }}",
+              "type": "string"
+            },
+            {
+              "id": "c02b24ca-d839-4183-907c-19600fb8b1cb",
+              "name": "aud",
+              "value": "={{ $json.aud }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        -288
+      ],
+      "id": "c6413302-1733-485c-b148-c4b976567283",
+      "name": "Normalização1"
+    },
+    {
+      "parameters": {
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/auth/v1/user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2ZmdpaHhqb25hb3d1YmxkdnltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAyMjk5MjUsImV4cCI6MjA0NTgwNTkyNX0.2ujO8rU0lvVV2TfvJJc9IzUSvJjm5cVdpTmUojMz1NA"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "ab635eb5-3cd4-4bcc-bd94-efd9d9bac43b",
+      "name": "Validar JWT Supabase1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        16,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9afa9c56-5a41-4e3c-981a-2a6a68c2a3af",
+              "leftValue": "={{ $json.aud }}",
+              "rightValue": "authenticated",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        160
+      ],
+      "id": "739590aa-a6aa-45c8-bdfd-41da56053926",
+      "name": "If - Authenticated1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "error-response",
+              "name": "status",
+              "value": "error",
+              "type": "string"
+            },
+            {
+              "id": "invalid-flag",
+              "name": "jwt_valid",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error-message",
+              "name": "message",
+              "value": "JWT inválido ou expirado - Acesso negado",
+              "type": "string"
+            },
+            {
+              "id": "status-code",
+              "name": "http_status",
+              "value": "={{ $json.statusCode }}",
+              "type": "number"
+            },
+            {
+              "id": "error-detail",
+              "name": "error_detail",
+              "value": "={{ $json.body?.error_description || $json.body?.message || 'Token não autorizado' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ab890bc9-6e17-462b-b734-0f2fce762c2a",
+      "name": "JWT Inválido - Erro2",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e3716bef-ae68-416d-b57e-f6ad8610bcc5",
+              "name": "body",
+              "value": "={{ $('Webhook - Info do Grupo1').item.json.body }}",
+              "type": "object"
+            },
+            {
+              "id": "5200b8cf-b296-4242-800d-382eca9120c4",
+              "name": "webhookUrl",
+              "value": "={{ $('Webhook - Info do Grupo1').item.json.webhookUrl.split(\".br/\")[1] }}",
+              "type": "string"
+            },
+            {
+              "id": "2bc91d6e-35f0-46b3-8f6c-41c3a7e85592",
+              "name": "aud",
+              "value": "={{ $json.aud }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        160
+      ],
+      "id": "c4c7c7fa-a620-4eb5-ac45-4e65ee833de5",
+      "name": "Normalização2"
+    },
+    {
+      "parameters": {
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/auth/v1/user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2ZmdpaHhqb25hb3d1YmxkdnltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAyMjk5MjUsImV4cCI6MjA0NTgwNTkyNX0.2ujO8rU0lvVV2TfvJJc9IzUSvJjm5cVdpTmUojMz1NA"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "878d5101-0a07-47a0-b4a4-dfcb9c2d452a",
+      "name": "Validar JWT Supabase2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        16,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9afa9c56-5a41-4e3c-981a-2a6a68c2a3af",
+              "leftValue": "={{ $json.aud }}",
+              "rightValue": "authenticated",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        672
+      ],
+      "id": "a839e765-787e-40a4-b228-8f9ff4f4c0c3",
+      "name": "If - Authenticated2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "error-response",
+              "name": "status",
+              "value": "error",
+              "type": "string"
+            },
+            {
+              "id": "invalid-flag",
+              "name": "jwt_valid",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error-message",
+              "name": "message",
+              "value": "JWT inválido ou expirado - Acesso negado",
+              "type": "string"
+            },
+            {
+              "id": "status-code",
+              "name": "http_status",
+              "value": "={{ $json.statusCode }}",
+              "type": "number"
+            },
+            {
+              "id": "error-detail",
+              "name": "error_detail",
+              "value": "={{ $json.body?.error_description || $json.body?.message || 'Token não autorizado' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5f298d7d-790d-4c4e-8b1e-2e304a6a0543",
+      "name": "JWT Inválido - Erro3",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        688,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e3716bef-ae68-416d-b57e-f6ad8610bcc5",
+              "name": "body",
+              "value": "={{ $('Webhook - Gerenciar Comunidade1').item.json.body }}",
+              "type": "object"
+            },
+            {
+              "id": "5200b8cf-b296-4242-800d-382eca9120c4",
+              "name": "webhookUrl",
+              "value": "={{ $('Webhook - Gerenciar Comunidade1').item.json.webhookUrl.split(\".br/\")[1] }}",
+              "type": "string"
+            },
+            {
+              "id": "7675b736-0ce4-45bd-90c3-009cdee6ef70",
+              "name": "aud",
+              "value": "={{ $json.aud }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        672
+      ],
+      "id": "96658114-a648-451b-a87e-6b85062d28ac",
+      "name": "Normalização3"
+    }
+  ],
+  "connections": {
+    "Webhook - Listar Grupos": {
+      "main": [
+        [
+          {
+            "node": "Listar Todos os Grupos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Gerenciar Membros": {
+      "main": [
+        [
+          {
+            "node": "Aprovar/Rejeitar Membros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Info do Grupo": {
+      "main": [
+        [
+          {
+            "node": "Buscar Info Completa do Grupo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Gerenciar Comunidade": {
+      "main": [
+        [
+          {
+            "node": "Adicionar/Remover Grupos da Comunidade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar JWT Supabase6": {
+      "main": [
+        [
+          {
+            "node": "Normalização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Authenticated6": {
+      "main": [
+        [
+          {
+            "node": "Listar Todos os Grupos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JWT Inválido - Erro1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalização": {
+      "main": [
+        [
+          {
+            "node": "If - Authenticated6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Listar Grupos1": {
+      "main": [
+        [
+          {
+            "node": "Validar JWT Supabase6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar JWT Supabase": {
+      "main": [
+        [
+          {
+            "node": "Normalização1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Authenticated": {
+      "main": [
+        [
+          {
+            "node": "Aprovar/Rejeitar Membros",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JWT Inválido - Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalização1": {
+      "main": [
+        [
+          {
+            "node": "If - Authenticated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Gerenciar Membros1": {
+      "main": [
+        [
+          {
+            "node": "Validar JWT Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar JWT Supabase1": {
+      "main": [
+        [
+          {
+            "node": "Normalização2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Authenticated1": {
+      "main": [
+        [
+          {
+            "node": "Buscar Info Completa do Grupo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JWT Inválido - Erro2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalização2": {
+      "main": [
+        [
+          {
+            "node": "If - Authenticated1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Info do Grupo1": {
+      "main": [
+        [
+          {
+            "node": "Validar JWT Supabase1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar JWT Supabase2": {
+      "main": [
+        [
+          {
+            "node": "Normalização3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Authenticated2": {
+      "main": [
+        [
+          {
+            "node": "Adicionar/Remover Grupos da Comunidade",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JWT Inválido - Erro3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalização3": {
+      "main": [
+        [
+          {
+            "node": "If - Authenticated2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Gerenciar Comunidade1": {
+      "main": [
+        [
+          {
+            "node": "Validar JWT Supabase2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f3348837-4840-4859-93cb-73d0af0a857f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "SwvqAM7MOhQVuZJz",
+  "tags": []
+}

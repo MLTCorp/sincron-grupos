@@ -1,0 +1,433 @@
+{
+  "name": "Tool - Geração de testes",
+  "nodes": [
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "video_id",
+              "value": "={{ $json.video_id }}"
+            },
+            {
+              "key": "video_url",
+              "value": "={{ $json.video_url }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1,
+      "position": [
+        336,
+        -48
+      ],
+      "id": "c4519a06-442c-4727-ab39-3e1251941072",
+      "name": "Execution Data"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH inserted_test AS (\n  INSERT INTO tests (\n    title_byuser, \n    description, \n    content_video_id, \n    questions, \n    max_score, \n    status, \n    total_questions, \n    open_questions, \n    closed_questions, \n    test_maker_id\n  ) VALUES (\n    $1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $10\n  ) RETURNING id\n),\ninserted_questions AS (\n  INSERT INTO questions (test_id, sequence, type, question, active, required)\n  SELECT \n    (SELECT id FROM inserted_test),\n    (q.value->>'sequence')::integer,\n    q.value->>'type',\n    q.value->>'question',\n    true,  -- active sempre true\n    true   -- required sempre true\n  FROM jsonb_array_elements($11::jsonb) AS q\n  RETURNING id, sequence\n),\ninserted_options AS (\n  INSERT INTO options (questions_id, sequence, option, text, correct)\n  SELECT \n    iq.id,\n    (o.value->>'sequence')::integer,\n    o.value->>'option',\n    o.value->>'text',\n    (o.value->>'correct')::boolean\n  FROM inserted_questions iq\n  JOIN jsonb_array_elements($12::jsonb) AS o \n    ON (o.value->>'question_sequence')::integer = iq.sequence\n  RETURNING *\n)\nSELECT \n  json_build_object(\n    'test_id', (SELECT id FROM inserted_test),\n    'questions', (\n      SELECT json_agg(\n        json_build_object(\n          'id', id,\n          'sequence', sequence\n        ) ORDER BY sequence\n      ) FROM inserted_questions\n    ),\n    'questions_count', (SELECT count(*) FROM inserted_questions),\n    'options_count', (SELECT count(*) FROM inserted_options),\n    'original_jsonb', $4::jsonb\n  ) as result;",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.test.title_byuser,\n  $json.test.description,\n  $json.test.content_video_id,\n  JSON.stringify($json.test.questions),\n  $json.test.max_score,\n  $json.test.status,\n  $json.test.total_questions,\n  $json.test.open_questions,\n  $json.test.closed_questions,\n  $json.test.test_maker_id,\n  JSON.stringify($json.questions),\n  JSON.stringify($json.options)\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1472,
+        -48
+      ],
+      "id": "d6f33139-a10c-4c9c-bbd6-89f032f62dfe",
+      "name": "1. Inserir Dados nas Tabelas",
+      "credentials": {
+        "postgres": {
+          "id": "SRbBuiGN9bR0qhkI",
+          "name": "Postgres - manytest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH question_mapping AS (\n  SELECT \n    q.id,\n    q.sequence\n  FROM questions q\n  WHERE q.test_id = $1\n),\nfinal_jsonb AS (\n  SELECT \n    jsonb_build_object(\n      'test_setup', jsonb_build_object(\n        'id', $1::integer,\n        'active', ($2::jsonb->'test_setup'->>'active')::boolean,\n        'title_byuser', $2::jsonb->'test_setup'->>'title_byuser',\n        'description', $2::jsonb->'test_setup'->>'description',\n        'total_questions', ($2::jsonb->'test_setup'->>'total_questions')::integer,\n        'open_questions', ($2::jsonb->'test_setup'->>'open_questions')::integer,\n        'closed_questions', ($2::jsonb->'test_setup'->>'closed_questions')::integer,\n        'max_score', ($2::jsonb->'test_setup'->>'max_score')::integer,\n        'primary_color', $2::jsonb->'test_setup'->>'primary_color',\n        'secondary_color', $2::jsonb->'test_setup'->>'secondary_color',\n        'difficulty_level', $2::jsonb->'test_setup'->>'difficulty_level'\n      ),\n      'questions', (\n        SELECT jsonb_agg(\n          jsonb_build_object(\n            'id', qm.id,\n            'sequence', (q.value->>'sequence')::integer,\n            'active', (q.value->>'active')::boolean,\n            'required', (q.value->>'required')::boolean,\n            'type', q.value->>'type',\n            'points', (q.value->>'points')::integer,\n            'question', q.value->>'question',\n            'max_words', (q.value->>'max_words')::integer,\n            'difficulty', q.value->>'difficulty',\n            'options', q.value->'options',\n            'correct_answer', CASE \n              WHEN q.value->>'correct_answer' = 'null' OR q.value->>'correct_answer' IS NULL THEN NULL\n              ELSE (q.value->>'correct_answer')::integer\n            END,\n            'explanation', q.value->>'explanation',\n            'video_timestamp', q.value->>'video_timestamp',\n            'evaluation_criteria', q.value->'evaluation_criteria'\n          ) ORDER BY (q.value->>'sequence')::integer\n        )\n        FROM jsonb_array_elements($2::jsonb->'questions') AS q\n        LEFT JOIN question_mapping qm ON qm.sequence = (q.value->>'sequence')::integer\n      ),\n      'content_video', jsonb_build_object(\n        'id', $3::text,\n        'sequence', ($2::jsonb->'content_video'->>'sequence')::integer,\n        'active', ($2::jsonb->'content_video'->>'active')::boolean,\n        'required', ($2::jsonb->'content_video'->>'required')::boolean,\n        'title', $2::jsonb->'content_video'->>'title',\n        'url', $2::jsonb->'content_video'->>'url',\n        'source', $2::jsonb->'content_video'->>'source',\n        'video_length', $2::jsonb->'content_video'->>'video_length'\n      )\n    ) AS updated_jsonb\n)\nUPDATE tests \nSET questions = (SELECT updated_jsonb FROM final_jsonb)\nWHERE id = $1\nRETURNING \n  json_build_object(\n    'test_id', id,\n    'updated', true,\n    'final_jsonb', questions\n  ) as result;",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.result.test_id,\n  JSON.stringify($json.result.original_jsonb),\n  String($('Call Tool - Análise de videos Youtube').first().json.id || $json.result.original_jsonb.content_video.id)\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1680,
+        -48
+      ],
+      "id": "5ce98d1b-14f9-4950-969f-a5f6ce99e884",
+      "name": "2. Atualizar JSONB com IDs",
+      "credentials": {
+        "postgres": {
+          "id": "SRbBuiGN9bR0qhkI",
+          "name": "Postgres - manytest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://manytest.uazapi.com/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('tool_gerar_questionario').item.json.user_info.mobile_e164 }}"
+            },
+            {
+              "name": "text",
+              "value": "=Ok, gerando seu teste..."
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{false}}"
+            },
+            {
+              "name": "delay",
+              "value": "={{2500}}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        -256
+      ],
+      "id": "1ea3ccb4-75c1-44c7-a074-c8cbdb418f98",
+      "name": "uazapi - send message",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tgwYtEsWbsCNo8SS",
+          "name": "Uazapi - manytest"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "video-content",
+              "name": "video_content",
+              "value": "={{ $json.transcript }}",
+              "type": "string"
+            },
+            {
+              "id": "quiz-params",
+              "name": "quiz_params",
+              "value": "={{ $('tool_gerar_questionario').first().json.quiz_parameters }}",
+              "type": "object"
+            },
+            {
+              "id": "user-info",
+              "name": "user_info",
+              "value": "={{ $('tool_gerar_questionario').first().json.user_info }}",
+              "type": "object"
+            },
+            {
+              "id": "video-info",
+              "name": "video_info",
+              "value": "={{ $json.removeField('transcript') }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7701a580-13d9-4073-8fa3-1caf14b4a5df",
+      "name": "Preparar Dados para Gerador",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        816,
+        -48
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "gpt-4.1-mini"
+            },
+            {
+              "name": "instructions",
+              "value": "=Você é um especialista em educação e criação de questionários avaliativos. Sua função é analisar o conteúdo de vídeos educacionais e criar questionários estruturados e pedagogicamente eficazes.\n\n## ESTRUTURA OBRIGATÓRIA DO JSON:\n\n### test_setup:\n- active: sempre true\n- test_name: título do questionário (escolhido pelo usuário)\n- description: descrição completa do teste\n- total_questions: número total de questões\n- open_questions: número de questões dissertativas\n- closed_questions: número de questões de múltipla escolha\n- max_score: pontuação máxima total (soma dos pontos de todas as questões)\n- primary_color: SEMPRE \"#673AB6\"\n- secondary_color: SEMPRE \"#F0EBF7\"\n- difficulty_level: \"easy\", \"medium\" ou \"hard\"\n\n### questions (array):\nPara CADA questão:\n- sequence: número sequencial (1, 2, 3, 4, 5...)\n- active: sempre true\n- required: sempre true\n- type: \"CSS_closed_single_selection\" para múltipla escolha, \"OST_open_short_text\" para dissertativas\n- points: pontuação da questão (1-10)\n- question: texto da pergunta\n- max_words: limite de palavras (60-100 para múltipla escolha, 100-300 para dissertativas)\n- difficulty: \"easy\", \"medium\" ou \"hard\"\n- correct_answer: \n  * Para questões de múltipla escolha: OBRIGATORIAMENTE escolha um número DIFERENTE para cada questão\n  * NUNCA use 0 (zero)\n  * Distribua as respostas corretas de forma variada: algumas na posição 1, outras na 2, outras na 3 e outras na 4\n  * Evite padrões repetitivos (ex: não coloque várias questões seguidas com correct_answer = 1)\n  * Para questões dissertativas: use null\n- options: array de opções (4 opções para múltipla escolha, array vazio [] para dissertativas)\n  - Para múltipla escolha, cada opção tem:\n    - sequence: 1, 2, 3, 4\n    - value: texto SEM letra (apenas o texto da alternativa)\n\n- explanation: explicação detalhada da resposta\n- video_timestamp: formato \"XmYs-XmYs\" (ex: \"10m54s-11m40s\")\n- evaluation_criteria: array com 2-3 critérios de avaliação\n\n### content_video:\n- sequence: sempre 1, 2, 3...\n- active: sempre true\n- required: sempre true\n- title: título do vídeo\n- url: URL completa do YouTube\n- source: sempre \"youtube\"\n- video_length: duração no formato \"XXhXXm\" (ex: \"01h35m\")\n\n## REGRAS CRÍTICAS:\n\n1. **ALEATORIZAÇÃO DE RESPOSTAS CORRETAS**:\n   - Para cada questão de múltipla escolha, escolha independentemente um número entre 1, 2, 3 ou 4\n   - NÃO siga uma ordem ou padrão previsível\n   - Exemplo de distribuição correta em 10 questões: 3, 1, 4, 2, 3, 4, 1, 2, 4, 3\n   - Exemplo de distribuição INCORRETA: 1, 1, 1, 2, 2, 3, 3, 4, 4, 4\n\n2. **FORMATO DAS OPÇÕES**:\n   - Options NÃO devem ter letras A), B), C), D) - apenas o texto da alternativa\n   - Exemplo CORRETO: \"value\": \"A fotossíntese é o processo de conversão de luz em energia\"\n   - Exemplo INCORRETO: \"value\": \"A) A fotossíntese é o processo de conversão de luz em energia\"\n\n3. **QUESTÕES DISSERTATIVAS**:\n   - options = [] (array vazio)\n   - correct_answer = null\n\n4. **PONTUAÇÃO**:\n   - A soma dos points de todas as questões DEVE ser exatamente igual ao max_score\n\n5. **CONTAGEM**:\n   - total_questions DEVE ser igual a: open_questions + closed_questions\n\n6. **ENCODING**:\n   - Use UTF-8 characters para valores string no JSON\n   - NUNCA use escape characters\n   - Exemplo: use \"ã\" e não \"\\\\u00e3\" ou \"\\\\xe3\"\n\n## PROCESSO DE CRIAÇÃO:\n\nAo criar cada questão de múltipla escolha:\n1. Primeiro, escreva a pergunta e todas as 4 alternativas\n2. Identifique qual alternativa é a correta\n3. Ao montar o array \"options\", coloque a alternativa correta em uma posição DIFERENTE das questões anteriores\n4. Defina o \"correct_answer\" com o número da sequence onde a alternativa correta ficou\n5. Verifique se você não está repetindo o mesmo número em questões consecutivas\n\nImportante> Use UTF-8 characters for string values in the JSON response and never use escape characters. For example, use \"ä\" instead of \"\\\\u00e4\" or \"\\\\xe4\"."
+            },
+            {
+              "name": "text",
+              "value": "={{ {\n  \"format\": {\n    \"type\": \"json_schema\",\n    \"name\": \"quiz_generator_schema\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"test_setup\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"active\": {\n              \"type\": \"boolean\"\n            },\n            \"test_name\": {\n              \"type\": \"string\"\n            },\n            \"description\": {\n              \"type\": \"string\"\n            },\n            \"total_questions\": {\n              \"type\": \"integer\",\n              \"minimum\": 1\n            },\n            \"open_questions\": {\n              \"type\": \"integer\",\n              \"minimum\": 0\n            },\n            \"closed_questions\": {\n              \"type\": \"integer\",\n              \"minimum\": 0\n            },\n            \"max_score\": {\n              \"type\": \"integer\",\n              \"minimum\": 1\n            },\n            \"primary_color\": {\n              \"type\": \"string\"\n            },\n            \"secondary_color\": {\n              \"type\": \"string\"\n            },\n            \"difficulty_level\": {\n              \"type\": \"string\",\n              \"enum\": [\"easy\", \"medium\", \"hard\"]\n            }\n          },\n          \"required\": [\"active\", \"test_name\", \"description\", \"total_questions\", \"open_questions\", \"closed_questions\", \"max_score\", \"primary_color\", \"secondary_color\", \"difficulty_level\"],\n          \"additionalProperties\": false\n        },\n        \"questions\": {\n          \"type\": \"array\",\n          \"minItems\": 1,\n          \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"sequence\": {\n                \"type\": \"integer\",\n                \"minimum\": 1\n              },\n              \"active\": {\n                \"type\": \"boolean\"\n              },\n              \"required\": {\n                \"type\": \"boolean\"\n              },\n              \"type\": {\n                \"type\": \"string\",\n                \"enum\": [\"CSS_closed_multiple_choice_single_selection\", \"OST_open_short_text\"]\n              },\n              \"points\": {\n                \"type\": \"integer\",\n                \"minimum\": 1,\n                \"maximum\": 10\n              },\n              \"question\": {\n                \"type\": \"string\",\n                \"minLength\": 10\n              },\n              \"max_words\": {\n                \"type\": \"integer\",\n                \"minimum\": 50,\n                \"maximum\": 500\n              },\n              \"difficulty\": {\n                \"type\": \"string\",\n                \"enum\": [\"easy\", \"medium\", \"hard\"]\n              },\n              \"correct_answer\": {\n                \"type\": [\"integer\", \"null\"],\n                \"minimum\": 1,\n                \"maximum\": 4\n              },\n              \"options\": {\n                \"type\": \"array\",\n                \"items\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"sequence\": {\n                      \"type\": \"integer\",\n                      \"minimum\": 1,\n                      \"maximum\": 4\n                    },\n                    \"value\": {\n                      \"type\": \"string\",\n                      \"minLength\": 1\n                    }\n                  },\n                  \"required\": [\"sequence\", \"value\"],\n                  \"additionalProperties\": false\n                }\n              },\n              \"explanation\": {\n                \"type\": \"string\"\n              },\n              \"video_timestamp\": {\n                \"type\": \"string\"\n              },\n              \"evaluation_criteria\": {\n                \"type\": \"array\",\n                \"items\": {\n                  \"type\": \"string\",\n                  \"minLength\": 5\n                },\n                \"minItems\": 2,\n                \"maxItems\": 5\n              }\n            },\n            \"required\": [\"sequence\", \"active\", \"required\", \"type\", \"points\", \"question\", \"max_words\", \"difficulty\", \"options\", \"correct_answer\", \"explanation\", \"video_timestamp\", \"evaluation_criteria\"],\n            \"additionalProperties\": false\n          }\n        },\n        \"content_video\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"sequence\": {\n              \"type\": \"integer\"\n            },\n            \"active\": {\n              \"type\": \"boolean\"\n            },\n            \"required\": {\n              \"type\": \"boolean\"\n            },\n            \"title\": {\n              \"type\": \"string\"\n            },\n            \"url\": {\n              \"type\": \"string\"\n            },\n            \"source\": {\n              \"type\": \"string\"\n            },\n            \"video_length\": {\n              \"type\": \"string\"\n            }\n          },\n          \"required\": [\"sequence\", \"active\", \"required\", \"title\", \"url\", \"source\", \"video_length\"],\n          \"additionalProperties\": false\n        }\n      },\n      \"required\": [\"test_setup\", \"questions\", \"content_video\"],\n      \"additionalProperties\": false\n    },\n    \"strict\": true\n  }\n} }}"
+            },
+            {
+              "name": "input",
+              "value": "=CONTEÚDO DO VÍDEO:\n{{$json.video_content}}\n\nPARÂMETROS DO QUESTIONÁRIO:\n- Total de questões: {{$json.quiz_params.total_questions}}\n- Questões múltipla escolha: {{$json.quiz_params.multiple_choice_count}}\n- Questões dissertativas: {{$json.quiz_params.essay_count}}\n- Título do questionário: {{$json.quiz_params.title}}\n- Dificuldade desejada: {{$json.quiz_params.difficulty || 'medium'}}\n\nINFORMAÇÕES DO VÍDEO:\n- Título: {{$json.video_info.title}}\n- ID: {{$json.video_info.id}}\n- URL: {{ $json.video_info.url }}\n- Duração: {{ $json.video_info.video_length || $json.video_info.lenght}}\n\nCRIE UM QUESTIONÁRIO seguindo EXATAMENTE a estrutura especificada.\nLEMBRE-SE:\n- correct_answer para múltipla escolha: (posicionada aleatoriamente) 1, 2, 3 ou 4 (NUNCA 0)\n- sempre aleatorize as correct_answer para que as respostas corretas estejam em posições diferentes entre as questões\n- correct_answer para dissertativas: null\n- options sem letras, apenas texto\n- cores obrigatórias: primary_color=\"#673AB6\", secondary_color=\"#F0EBF7\""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fb9e79bd-9d3a-45b0-a0ff-f8fc0b446eb0",
+      "name": "OpenAI - Gerador de Questionário",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        -48
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "Er8fjgP28B3h16av",
+          "name": "OpenAi - Manytest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processa resposta da OpenAI com a nova estrutura\nconst openAIResponse = JSON.parse($json.output[0].content[0].text);\nconst userInfo = $('tool_gerar_questionario').first().json.user_info;\nconst videoInfo = $('Preparar Dados para Gerador').first().json.video_info;\nconst contentVideoId = $('Call Tool - Análise de videos Youtube').first().json.id;\n\n// 1. PREPARAR JSONB INICIAL (será atualizado após INSERTs)\nconst questionsJsonb = {\n  test_setup: {\n    id: null, // Será preenchido após INSERT\n    active: openAIResponse.test_setup.active,\n    title_byuser: openAIResponse.test_setup.test_name,\n    description: openAIResponse.test_setup.description,\n    total_questions: openAIResponse.test_setup.total_questions,\n    open_questions: openAIResponse.test_setup.open_questions,\n    closed_questions: openAIResponse.test_setup.closed_questions,\n    max_score: openAIResponse.test_setup.max_score,\n    primary_color: openAIResponse.test_setup.primary_color,\n    secondary_color: openAIResponse.test_setup.secondary_color,\n    difficulty_level: openAIResponse.test_setup.difficulty_level\n  },\n  questions: openAIResponse.questions.map(q => ({\n    id: null, // Será preenchido após INSERT\n    sequence: q.sequence,\n    active: q.active,\n    required: q.required,\n    type: q.type,\n    points: q.points,\n    question: q.question,\n    max_words: q.max_words,\n    difficulty: q.difficulty,\n    options: q.options,\n    correct_answer: q.correct_answer,\n    explanation: q.explanation,\n    video_timestamp: q.video_timestamp,\n    evaluation_criteria: q.evaluation_criteria\n  })),\n  content_video: {\n    id: contentVideoId || null,\n    sequence: openAIResponse.content_video.sequence,\n    active: openAIResponse.content_video.active,\n    required: openAIResponse.content_video.required,\n    title: openAIResponse.content_video.title,\n    url: openAIResponse.content_video.url,\n    source: openAIResponse.content_video.source,\n    video_length: openAIResponse.content_video.video_length\n  }\n};\n\n// 2. DADOS PARA TABELA TESTS\nconst test = {\n  title_byuser: openAIResponse.test_setup.test_name,\n  description: openAIResponse.test_setup.description,\n  content_video_id: contentVideoId || null,\n  questions: questionsJsonb, // JSONB completo\n  max_score: openAIResponse.test_setup.max_score,\n  status: 'draft',\n  total_questions: openAIResponse.test_setup.total_questions,\n  open_questions: openAIResponse.test_setup.open_questions,\n  closed_questions: openAIResponse.test_setup.closed_questions,\n  test_maker_id: userInfo?.id || userInfo?.user_id || null\n};\n\n// 3. DADOS PARA TABELA QUESTIONS\nconst questions = openAIResponse.questions.map(q => ({\n  id_test: null, // Será preenchido após salvar o test\n  sequence: q.sequence,\n  type: q.type === 'CSS_closed_multiple_choice_single_selection' ? 'CSS_closed_multiple_choice_single_selection' : 'OST_open_short_text',\n  question: q.question,\n  correct_answer: q.type === 'CSS_closed_multiple_choice_single_selection' ? q.correct_answer : null\n}));\n\n// 4. DADOS PARA TABELA OPTIONS\nconst options = [];\nopenAIResponse.questions.forEach(q => {\n  if (q.type === 'CSS_closed_multiple_choice_single_selection' && q.options && q.options.length > 0) {\n    q.options.forEach(opt => {\n      options.push({\n        questions_id: null, // Será preenchido após salvar a question\n        question_sequence: q.sequence,\n        sequence: opt.sequence,\n        option: String.fromCharCode(64 + opt.sequence), // A=1, B=2, C=3, D=4\n        text: opt.value,\n        correct: opt.sequence === q.correct_answer\n      });\n    });\n  }\n});\n\n// RETORNA DADOS ORGANIZADOS\nreturn {\n  test: test,\n  questions: questions,\n  options: options,\n  questionsJsonb: questionsJsonb\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        -48
+      ],
+      "id": "e60ab072-61f6-4302-a1d1-dfc531e3ec08",
+      "name": "Processar Resposta Quiz"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "video_id"
+            },
+            {
+              "name": "video_url"
+            },
+            {
+              "name": "quiz_parameters",
+              "type": "object"
+            },
+            {
+              "name": "user_info",
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        96,
+        -48
+      ],
+      "id": "91e0584a-94d9-42be-b335-6b44fb955ce6",
+      "name": "tool_gerar_questionario"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "nJdEKFn4IUoFP6IW",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/nJdEKFn4IUoFP6IW",
+          "cachedResultName": "Tool - Análise de videos Youtube"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "video_id": "={{ $json.video_id }}",
+            "video_url": "={{ $json.video_url }}",
+            "user_info": "={{ $json.user_info }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "video_id",
+              "displayName": "video_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "video_url",
+              "displayName": "video_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "user_info",
+              "displayName": "user_info",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        -48
+      ],
+      "id": "81792ba2-e799-405f-a0ec-cd1820e579c2",
+      "name": "Call Tool - Análise de videos Youtube"
+    }
+  ],
+  "connections": {
+    "Execution Data": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call Tool - Análise de videos Youtube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Inserir Dados nas Tabelas": {
+      "main": [
+        [
+          {
+            "node": "2. Atualizar JSONB com IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "uazapi - send message": {
+      "main": [
+        []
+      ]
+    },
+    "Preparar Dados para Gerador": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Gerador de Questionário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Gerador de Questionário": {
+      "main": [
+        [
+          {
+            "node": "Processar Resposta Quiz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Resposta Quiz": {
+      "main": [
+        [
+          {
+            "node": "1. Inserir Dados nas Tabelas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tool_gerar_questionario": {
+      "main": [
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Tool - Análise de videos Youtube": {
+      "main": [
+        [
+          {
+            "node": "Preparar Dados para Gerador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "13f0507e-dd58-4a4a-a247-ea16290234cf",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "xfoD8YboKOGl6JDF",
+  "tags": []
+}

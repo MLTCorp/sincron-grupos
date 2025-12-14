@@ -1,0 +1,1466 @@
+{
+  "name": "1- Tracker",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "eba4f22a-e13c-4c8f-a225-82593bf23af9",
+              "name": "variaveis.chat.chatId",
+              "value": "={{ $json.body.message.chatid.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "dd69a97c-046c-4948-869c-9568fb4ab5fb",
+              "name": "variaveis.chat.groupName",
+              "value": "={{ $json.body.message.groupName }}",
+              "type": "string"
+            },
+            {
+              "id": "6a3fc213-3e9f-4124-a1b8-5a249f15660a",
+              "name": "variaveis.user.whatsapp",
+              "value": "={{ $json.body.message.sender_pn.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "bedd9dfe-2cef-4708-afe6-65739e1fc30b",
+              "name": "variaveis.message.text",
+              "value": "={{ $json.body.message.content.text || $json.body.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "4b8332ca-d18a-4e1d-b79c-864dbc961d36",
+              "name": "variaveis.message.id",
+              "value": "={{ $json.body.message.messageid }}",
+              "type": "string"
+            },
+            {
+              "id": "9346d8da-22f3-42c9-a139-4db62a8062bb",
+              "name": "variaveis.message.fromMe",
+              "value": "={{ $json.body.message.fromMe }}",
+              "type": "boolean"
+            },
+            {
+              "id": "3e48fd29-63ca-4879-9d9c-9bff97a6e02a",
+              "name": "variaveis.message.type",
+              "value": "={{ $json.body.message.type == 'text' ? $json.body.message.type : $json.body.message.messageType.split(\"M\")[0].replace(\"Extended\",\"\") }}",
+              "type": "string"
+            },
+            {
+              "id": "4d61bada-3911-4565-959b-702f96b39bac",
+              "name": "variaveis.message.responded.whatsapp",
+              "value": "={{ $json.body.message.content.contextInfo?.participant.split(\"@\")[0] || $json.body.message.content.key.participant.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "d88bcf78-a460-4369-8072-b18b8fb7ab99",
+              "name": "variaveis.message.responded.text",
+              "value": "={{ $json.body.message.content.contextInfo.quotedMessage.conversation || $json.body.message.content.contextInfo.quotedMessage.extendedTextMessage.text }}",
+              "type": "string"
+            },
+            {
+              "id": "7a3b8be7-14d6-4981-a27d-3f1f2082aecb",
+              "name": "variaveis.message.responded.id",
+              "value": "={{ $json.body.message.content.contextInfo?.stanzaID || $json.body.message.quoted || $json.body.message.content.key.ID }}",
+              "type": "string"
+            },
+            {
+              "id": "f8175cd6-8828-4705-b5cc-7ae2853541ff",
+              "name": "variaveis.message.timestamp",
+              "value": "={{ $json.body.message.messageTimestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "343b33a6-d094-40ec-8656-bb32a65352e0",
+              "name": "variaveis.message.media.url",
+              "value": "={{ $json.body.message.content.URL }}",
+              "type": "string"
+            },
+            {
+              "id": "df04ea52-e9fa-43ea-aba3-e2f0b18d86c0",
+              "name": "variaveis.message.media.file_name",
+              "value": "={{$json.body.data.content.media.metadata.fileName}}",
+              "type": "string"
+            },
+            {
+              "id": "acde62fb-5e0e-42d1-8246-0a798cf908e2",
+              "name": "variaveis.message.media.type",
+              "value": "={{ $json.body.message.messageType }}",
+              "type": "string"
+            },
+            {
+              "id": "bcf93453-6b54-419d-8885-61d22512a04c",
+              "name": "variaveis.instance.number",
+              "value": "={{ $json.body.owner }}",
+              "type": "string"
+            },
+            {
+              "id": "2872a011-4489-45e8-9ad0-d58987ea5084",
+              "name": "variaveis.event.type",
+              "value": "={{ $json.body.event?.Join[0]?.split(\"@\")[0] || $json.body.event?.Leave[0].split(\"@\")[0] || $json.body.EventType }}",
+              "type": "string"
+            },
+            {
+              "id": "56d64047-d557-4599-93b3-4b9adb315314",
+              "name": "variaveis.event.whatsapp",
+              "value": "={{ $json.body.event.Join[0]?.split(\"@\")[0] || $json.body.event.Leave[0].split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "07d3132e-98cf-4083-b1cc-f10af99fee9e",
+              "name": "variaveis.chat.isGroup",
+              "value": "={{ $json.body.message.isGroup }}",
+              "type": "boolean"
+            },
+            {
+              "id": "5a2e6b41-967e-4b74-9c9e-3c063b44a8ed",
+              "name": "variaveis.instance.token",
+              "value": "={{ $json.body.token }}",
+              "type": "string"
+            },
+            {
+              "id": "72b87e46-2def-4452-a118-2de787e739e2",
+              "name": "variaveis.instance.host",
+              "value": "https://m7growth.uazapi.com",
+              "type": "string"
+            },
+            {
+              "id": "bfe2a37c-acfd-4d09-bf7e-39fb0db914ad",
+              "name": "variaveis.message.responded.type",
+              "value": "={{ $json.body.message.content.contextInfo.quotedMessage.audioMessage ? 'audio' : ($json.body.message.content.contextInfo.quotedMessage.imageMessage ? 'image' : ($json.body.message.content.contextInfo.quotedMessage.videoMessage ? 'video' : 'text')) }}",
+              "type": "string"
+            },
+            {
+              "id": "41b4adef-1648-4194-a94a-602d3f377228",
+              "name": "variaveis.message.responded.mediaurl",
+              "value": "={{ $json.body.message.content.contextInfo.quotedMessage.audioMessage?.URL || $json.body.message.content.contextInfo.quotedMessage.imageMessage?.URL || $json.body.message.content.contextInfo.quotedMessage.videoMessage.URL}}",
+              "type": "string"
+            },
+            {
+              "id": "b3bbb725-f6fa-4bb0-80ec-64db1c7ef8f8",
+              "name": "variaveis.user.name",
+              "value": "={{ $json.body.message.senderName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "ignoreConversionErrors": false
+        }
+      },
+      "id": "14a804cc-1610-4ac2-9c07-6a5dd5e7aa33",
+      "name": "variaveis",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -640,
+        -288
+      ],
+      "alwaysOutputData": false,
+      "notesInFlow": true,
+      "notes": "Uazapi"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM process_group_message(\n  $1::varchar,  -- chatId\n  $2::varchar,  -- groupName com escape\n  $3::varchar,  -- instance.number\n  $4::varchar,  -- instance.token\n  $5::varchar   -- instance.host\n)",
+        "options": {
+          "queryReplacement": "={{ $('variaveis').item.json.variaveis.chat.chatId }},\n{{ JSON.stringify($('variaveis').item.json.variaveis.chat.groupName || 'Grupo sem nome') }},\n{{ $('variaveis').item.json.variaveis.instance.number }},\n{{ $('variaveis').item.json.variaveis.instance.token }},\n{{ $('variaveis').item.json.variaveis.instance.host }}"
+        }
+      },
+      "id": "ff6fc7b0-2fc2-46fb-9896-b1164c6ecba9",
+      "name": "Validar Grupo",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        288,
+        -464
+      ],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      },
+      "notes": "Cadastra grupo como inativo se não existir\nOu atualiza nome se já existir"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "z1x2c3v4-b5n6-7890-mnop-qrstuvwxyz12",
+              "name": "grupo.id",
+              "value": "={{ $('Validar Grupo').first().json.id }}",
+              "type": "number"
+            },
+            {
+              "id": "y1w2e3r4-t5y6-7890-uiop-asdfghjkl123",
+              "name": "grupo.chat_id",
+              "value": "={{ $('Validar Grupo').first().json.chat_id }}",
+              "type": "string"
+            },
+            {
+              "id": "x1v2c3x4-z5a6-7890-sdfg-hjklpoiuyt456",
+              "name": "grupo.name",
+              "value": "={{ $('Validar Grupo').first().json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "w1v2b3n4-m5q6-7890-wert-yuiopasdfgh789",
+              "name": "grupo.status",
+              "value": "={{ $('Validar Grupo').first().json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "v1u2i3o4-p5l6-7890-zxcv-bnmqwertyui012",
+              "name": "grupo.newsletter_enabled",
+              "value": "={{ $('Validar Grupo').first().json.newsletter_enabled }}",
+              "type": "boolean"
+            },
+            {
+              "id": "u1t2r3e4-w5q6-7890-asdf-ghjklzxcvbn345",
+              "name": "grupo.auto_transcription_enabled",
+              "value": "={{ $('Validar Grupo').first().json.auto_transcription_enabled }}",
+              "type": "boolean"
+            },
+            {
+              "id": "t1s2d3f4-g5h6-7890-qwer-tyuiopzxcvb678",
+              "name": "grupo.pdf_summary_enabled",
+              "value": "={{ $('Validar Grupo').first().json.pdf_summary_enabled }}",
+              "type": "boolean"
+            },
+            {
+              "id": "r1q2w3e4-r5t6-7890-yuio-pasdfghjklx234",
+              "name": "grupo.daily_summary_enabled",
+              "value": "={{ $('Validar Grupo').first().json.daily_summary_enabled }}",
+              "type": "boolean"
+            },
+            {
+              "id": "0afb36d1-ca26-4ff6-8e39-faee3d9f43f7",
+              "name": "grupo.youtube_auto_transcript_enabled",
+              "value": "={{ $('Validar Grupo').first().json.youtube_auto_transcript_enabled}}",
+              "type": "boolean"
+            },
+            {
+              "id": "efd60260-dfdd-41e2-bea4-3a7254aab034",
+              "name": "grupo.transcription_mode",
+              "value": "={{ $('Validar Grupo').first().json.transcription_mode}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {
+          "ignoreConversionErrors": false
+        }
+      },
+      "id": "db3b3452-e351-4b64-9fc6-147e8fea611f",
+      "name": "Consolidar Dados",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1040,
+        -304
+      ],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "notes": "Consolida dados do grupo\ncom configurações ativas"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "m1n2b3v4-c5x6-7890-zaqw-sedcvfrtgb890",
+              "name": "status.bloqueado",
+              "value": "true",
+              "type": "boolean"
+            },
+            {
+              "id": "l1k2j3h4-g5f6-7890-dsaq-wetrgyhujki123",
+              "name": "status.motivo",
+              "value": "Grupo não está ativo no sistema",
+              "type": "string"
+            },
+            {
+              "id": "k1j2h3g4-f5d6-7890-saqw-edtrgyhujki456",
+              "name": "grupo.status",
+              "value": "={{ $('Validar Grupo').item.json.status }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {
+          "ignoreConversionErrors": false
+        }
+      },
+      "id": "be1e58b9-4771-423f-9892-07f401f25b35",
+      "name": "Grupo Bloqueado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        720,
+        -624
+      ],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "notes": "Marca como bloqueado\ngrupos inativos/blocked"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "useDataOfInput": 2
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        736,
+        -320
+      ],
+      "id": "24510f6c-d37b-4f1c-8d84-4d8848c7c6eb",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "m7-tracker",
+        "options": {}
+      },
+      "id": "963aad25-6425-4225-9b85-629109c1876a",
+      "name": "Webhook2",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -864,
+        -288
+      ],
+      "webhookId": "3d853676-2cd8-4b99-b015-05d0a876b979"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://m7growth.uazapi.com/group/join",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "inviteCode",
+              "value": "https://chat.whatsapp.com/BYrHj4YCcSf1Zm2BXvy425"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -176,
+        -768
+      ],
+      "id": "70748489-45b6-4b92-9612-0c1c99a94f9c",
+      "name": "Join - group test",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "m25oNcmR8mY4YVbJ",
+          "name": "Uazapi - Pricing Cast"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "fromMe",
+              "value": "={{ $json.variaveis.message.fromMe }}"
+            },
+            {
+              "key": "event",
+              "value": "={{ $json.variaveis.event.type }}"
+            },
+            {
+              "key": "whatsapp",
+              "value": "={{ $json.variaveis.user.whatsapp }}"
+            },
+            {
+              "key": "chat_id",
+              "value": "={{ $json.variaveis.chat.chatId }}"
+            },
+            {
+              "key": "type",
+              "value": "={{ $json.variaveis.message.type }}"
+            },
+            {
+              "key": "text",
+              "value": "={{ $json.variaveis.message.text }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -416,
+        -288
+      ],
+      "id": "a3a5bfac-f46e-4019-99ed-97b1d1fa5809",
+      "name": "Execution Data"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('variaveis').item.json.variaveis.message.text.split(\"\")[0] }}",
+                    "rightValue": "/",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "927a9a91-0d28-4ac8-a597-cc04d43a2fb2"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "command"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e8645621-b69d-457c-a34f-60162cbce473",
+                    "leftValue": "={{ $('variaveis').item.json.variaveis.message.text }}",
+                    "rightValue": "=@{{ $('variaveis').item.json.variaveis.instance.number }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "marcação"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1264,
+        -320
+      ],
+      "id": "cead8a34-ff14-4afc-90cf-aab1c99a6e65",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://webhook.m7growth.com/webhook/process-whatsapp-message",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1552,
+        -160
+      ],
+      "id": "c6b4bb4b-d3df-4ad6-9227-bbf0cf21cbd4",
+      "name": "Call 2. Segmentação"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4f2664e9-9924-4a79-8ece-71986676bacc",
+              "leftValue": "={{ $('variaveis').item.json.variaveis.chat.chatId }}",
+              "rightValue": "5511979714123",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "4d29f7e6-8cb8-4e4f-b9e6-f8a57e77f281",
+              "leftValue": "={{ $('variaveis').item.json.variaveis.chat.chatId }}",
+              "rightValue": "5519994317797",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "9f690f37-a3db-4bee-82e4-55e560b8880e",
+              "leftValue": "={{ $('variaveis').item.json.variaveis.chat.chatId }}",
+              "rightValue": "554199898009",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        288,
+        256
+      ],
+      "id": "de2f9d3a-6b9f-4917-ac9d-7777cb8d83be",
+      "name": "If - Admin in Private"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://webhook.m7growth.com/webhook/pricingcastai/ia-privado",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('variaveis').first().json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        512,
+        256
+      ],
+      "id": "3efedd94-5952-43e0-ae11-a97c64d64170",
+      "name": "Call 3.2 - AI-Private"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e10f2ed5-1bde-4105-92d2-91d588999dc4",
+              "leftValue": "={{ $json.variaveis.message.fromMe }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "f3b0cf9b-7e9a-4a0a-9bc5-d0f7d26b3f81",
+              "leftValue": "={{ $json.variaveis.message.text }}",
+              "rightValue": "[Undecryptable] [text]",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -192,
+        -288
+      ],
+      "id": "456f5a42-786a-4502-8808-0d5028a63a81",
+      "name": "If - fromMe"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.variaveis.chat.isGroup }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "2a26bf69-de33-49ad-a875-8344b80da427"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Group"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7f693323-cd2c-4ea4-91df-50a9d80d76b0",
+                    "leftValue": "={{ $('Webhook2').item.json.body.event.Join[0] }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Join Group"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "679bb476-07ce-4f90-8387-47e17faf3ca5",
+                    "leftValue": "={{ $('Webhook2').item.json.body.event.Leave[0] }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Leave Group"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Private"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        48,
+        -320
+      ],
+      "id": "94d720e1-1bd2-4c51-8e0f-9abd806db200",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f1a2b3c4-d5e6-7890-abcd-ef0123456789",
+              "leftValue": "={{ $('Validar Grupo').item.json.status }}",
+              "rightValue": "active",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        512,
+        -464
+      ],
+      "id": "8ac21be2-8426-4d29-af5a-ad627fe6fcad",
+      "name": "Grupo inativo?",
+      "notesInFlow": true,
+      "notes": "Verifica se o grupo está ativo\nSó processa mensagens de grupos ativos"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "8984095d-3caa-4634-85ed-0117f61d1941",
+              "leftValue": "={{ $('variaveis').first().json.variaveis.user.whatsapp }}",
+              "rightValue": "={{ $json.PhoneNumber.split(\"@\")[0] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "927be4ef-6cb9-4d64-ad9d-55e6ae844d59",
+      "name": "Filter",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        1904,
+        -480
+      ],
+      "notesInFlow": true,
+      "notes": "é o usuário?"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "Participants",
+        "options": {}
+      },
+      "id": "701366de-bd61-4c02-b4c3-27a709c1f921",
+      "name": "Split Out1",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        -480
+      ],
+      "notesInFlow": true,
+      "notes": "separa o result dos participantes"
+    },
+    {
+      "parameters": {
+        "content": "## Checa admin\nSe for owner, supadmin ou admin ",
+        "height": 308.399794769607,
+        "width": 722.6546937608102,
+        "color": 4
+      },
+      "id": "b4f6c2c5-31be-4461-a42b-ebcaf72315a2",
+      "name": "Sticky Note10",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        -592
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('variaveis').first().json.variaveis.instance.host }}/group/info",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "={{ $('variaveis').item.json.variaveis.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "GroupJID",
+              "value": "={{ $('variaveis').first().json.variaveis.chat.chatId }}@g.us"
+            },
+            {
+              "name": "getInviteLink",
+              "value": "={{ false }}"
+            },
+            {
+              "name": "force",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1552,
+        -480
+      ],
+      "id": "5befc627-c397-461d-927a-e891a3325587",
+      "name": "uazapi - Fetch group info1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://webhook.m7growth.com/webhook/pricingcastai/ia-grupo",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Consolidar Dados').first().json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2304,
+        -480
+      ],
+      "id": "263979b5-9776-4671-b4ac-8e0d9bb8f79d",
+      "name": "Call 3.1 - AI - Group"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Query corrigida para funcionar sempre\nWITH input_data AS (\n    SELECT \n        $1::VARCHAR as chat_id,\n        $2::VARCHAR as whatsapp_number\n),\ngrupo_info AS (\n    SELECT id as group_id\n    FROM groups\n    WHERE chat_id = (SELECT chat_id FROM input_data)\n    LIMIT 1\n),\nmembro_upsert AS (\n    INSERT INTO members (phone, name, profile_name, status)\n    SELECT \n        whatsapp_number,\n        COALESCE('User ' || whatsapp_number, 'Unknown User'),\n        NULL,\n        'active'\n    FROM input_data\n    ON CONFLICT (phone) \n    DO UPDATE SET \n        status = 'active',\n        last_seen = NOW() AT TIME ZONE 'America/Sao_Paulo',\n        updated_at = NOW() AT TIME ZONE 'America/Sao_Paulo'\n    RETURNING id, phone, created_at, updated_at\n),\nassociacao AS (\n    INSERT INTO members_groups (member_id, group_id, joined_at, status)\n    SELECT \n        m.id,\n        g.group_id,\n        NOW() AT TIME ZONE 'America/Sao_Paulo',\n        'active'\n    FROM membro_upsert m\n    CROSS JOIN grupo_info g\n    WHERE g.group_id IS NOT NULL\n    ON CONFLICT (member_id, group_id) \n    DO UPDATE SET \n        status = 'active',\n        left_at = CASE \n            WHEN members_groups.status != 'active' THEN NULL \n            ELSE members_groups.left_at \n        END,\n        updated_at = NOW() AT TIME ZONE 'America/Sao_Paulo'\n    RETURNING id, member_id, group_id, status, joined_at, created_at\n)\nSELECT \n    json_build_object(\n        'status', CASE \n            WHEN g.group_id IS NULL THEN 'error_group_not_found'\n            ELSE 'success'\n        END,\n        'operation', CASE\n            WHEN m.created_at >= NOW() - INTERVAL '5 seconds' THEN 'member_created'\n            WHEN a.created_at >= NOW() - INTERVAL '5 seconds' THEN 'association_created'\n            WHEN m.updated_at >= NOW() - INTERVAL '5 seconds' THEN 'member_updated'\n            ELSE 'no_changes_needed'\n        END,\n        'member', json_build_object(\n            'id', m.id,\n            'phone', m.phone,\n            'was_new', m.created_at >= NOW() - INTERVAL '5 seconds'\n        ),\n        'group', json_build_object(\n            'id', g.group_id,\n            'chat_id', (SELECT chat_id FROM input_data)\n        ),\n        'association', json_build_object(\n            'id', a.id,\n            'status', a.status,\n            'joined_at', a.joined_at,\n            'was_new', a.created_at >= NOW() - INTERVAL '5 seconds'\n        )\n    ) as resultado\nFROM membro_upsert m\nCROSS JOIN grupo_info g\nCROSS JOIN associacao a;",
+        "options": {
+          "queryReplacement": "={{ $json.group.chat_id }}, {{ $json.user.whatsapp }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        512,
+        -96
+      ],
+      "id": "917940d5-6b55-4f66-b6fc-3b652a27d4e8",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "976c9c4f-7a4f-49c4-a72c-838caba1fa9a",
+              "name": "group.chat_id",
+              "value": "={{ $('Webhook2').item.json.body.event.JID.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "4eeaf0ca-1ee5-4dbe-9070-0ec4864cd760",
+              "name": "user.whatsapp",
+              "value": "={{ $('Webhook2').item.json.body.event.Join[0].split(\"@\")[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        -96
+      ],
+      "id": "ad6a3c1f-6c44-428a-927a-2628b304d5f7",
+      "name": "Join Info"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "976c9c4f-7a4f-49c4-a72c-838caba1fa9a",
+              "name": "group.chat_id",
+              "value": "={{ $('Webhook2').item.json.body.event.JID.split(\"@\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "4eeaf0ca-1ee5-4dbe-9070-0ec4864cd760",
+              "name": "user.whatsapp",
+              "value": "={{ $('Webhook2').item.json.body.event.Leave[0].split(\"@\")[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        80
+      ],
+      "id": "ba8963c6-1cd3-4dc4-a4f9-a60fba641b3e",
+      "name": "Leave Info"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Query para marcar membro como inativo (saiu do grupo)\nWITH input_data AS (\n    SELECT \n        $1::VARCHAR as chat_id,\n        $2::VARCHAR as whatsapp_number\n),\ngrupo_info AS (\n    SELECT id as group_id\n    FROM groups\n    WHERE chat_id = (SELECT chat_id FROM input_data)\n    LIMIT 1\n),\nmembro_info AS (\n    SELECT id as member_id\n    FROM members\n    WHERE phone = (SELECT whatsapp_number FROM input_data)\n    LIMIT 1\n),\ndesativacao AS (\n    UPDATE members_groups\n    SET \n        status = 'left',\n        left_at = NOW() AT TIME ZONE 'America/Sao_Paulo',\n        updated_at = NOW() AT TIME ZONE 'America/Sao_Paulo'\n    WHERE \n        member_id = (SELECT member_id FROM membro_info)\n        AND group_id = (SELECT group_id FROM grupo_info)\n        AND status = 'active'\n    RETURNING *\n)\nSELECT \n    json_build_object(\n        'status', CASE \n            WHEN g.group_id IS NULL THEN 'error_group_not_found'\n            WHEN m.member_id IS NULL THEN 'error_member_not_found'\n            WHEN d.id IS NULL THEN 'error_no_active_association'\n            ELSE 'success'\n        END,\n        'operation', CASE\n            WHEN d.id IS NOT NULL THEN 'member_deactivated'\n            ELSE 'no_changes_needed'\n        END,\n        'member', CASE \n            WHEN m.member_id IS NOT NULL THEN json_build_object(\n                'id', m.member_id,\n                'phone', (SELECT whatsapp_number FROM input_data)\n            )\n            ELSE NULL\n        END,\n        'group', CASE \n            WHEN g.group_id IS NOT NULL THEN json_build_object(\n                'id', g.group_id,\n                'chat_id', (SELECT chat_id FROM input_data)\n            )\n            ELSE NULL\n        END,\n        'deactivation', CASE \n            WHEN d.id IS NOT NULL THEN json_build_object(\n                'association_id', d.id,\n                'status', d.status,\n                'left_at', d.left_at,\n                'was_active_since', d.joined_at\n            )\n            ELSE NULL\n        END\n    ) as resultado\nFROM (SELECT 1) dummy\nLEFT JOIN grupo_info g ON true\nLEFT JOIN membro_info m ON true\nLEFT JOIN desativacao d ON true;",
+        "options": {
+          "queryReplacement": "={{ $json.group.chat_id }}, {{ $json.user.whatsapp }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        512,
+        80
+      ],
+      "id": "a2923724-9a1c-4218-87a3-58c65ac41d79",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "82d21db9-09fd-4a3a-a233-a59141319eda",
+              "leftValue": "={{ $('Webhook2').item.json.body.event.JID.split(\"@\")[0] }}",
+              "rightValue": "120363403027713163",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "9939c14e-121b-4d02-b165-089ef683e1f6",
+              "leftValue": "={{ $('Webhook2').item.json.body.event.JID.split(\"@\")[0] }}",
+              "rightValue": "5512981550164-1493380046",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "43ea0b44-2402-4dba-894e-3f412e20a9ae",
+              "leftValue": "={{ $('Webhook2').item.json.body.event.JID.split(\"@\")[0] }}",
+              "rightValue": "120363388879916334",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "e097d7be-f819-4795-9bb0-964ee42b64b0",
+              "leftValue": "={{ $('Webhook2').item.json.body.event.JID.split(\"@\")[0] }}",
+              "rightValue": "120363402686969493",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        -96
+      ],
+      "id": "36d2c47e-8001-423a-b2a2-a226f79ba1b4",
+      "name": "Grupos que mandam saudações"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('variaveis').first().json.variaveis.instance.host }}/send/text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $('variaveis').first().json.variaveis.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook2').item.json.body.event.JID }}"
+            },
+            {
+              "name": "text",
+              "value": "=Seja bem vindo {{\"@\"+ $('Webhook2').first().json.body.event.Join[0].split(\"@\")[0] }}. Quer se apresentar e compartilhar o seu Linkedin?"
+            },
+            {
+              "name": "readchat",
+              "value": "={{ true }}"
+            },
+            {
+              "name": "mentions",
+              "value": "={{ $json.resultado.member.phone }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1232,
+        -112
+      ],
+      "id": "e48e324c-2c8c-4b98-bce9-6ed4031de17b",
+      "name": "uazapi - send Bem vindo",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "groups",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "boas_vindas"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        176
+      ],
+      "id": "7115a9c8-3cc5-4516-8ef9-f2c4b1d6352a",
+      "name": "Get a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Mlr0yqoxA93FsNLe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "af90536d-1a07-41c9-952d-d16cd04af64c",
+              "leftValue": "={{ $json.IsAdmin }}",
+              "rightValue": "admin",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "2117beb8-ff11-40a1-8db9-e4263fc43db5",
+              "leftValue": "={{ $json.IsSuperAdmin }}",
+              "rightValue": "owner",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "2a056055-9e4e-4beb-b1d1-4dda38b146f5",
+      "name": "If - Admin",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        -480
+      ]
+    }
+  ],
+  "connections": {
+    "variaveis": {
+      "main": [
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Grupo": {
+      "main": [
+        [
+          {
+            "node": "Grupo inativo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidar Dados": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Consolidar Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook2": {
+      "main": [
+        [
+          {
+            "node": "variaveis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "uazapi - Fetch group info1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "uazapi - Fetch group info1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call 2. Segmentação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grupo Bloqueado": {
+      "main": [
+        []
+      ]
+    },
+    "If - Admin in Private": {
+      "main": [
+        [
+          {
+            "node": "Call 3.2 - AI-Private",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - fromMe": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Validar Grupo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Join Info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Leave Info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If - Admin in Private",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution Data": {
+      "main": [
+        [
+          {
+            "node": "If - fromMe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grupo inativo?": {
+      "main": [
+        [
+          {
+            "node": "Grupo Bloqueado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 3.2 - AI-Private": {
+      "main": [
+        []
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "If - Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "uazapi - Fetch group info1": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Join Info": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leave Info": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Grupos que mandam saudações",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grupos que mandam saudações": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send Bem vindo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Admin": {
+      "main": [
+        [
+          {
+            "node": "Call 3.1 - AI - Group",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call 3.1 - AI - Group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "af96bcdf-4b21-43ed-a10b-195dbdb5fabe",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "u6DJjtRqtJbPIOtq",
+  "tags": []
+}

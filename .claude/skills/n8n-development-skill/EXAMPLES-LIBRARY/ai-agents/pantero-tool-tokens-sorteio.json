@@ -1,0 +1,1768 @@
+{
+  "name": "[Tools] !tokens e !sorteio",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Comando !token_show\n\n**Funcionalidade:** Consulta ranking de tokens ou dados específicos de usuário\n\n**Fluxo:**\n1. Recebe webhook com comando !token_show\n2. Parse Command analisa se é ranking geral ou consulta específica\n3. IF decide rota: vazio = ranking, WhatsApp = usuário específico\n4. **RANKING:** Query PostgreSQL top 10 + formatação com posições e status\n5. **USUÁRIO:** Query detalhada com tokens, posição, atividade e transações\n6. Merge das respostas formatadas\n7. Envio via UazAPI\n\n**Saídas:**\n- Ranking: Top 10 com medalhas, status (🧊=congelado, 🚫=blocked, ✅=ativo)\n- Usuário: Dados completos incluindo histórico e estatísticas\n\n**Validações:**\n- WhatsApp formato brasileiro (55 + DDD + número)\n- Tratamento para usuários não encontrados",
+        "height": 100,
+        "width": 600,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1616,
+        112
+      ],
+      "id": "7d46d9f6-3f43-41db-a2db-14f757d3a7e5",
+      "name": "Sticky - Token Show"
+    },
+    {
+      "parameters": {
+        "content": "## Comando !token_add\n\n**Funcionalidade:** Adiciona tokens a usuários específicos (apenas moderadores+)\n\n**Fluxo:**\n1. Recebe webhook com comando !token_add\n2. Parse Parameters extrai quantidade e WhatsApp dos parâmetros\n3. Validation Check valida formato e valores\n4. **SUCESSO:** UPSERT Member Tokens + Log Transaction + Success Response\n5. **ERRO:** Error Response com detalhes de validação\n6. Envio da resposta via UazAPI\n\n**Validações:**\n- Quantidade > 0\n- WhatsApp formato válido (5511999999999)\n- Logs de transação para auditoria\n\n**Saídas:**\n- Sucesso: Confirmação com total atual de tokens\n- Erro: Mensagem explicativa com formato correto\n\n**Segurança:** Registra executor para rastreabilidade",
+        "height": 100,
+        "width": 600,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1616,
+        832
+      ],
+      "id": "37f223fd-85f3-4920-a623-17259db082d8",
+      "name": "Sticky - Token Add"
+    },
+    {
+      "parameters": {
+        "content": "## Comando !token_remove\n\n**Funcionalidade:** Remove tokens de usuários específicos (apenas moderadores+)\n\n**Fluxo:**\n1. Recebe webhook com comando !token_remove\n2. Parse Parameters2 extrai quantidade e WhatsApp + validações robustas\n3. Check for Errors1 valida formato e valores\n4. **SUCESSO:** Execute Token Remove1 (PostgreSQL com lógica de mínimo)\n5. Code1 formata resposta detalhada com status da operação\n6. **ERRO:** Format Error Response1 com detalhes de validação\n7. Send WhatsApp Response1 envia via UazAPI\n\n**Validações:**\n- Formato: quantidade + whatsapp (ex: \"3 5511999888555\")\n- Quantidade > 0 e numérica\n- WhatsApp 10-15 dígitos\n- **PROTEÇÃO:** Sempre mantém mínimo 1 token\n\n**Saídas:**\n- Sucesso: Detalhes completos da operação + status do membro\n- Erro: Mensagem explicativa com formato correto\n- Logs: Transação registrada para auditoria",
+        "height": 100,
+        "width": 600,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1616,
+        1648
+      ],
+      "id": "46eaafbd-66c3-4ffc-89fc-52012f1af9a7",
+      "name": "Sticky - Token Remove"
+    },
+    {
+      "parameters": {
+        "content": "## Comando !token_freeze\n\n**Funcionalidade:** Congela tokens de usuários por período específico (apenas moderadores+)\n\n**Fluxo:**\n1. Recebe webhook com comando !token_freeze\n2. Parse Parameters3 com parsing inteligente e flexível\n3. Check Parse Error1 valida parâmetros\n4. **SUCESSO:** Execute Freeze1 (UPSERT + log de transação)\n5. **ERRO:** Return Error1 trata erros de validação\n6. Format Response1 unifica respostas\n7. Respond + Send via UazAPI\n\n**Parsing Flexível:**\n- `!token_freeze 5511999888555` (padrão: 7 dias)\n- `!token_freeze 5511999888555 15` (15 dias)\n- `!token_freeze 15 5511999888555` (aceita ordem reversa)\n\n**Validações:**\n- WhatsApp brasileiro válido (55 + 10-11 dígitos)\n- Dias entre 1-365\n- UPSERT: cria usuário se não existir\n\n**Efeito:** Usuário não pode participar de sorteios até data/hora especificada",
+        "height": 120,
+        "width": 600,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1616,
+        2032
+      ],
+      "id": "27433265-ab38-46e9-8b2c-99cbf8b5fe9e",
+      "name": "Sticky - Token Freeze"
+    },
+    {
+      "parameters": {
+        "content": "## Comando !sorteio\n\n**Funcionalidade:** Executa sorteio ponderado por tokens com congelamento automático\n\n**Sintaxe:** `!sorteio [#tags] [quantidade]`\n**Exemplos:** \n- `!sorteio #furia 3` → 3 ganhadores da tag #furia\n- `!sorteio #fpm2 #fire 5` → 5 ganhadores de múltiplas tags\n\n**Recursos:**\n- ⚖️ Sorteio ponderado por tokens (mais tokens = mais chances)\n- 🧊 Congelamento automático por 30 dias dos ganhadores\n- 📊 Estatísticas completas de participação\n- 💾 Histórico salvo no banco de dados\n- 🎯 Filtragem por tags de grupos específicos",
+        "height": 100,
+        "width": 600,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1616,
+        2432
+      ],
+      "id": "794ae415-3c1f-426a-bf94-efdac39bca33",
+      "name": "Sticky - Sorteio Principal"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Parse incoming REST request and prepare for JWT validation\nconst method = $json.httpMethod || 'GET';\nconst command = $json.command;\nconst headers = $json.headers || {};\nconst query = $json.params?.query || {};\nconst body = $json.body || {};\nconst path = $json.path || '';\n\n// Extract Authorization header\nconst authHeader = headers.authorization || headers.Authorization;\n\n// Parse request data based on method\nlet requestData = {};\nif (method === 'GET') {\n  requestData = query;\n} else {\n  requestData = body;\n}\n\nreturn {\n  method,\n  command,\n  path,\n  authHeader,\n  requestData,\n  originalRequest: {\n    headers,\n    query,\n    body\n  },\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "95217522-6702-4248-854d-fa73353d0802",
+      "name": "Parse Request2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1728,
+        -384
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://pantero-n8n-webhook.respondeaqui.com.br/webhook/whatsapp-command/{{ $('Parse Request2').item.json.command.replace(\"!\",\"\") }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ \n(() => {\n  const current = $json;\n  const webhook = $('Webhook1').first().json.body || {};\n  const mediaUrl = webhook.message?.media?.url || '';\n  const type = webhook.message?.type || '';\n  const instance = webhook.instance || '';\n  const messageId = webhook.message?.id || '';\n\n  return {\n    ...current,\n    media: mediaUrl,\n    type: type,\n    instance: instance,\n    message_id: messageId\n  };\n})() \n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1280,
+        -384
+      ],
+      "id": "48d2b6a4-1fec-4164-8eb0-8094bd0b59a3",
+      "name": "Run_Command1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/functions/v1/pantero-api-validator",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "jwt_token",
+              "value": "={{ $json.authHeader.split(' ')[1] }}"
+            },
+            {
+              "name": "command",
+              "value": "={{ $json.command }}"
+            },
+            {
+              "name": "endpoint",
+              "value": "={{ $json.path }}"
+            },
+            {
+              "name": "method",
+              "value": "={{ $json.method }}"
+            },
+            {
+              "name": "parameters",
+              "value": "={{ $json.requestData }}"
+            },
+            {
+              "name": "tags",
+              "value": "={{ $json.originalRequest.query.tags.replaceAll(\" \",\"\").split(\",\") }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1504,
+        -384
+      ],
+      "id": "f4e7a1cd-a082-436b-8398-658774e57e20",
+      "name": "API Validator - pantero-api-validator",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GaOznV2Qpovea8iN",
+          "name": "Pantero - system"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/token_show",
+        "authentication": "basicAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "04b96f73-e79d-4753-86e2-4b69b0d2019e",
+      "name": "Webhook - !token_show4",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        112
+      ],
+      "webhookId": "22222222-2222-2222-2222-222222222222",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse do message_text para extrair WhatsApp específico ou detectar ranking\nconst messageText = $json.body.messag?.text || '';\nconst cleanText = messageText.trim();\n\n// Verificar se tem hashtag (não deveria processar hashtags aqui)\nif (cleanText.startsWith('#')) {\n  return {\n    error: true,\n    message: '❌ O comando !token_show não aceita hashtags. Use apenas o número do WhatsApp ou deixe vazio para ver o ranking.',\n    user_whatsapp: $json.body.user.whatsapp,\n    instance: $json.body.instance_info.instance\n  };\n}\n\n// Regex para WhatsApp brasileiro (55 + DDD + número)\nconst whatsappRegex = /55[1-9][1-9]9?[0-9]{8}/;\nconst match = cleanText.match(whatsappRegex);\n\nconst targetWhatsapp = match ? match[0] : null;\nconst isRanking = !targetWhatsapp;\n\nreturn {\n  target_whatsapp: targetWhatsapp,\n  is_ranking: isRanking,\n  user_whatsapp: $json.body.user.whatsapp,\n  instance: $json.body.instance_info.instance\n};"
+      },
+      "id": "1079c6a4-65da-4583-b719-47821e9bd66d",
+      "name": "Parse Command5",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -704,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a4bab513-0016-4800-9b9a-5c49948f1a47",
+              "leftValue": "={{ $json.target_whatsapp }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -480,
+        112
+      ],
+      "id": "3b576e5e-80c0-4bc8-9113-9514ed85d9ac",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Ranking Top 10 - Todos com tokens > 0\nWITH ranked_members AS (\n  SELECT \n    whatsapp,\n    name,\n    tokens,\n    CASE \n      WHEN freeze_until IS NOT NULL AND freeze_until > NOW() THEN \n        'Congelado até ' || TO_CHAR(freeze_until, 'DD/MM')\n      WHEN lucky = false THEN 'Blocked'\n      ELSE 'Ativo'\n    END as status,\n    CASE \n      WHEN freeze_until IS NOT NULL AND freeze_until > NOW() THEN '🧊'\n      WHEN lucky = false THEN '🚫'\n      ELSE '✅'\n    END as status_icon,\n    freeze_until,\n    ROW_NUMBER() OVER (ORDER BY tokens DESC, created_at ASC) as position\n  FROM members \n  WHERE tokens > 0\n)\nSELECT \n  json_build_object(\n    'type', 'ranking',\n    'data', json_agg(\n      json_build_object(\n        'position', position,\n        'name', COALESCE(name, 'Usuário'),\n        'whatsapp', whatsapp,\n        'tokens', tokens,\n        'status', status,\n        'status_icon', status_icon\n      ) ORDER BY position\n    ),\n    'total_users', COUNT(*),\n    'generated_at', NOW()\n  ) as result\nFROM ranked_members \nWHERE position <= 10;",
+        "options": {}
+      },
+      "id": "5ffe8d37-2932-41f4-bb6c-5f5f6798400f",
+      "name": "Get Ranking4",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -256,
+        -96
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar usuário específico - VERSÃO STAFF DETALHADA\nWITH user_data AS (\n  SELECT \n    m.whatsapp,\n    m.name,\n    m.tokens,\n    m.lucky,\n    m.freeze_until,\n    m.first_seen,\n    m.last_activity,\n    m.total_messages,\n    m.total_reactions,\n    m.created_at,\n    CASE \n      WHEN m.freeze_until IS NOT NULL AND m.freeze_until > NOW() THEN \n        'Congelado até ' || TO_CHAR(m.freeze_until, 'DD/MM/YYYY HH24:MI')\n      WHEN m.lucky = false THEN 'Bloqueado para sorteios'\n      ELSE 'Ativo para sorteios'\n    END as status_text,\n    CASE \n      WHEN m.freeze_until IS NOT NULL AND m.freeze_until > NOW() THEN '🧊'\n      WHEN m.lucky = false THEN '🚫'\n      ELSE '✅'\n    END as status_icon\n  FROM members m\n  WHERE m.whatsapp = $1\n),\nuser_ranking AS (\n  SELECT \n    whatsapp,\n    ROW_NUMBER() OVER (ORDER BY tokens DESC, created_at ASC) as position\n  FROM members \n  WHERE tokens > 0 AND whatsapp = $1\n),\nrecent_transactions AS (\n  SELECT \n    COUNT(*) as total_transactions,\n    SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as total_added,\n    SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as total_removed,\n    MAX(created_at) as last_transaction\n  FROM token_transactions \n  WHERE whatsapp = $1\n),\nuser_groups AS (\n  SELECT \n    COUNT(DISTINCT g.id) as total_groups,\n    ARRAY_AGG(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL) as tags\n  FROM members m\n  JOIN member_groups mg ON m.id = mg.member_id\n  JOIN groups g ON mg.group_id = g.id\n  LEFT JOIN group_tags gt ON g.id = gt.group_id\n  LEFT JOIN tags t ON gt.tag_id = t.id\n  WHERE m.whatsapp = $1 AND mg.is_active = true\n)\nSELECT \n  json_build_object(\n    'type', 'user_detailed',\n    'data', CASE \n      WHEN ud.whatsapp IS NOT NULL THEN \n        json_build_object(\n          'name', COALESCE(ud.name, 'Usuário'),\n          'whatsapp', ud.whatsapp,\n          'tokens', ud.tokens,\n          'lucky', ud.lucky,\n          'status_text', ud.status_text,\n          'status_icon', ud.status_icon,\n          'freeze_until', ud.freeze_until,\n          'position', COALESCE(ur.position, 0),\n          'member_since', TO_CHAR(ud.created_at, 'DD/MM/YYYY'),\n          'first_seen', TO_CHAR(ud.first_seen, 'DD/MM/YYYY HH24:MI'),\n          'last_activity', TO_CHAR(ud.last_activity, 'DD/MM/YYYY HH24:MI'),\n          'total_messages', COALESCE(ud.total_messages, 0),\n          'total_reactions', COALESCE(ud.total_reactions, 0),\n          'total_groups', COALESCE(ug.total_groups, 0),\n          'tags', COALESCE(ug.tags, ARRAY[]::text[]),\n          'transactions', json_build_object(\n            'total', COALESCE(rt.total_transactions, 0),\n            'added', COALESCE(rt.total_added, 0),\n            'removed', COALESCE(rt.total_removed, 0),\n            'last_date', TO_CHAR(rt.last_transaction, 'DD/MM/YYYY HH24:MI')\n          )\n        )\n      ELSE NULL\n    END,\n    'found', (ud.whatsapp IS NOT NULL),\n    'generated_at', NOW()\n  ) as result\nFROM user_data ud\nFULL OUTER JOIN user_ranking ur ON ud.whatsapp = ur.whatsapp\nFULL OUTER JOIN recent_transactions rt ON true\nFULL OUTER JOIN user_groups ug ON true;",
+        "options": {
+          "queryReplacement": "={{ $json.target_whatsapp }}"
+        }
+      },
+      "id": "21a9acdb-b655-4c84-a42d-cde8b7696988",
+      "name": "Get User Tokens4",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -256,
+        304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formatar resposta do ranking - VERSÃO COM WHATSAPP + DETALHES\nconst data = $json.result;\n\nif (!data || !data.data || data.data.length === 0) {\n  return {\n    message: '📊 *RANKING DE TOKENS*\\n\\n❌ Nenhum usuário encontrado.',\n    instance: $('Parse Command5').first().json.instance\n  };\n}\n\nlet message = '📊 *RANKING DE TOKENS*\\n';\nmessage += '━━━━━━━━━━━━━━━━━━━━\\n';\n\ndata.data.forEach(user => {\n  const medal = user.position <= 3 ? \n    ['🥇', '🥈', '🥉'][user.position - 1] : \n    `${user.position}º`;\n  \n  // Extrair primeiro nome\n  const firstName = user.name ? \n    user.name.split(' ')[0] : \n    'Usuário';\n  \n  // Formato base: posição whatsapp - nome • tokens icon\n  let line = `${medal} ${user.whatsapp} - ${firstName} • ${user.tokens}💰 ${user.status_icon}`;\n  \n  // Adicionar detalhes do status se necessário\n  if (user.status !== 'Ativo') {\n    line += ` ${user.status}`;\n  }\n  \n  message += line + '\\n';\n});\n\nmessage += '━━━━━━━━━━━━━━━━━━━━\\n';\nmessage += `👥 ${data.total_users} usuários • 🕐 ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`;\n\nreturn {\n  message: message,\n  instance: $('Parse Command5').first().json.instance\n};"
+      },
+      "id": "06308eda-6aca-4161-be08-38bf7cf4c6b7",
+      "name": "Format Ranking4",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formatar resposta do usuário específico - VERSÃO STAFF DETALHADA\nconst data = $json.result;\nconst targetWhatsapp = $('Parse Command5').first().json.target_whatsapp;\n\nif (!data.found || !data.data) {\n  return {\n    message: `❌ *USUÁRIO NÃO ENCONTRADO*\\n\\n📱 WhatsApp: ${targetWhatsapp}\\n\\n💡 Este usuário ainda não possui tokens registrados.`,\n    instance: $('Parse Command5').first().json.instance\n  };\n}\n\nconst user = data.data;\nlet message = '👤 *CONSULTA DETALHADA* 👤\\n';\nmessage += '━━━━━━━━━━━━━━━━━━━━\\n';\n\n// INFORMAÇÕES BÁSICAS\nmessage += `📱 *${user.name}*\\n`;\nmessage += `📞 ${user.whatsapp}\\n`;\nmessage += `💰 ${user.tokens} tokens\\n`;\nmessage += `📊 ${user.position > 0 ? user.position + 'º lugar' : 'Sem ranking'}\\n\\n`;\n\n// STATUS ATUAL\nmessage += `🎯 *STATUS:* ${user.status_icon} ${user.status_text}\\n`;\nif (user.freeze_until) {\n  const freezeDate = new Date(user.freeze_until);\n  const now = new Date();\n  if (freezeDate > now) {\n    const diffDays = Math.ceil((freezeDate - now) / (1000 * 60 * 60 * 24));\n    message += `⏰ Libera em ${diffDays} dia(s)\\n`;\n  }\n}\nmessage += `🎲 Sorteios: ${user.lucky ? 'Habilitado' : 'Desabilitado'}\\n\\n`;\n\n\n// DICAS/STATUS\nif (user.tokens === 0) {\n  message += '💡 *Dica:* Usuário sem tokens registrados';\n} else if (user.position <= 3) {\n  message += '🎉 *TOP 3!* Usuário muito ativo';\n} else if (user.position <= 10) {\n  message += '⭐ *TOP 10!* Usuário bem engajado';\n} else {\n  message += '👍 Participação regular nos grupos';\n}\n\nmessage += `\\n\\n👨‍💼 Membro desde: ${user.member_since}`;\n\nreturn {\n  message: message,\n  instance: $('Parse Command5').first().json.instance\n};"
+      },
+      "id": "86a94fe6-6021-4fd1-b259-7c11ac1df792",
+      "name": "Format User4",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        304
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        192,
+        112
+      ],
+      "id": "21b0d325-a246-4895-ba70-c38095a17279",
+      "name": "Merge4"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -48,
+        112
+      ],
+      "id": "545492b7-f0aa-45ff-85ea-579b4eecae0e",
+      "name": "Respond to Webhook8"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.instance.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook - !token_show4').first().json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        496,
+        112
+      ],
+      "id": "d258a1a1-dc8f-4f55-a09d-28f449714fae",
+      "name": "uazapi - send text7",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Parse !token_add parameters\n// Corrigido: messag.text ao invés de execution_data.message_text\nconst messageText = $json.body.messag?.text || '';\nconst executor = $json.body.user;\n\n// Split parameters: \"1 5519994317797\"\nconst params = messageText.trim().split(/\\s+/);\nconst quantidade = parseInt(params[0]) || 0;\nconst whatsapp = params[1] || '';\n\n// Validações básicas\nconst errors = [];\nif (quantidade <= 0) errors.push('Quantidade deve ser maior que 0');\nif (!/^55\\d{10,11}$/.test(whatsapp)) errors.push('WhatsApp inválido (formato: 5511999999999)');\n\nreturn {\n  quantidade,\n  whatsapp,\n  executor_whatsapp: executor.whatsapp,\n  executor_name: executor.name,\n  valid: errors.length === 0,\n  errors,\n  // Adicionar instância para uso posterior\n  instance: $json.body.instance_info.instance\n};"
+      },
+      "id": "ccc5b0e3-2f8e-4cdb-82ce-ded7a32aff96",
+      "name": "Parse Parameters1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -688,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440010",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6c7fcb1a-9274-4873-8b87-e112c176279d",
+      "name": "Validation Check1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -464,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO members (whatsapp, tokens)\nVALUES ($1, $2)\nON CONFLICT (whatsapp) \nDO UPDATE SET \n  tokens = members.tokens + $2,\n  updated_at = NOW()\nRETURNING id, whatsapp, tokens, name;",
+        "options": {
+          "queryReplacement": "={{ $json.whatsapp }},{{ $json.quantidade }}"
+        }
+      },
+      "id": "eb1ab71a-43cf-4c8a-9bbf-b6333ed6d96d",
+      "name": "UPSERT Member Tokens1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -240,
+        608
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO token_transactions (member_id, whatsapp, amount, transaction_type, executed_by)\nVALUES ($1, $2, $3, 'add', $4)\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ $json.id }},{{ $json.whatsapp }},{{ $('Parse Parameters1').item.json.quantidade }},{{ $('Parse Parameters1').item.json.executor_whatsapp }}"
+        }
+      },
+      "id": "b9dda328-3221-40d0-a06a-382e86cac925",
+      "name": "Log Transaction1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -32,
+        608
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440011",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440012",
+              "name": "message",
+              "value": "=✅ Tokens adicionados!\n\n👤 WhatsApp: {{ $('UPSERT Member Tokens1').item.json.whatsapp }}\n🪙 Quantidade: +{{ $('Parse Parameters1').item.json.quantidade }}\n📊 Total atual: {{ $('UPSERT Member Tokens1').item.json.tokens }}\n\n🔹 Executado por: {{ $('Parse Parameters1').item.json.executor_name }}",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440013",
+              "name": "instance",
+              "value": "={{ $('Parse Parameters1').item.json.instance }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2f48f6f9-8619-4798-9add-55a450c4518e",
+      "name": "Success Response2",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440014",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440015",
+              "name": "message",
+              "value": "=❌ Erro no comando !token_add\n\n{{ $('Parse Parameters1').item.json.errors.join('\\n') }}\n\n💡 Uso correto: `!token_add [quantidade] [whatsapp]`\n📝 Exemplo: `!token_add 5 5511999999999`\n\nPor favor, tente novamente",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440016",
+              "name": "instance",
+              "value": "={{ $('Parse Parameters1').item.json.instance }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8c51f819-bc94-47f0-b3cb-e25ebfe35e26",
+      "name": "Error Response1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -240,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.instance.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook - !token_add').first().json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        528,
+        1040
+      ],
+      "id": "1aec884b-ff6e-445b-9773-36bf13c0073f",
+      "name": "uazapi - send text3",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        880
+      ],
+      "id": "9e1c5f31-6123-470a-8cc7-3b534cf2577f",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8272c88e-d0ef-436e-8ea6-a08138f28758",
+              "name": "error.info",
+              "value": "={{ $('Parse Parameters1').first().json }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -32,
+        880
+      ],
+      "id": "5799d5b0-5444-4802-9aef-c5a9bef4d9a5",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/token_add",
+        "authentication": "basicAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "213df282-ece1-406d-b00b-d700c5704ce0",
+      "name": "Webhook - !token_add",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        832
+      ],
+      "webhookId": "550e8400-e29b-41d4-a716-446655440099",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse do comando: '4 5511999888555'\nconst messageText = $input.first().json.body.messag?.text || '';\nconst parts = messageText.trim().split(' ');\n\n// Validações básicas\nif (parts.length !== 2) {\n  return [{\n    json: {\n      error: true,\n      message: '❌ Formato inválido. Use: !token_remove quantidade whatsapp',\n      example: 'Exemplo: !token_remove 3 5511999888555'\n    }\n  }];\n}\n\nconst quantidade = parseInt(parts[0]);\nconst whatsapp = parts[1].replace(/[^0-9]/g, ''); // Remove caracteres não numéricos\n\n// Validar quantidade\nif (isNaN(quantidade) || quantidade <= 0) {\n  return [{\n    json: {\n      error: true,\n      message: '❌ Quantidade deve ser um número maior que zero',\n      received: parts[0]\n    }\n  }];\n}\n\n// Validar WhatsApp (básico)\nif (whatsapp.length < 10 || whatsapp.length > 15) {\n  return [{\n    json: {\n      error: true,\n      message: '❌ WhatsApp inválido. Digite apenas números.',\n      received: parts[1],\n      cleaned: whatsapp\n    }\n  }];\n}\n\n// Dados do executor\nconst executor = $input.first().json.body.user;\nconst instance = $input.first().json.body.instance_info.instance;\n\nreturn [{\n  json: {\n    error: false,\n    quantidade: quantidade,\n    whatsapp: whatsapp,\n    executor: {\n      whatsapp: executor.whatsapp,\n      name: executor.name,\n      role: executor.role\n    },\n    instance: instance\n  }\n}];"
+      },
+      "id": "6f642686-cf08-47ec-ac52-cbccf157dd68",
+      "name": "Parse Parameters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440004",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1cffc584-586c-48d7-8a76-78a11b50d6ee",
+      "name": "Check for Errors",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -496,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH member_check AS (\n    -- Verificar se membro existe e tokens atuais\n    SELECT \n        id as member_id,\n        whatsapp,\n        name,\n        tokens as current_tokens,\n        CASE \n            WHEN tokens - $1 < 1 THEN 1\n            ELSE tokens - $1\n        END as new_tokens,\n        CASE \n            WHEN tokens - $1 < 1 THEN tokens - 1  -- Remove até deixar 1\n            ELSE $1                                -- Remove quantidade solicitada\n        END as actual_removed\n    FROM members \n    WHERE whatsapp = $2\n),\nupdate_tokens AS (\n    -- Atualizar tokens do membro\n    UPDATE members \n    SET \n        tokens = mc.new_tokens,\n        updated_at = NOW()\n    FROM member_check mc\n    WHERE members.whatsapp = mc.whatsapp\n    RETURNING \n        members.id as member_id,\n        members.whatsapp,\n        members.name,\n        members.tokens as final_tokens\n),\nlog_transaction AS (\n    -- Log da transação\n    INSERT INTO token_transactions (\n        member_id,\n        whatsapp,\n        amount,\n        transaction_type,\n        executed_by\n    )\n    SELECT \n        mc.member_id,\n        mc.whatsapp,\n        -mc.actual_removed,  -- Negativo para remoção\n        'remove',\n        $3\n    FROM member_check mc\n    RETURNING id as transaction_id\n)\nSELECT \n    json_build_object(\n        'status', CASE \n            WHEN mc.member_id IS NULL THEN 'member_not_found'\n            ELSE 'success'\n        END,\n        'member', json_build_object(\n            'whatsapp', mc.whatsapp,\n            'name', mc.name,\n            'tokens_before', mc.current_tokens,\n            'tokens_after', mc.new_tokens,\n            'requested_remove', $1,\n            'actual_removed', mc.actual_removed,\n            'was_limited', mc.actual_removed < $1\n        ),\n        'transaction', json_build_object(\n            'id', lt.transaction_id,\n            'executed_by', $3,\n            'timestamp', NOW()\n        ),\n        'message', CASE \n            WHEN mc.member_id IS NULL THEN \n                '❌ Membro não encontrado: ' || $2\n            WHEN mc.actual_removed < $1 THEN \n                '⚠️ Removidos ' || mc.actual_removed || ' tokens (mínimo 1 mantido). Saldo: ' || mc.new_tokens\n            ELSE \n                '✅ Removidos ' || mc.actual_removed || ' tokens. Novo saldo: ' || mc.new_tokens\n        END\n    ) as result\nFROM member_check mc\nLEFT JOIN log_transaction lt ON true\nUNION ALL\n-- Caso membro não existe\nSELECT \n    json_build_object(\n        'status', 'member_not_found',\n        'message', '❌ Membro não encontrado: ' || $2,\n        'suggestion', 'Verifique o número ou use !token_add para criar'\n    ) as result\nWHERE NOT EXISTS (SELECT 1 FROM members WHERE whatsapp = $2)\nLIMIT 1;",
+        "options": {
+          "queryReplacement": "={{ $json.quantidade }}, {{ $json.whatsapp }}, {{ $json.executor.whatsapp }}"
+        }
+      },
+      "id": "80f6eee4-16e0-4218-b87b-8c98b177ed08",
+      "name": "Execute Token Remove",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -288,
+        1344
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440012",
+              "name": "response_message",
+              "value": "={{ $json.message }}",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440013",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440014",
+              "name": "error_details",
+              "value": "={{ $json }}",
+              "type": "object"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440015",
+              "name": "instance",
+              "value": "={{ $('Parse Parameters').first().json.instance }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "89d57730-eeaa-4b1c-84ac-8cec6ecdfc57",
+      "name": "Format Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -288,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.instance.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook - !token_remove').first().json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.response_message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8012a8f1-7118-4e23-bbcd-402b7b47d4c9",
+      "name": "Send WhatsApp Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        304,
+        1648
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -64,
+        1504
+      ],
+      "id": "1dd3d0ce-acbf-4bce-b6d1-d95a72c0bd2d",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Nó Code: Format Token Remove Response Message\n// Recebe resultado da query PostgreSQL e formata mensagem informativa\n\nconst result = $json.result;\n\n// Se não foi sucesso, retorna mensagem de erro\nif (result.status !== 'success') {\n  return [{\n    json: {\n      response_message: result.message || '❌ Erro ao processar remoção de tokens',\n      success: false,\n      error_type: result.status,\n      instance: $('Parse Parameters').first().json.instance\n    }\n  }];\n}\n\nconst member = result.member;\nconst transaction = result.transaction;\n\n// Dados do executor (vem do webhook original)\nconst executor = $('Parse Parameters').first().json.executor;\nconst instance = $('Parse Parameters').first().json.instance;\n\n// Formatação da data/hora\nconst timestamp = new Date(transaction.timestamp).toLocaleString('pt-BR', {\n  timeZone: 'America/Sao_Paulo',\n  day: '2-digit',\n  month: '2-digit', \n  year: 'numeric',\n  hour: '2-digit',\n  minute: '2-digit'\n});\n\n// Construir mensagem informativa para staff\nlet message = `🔻 *TOKENS REMOVIDOS*\\n\\n`;\n\n// Info do membro\nmessage += `👤 *Membro:* ${member.name || 'Sem nome'}\\n`;\nmessage += `📱 *WhatsApp:* ${member.whatsapp}\\n\\n`;\n\n// Info da operação\nmessage += `💰 *Tokens:*\\n`;\nmessage += `   • Antes: ${member.tokens_before}\\n`;\nmessage += `   • Removidos: ${member.actual_removed}\\n`;\nmessage += `   • Depois: ${member.tokens_after}\\n\\n`;\n\n// Se houve limitação (tentou remover mais do que tinha)\nif (member.was_limited) {\n  message += `⚠️ *Limitado:* Solicitado ${member.requested_remove}, removido ${member.actual_removed} (mín. 1 mantido)\\n\\n`;\n}\n\n// Info da transação\nmessage += `📋 *Operação:*\\n`;\nmessage += `   • ID: #${transaction.id}\\n`;\nmessage += `   • Executado por: ${executor.name} (${executor.role})\\n`;\nmessage += `   • Data/Hora: ${timestamp}\\n\\n`;\n\n// Status final baseado na situação\nif (member.tokens_after === 1) {\n  message += `🟡 *Status:* Membro no limite mínimo (1 token)`;\n} else if (member.tokens_after <= 3) {\n  message += `🟠 *Status:* Poucos tokens restantes`;\n} else {\n  message += `🟢 *Status:* Operação concluída com sucesso`;\n}\n\nreturn [{\n  json: {\n    response_message: message,\n    success: true,\n    instance: instance,\n    member_status: {\n      whatsapp: member.whatsapp,\n      name: member.name,\n      current_tokens: member.tokens_after,\n      is_at_minimum: member.tokens_after === 1,\n      needs_attention: member.tokens_after <= 3\n    },\n    operation_details: {\n      transaction_id: transaction.id,\n      executor: executor.whatsapp,\n      timestamp: transaction.timestamp,\n      was_limited: member.was_limited\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        1344
+      ],
+      "id": "acb1d53d-8f96-4c56-8dfd-f081dc5d16ae",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/token_remove",
+        "authentication": "basicAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ed8d9592-4877-4d3f-94d8-93cee3aab880",
+      "name": "Webhook - !token_remove",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        1632
+      ],
+      "webhookId": "1b30ec02-cee3-4947-8cc0-20662fcd23bc",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440004",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7cfd6803-ba41-4a31-9bb5-8c3382c7b9f6",
+      "name": "Check Parse Error",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -496,
+        2032
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH member_upsert AS (\n  INSERT INTO members (whatsapp, freeze_until, updated_at)\n  VALUES ($1, $2, NOW())\n  ON CONFLICT (whatsapp) \n  DO UPDATE SET \n    freeze_until = $2,\n    updated_at = NOW()\n  RETURNING id, whatsapp, tokens, freeze_until\n),\ntransaction_log AS (\n  INSERT INTO token_transactions (\n    member_id, \n    whatsapp, \n    amount, \n    transaction_type, \n    executed_by\n  )\n  SELECT m.id, m.whatsapp, 0, 'freeze', $3\n  FROM member_upsert m\n  RETURNING id\n)\nSELECT json_build_object(\n  'success', true,\n  'action', 'freeze',\n  'whatsapp', m.whatsapp,\n  'tokens', m.tokens,\n  'freeze_until', m.freeze_until,\n  'days', $4,\n  'executed_by', $3,\n  'transaction_id', t.id,\n  'message', '🔒 Tokens congelados por ' || $4 || ' dias',\n  'freeze_date', TO_CHAR(m.freeze_until, 'DD/MM/YYYY HH24:MI')\n) as resultado\nFROM member_upsert m, transaction_log t;",
+        "options": {
+          "queryReplacement": "={{ $json.whatsapp }},{{ $json.freeze_until }},{{ $json.executed_by }},{{ $json.days }}"
+        }
+      },
+      "id": "ac6fb6ac-8b71-488f-ab44-481181b1d316",
+      "name": "Execute Freeze",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -288,
+        1936
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const errorMessage = $input.first().json.message;\nconst instance = $('Parse Parameters2').first().json.instance;\n\nreturn [{\n  json: {\n    success: false,\n    error: true,\n    message: errorMessage,\n    instance: instance,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "5bf17fce-6ee7-4a3b-9049-0755c769fa41",
+      "name": "Return Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst instance = $('Parse Parameters2').first().json.instance;\n\nif (input.success === false) {\n  // Error response\n  return [{\n    success: false,\n    message: input.message,\n    instance: instance,\n    timestamp: new Date().toISOString()\n  }];\n}\n\n// Success response from PostgreSQL\nconst result = input.resultado || input;\n\nreturn [{\n  success: true,\n  action: 'token_freeze',\n  data: {\n    whatsapp: result.whatsapp,\n    tokens: result.tokens,\n    freeze_until: result.freeze_until,\n    freeze_date: result.freeze_date,\n    days: result.days,\n    executed_by: result.executed_by\n  },\n  message: result.message,\n  instance: instance,\n  timestamp: new Date().toISOString()\n}];"
+      },
+      "id": "d388113b-19b2-4e77-ab46-3b4121e9fabf",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        2032
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const messageText = $input.first().json.body.messag?.text || '';\nconst executedBy = $input.first().json.body.user.whatsapp;\nconst executorName = $input.first().json.body.user.name;\nconst instance = $input.first().json.body.instance_info.instance;\n\n// Parse: pode ser \"whatsapp\" ou \"whatsapp dias\" ou \"dias whatsapp\"\nconst parts = messageText.trim().split(/\\s+/);\n\nlet whatsapp = '';\nlet days = 7; // padrão 7 dias\n\nif (parts.length === 0) {\n  return [{\n    json: {\n      error: true,\n      message: \"❌ Parâmetros obrigatórios: !token_freeze whatsapp [dias]\",\n      instance: instance\n    }\n  }];\n}\n\nif (parts.length === 1) {\n  // Só um parâmetro - deve ser whatsapp\n  whatsapp = parts[0];\n} else if (parts.length === 2) {\n  // Dois parâmetros - pode ser \"whatsapp dias\" ou \"dias whatsapp\"\n  const first = parts[0];\n  const second = parts[1];\n  \n  // Verificar qual é número (dias) e qual é whatsapp\n  if (/^\\d+$/.test(first) && /^\\d+/.test(second)) {\n    // Ambos são números, assumir primeiro=dias, segundo=whatsapp\n    days = parseInt(first);\n    whatsapp = second;\n  } else if (/^\\d+$/.test(first)) {\n    // Primeiro é número, segundo é whatsapp\n    days = parseInt(first);\n    whatsapp = second;\n  } else if (/^\\d+$/.test(second)) {\n    // Primeiro é whatsapp, segundo é número\n    whatsapp = first;\n    days = parseInt(second);\n  } else {\n    // Nenhum é número, assumir primeiro=whatsapp, segundo inválido\n    whatsapp = first;\n  }\n}\n\n// Validar whatsapp (deve começar com 55 e ter 11-13 dígitos)\nif (!whatsapp || !/^55\\d{10,11}$/.test(whatsapp)) {\n  return [{\n    json: {\n      error: true,\n      message: `❌ WhatsApp inválido: ${whatsapp}\\nFormato correto: 5511999888777`,\n      instance: instance\n    }\n  }];\n}\n\n// Validar dias (1-365)\nif (days < 1 || days > 365) {\n  return [{\n    json: {\n      error: true,\n      message: `❌ Dias inválidos: ${days}\\nPermitido: 1 a 365 dias`,\n      instance: instance\n    }\n  }];\n}\n\n// Calcular data de freeze\nconst freezeUntil = new Date();\nfreezeUntil.setDate(freezeUntil.getDate() + days);\n\nreturn [{\n  json: {\n    error: false,\n    whatsapp: whatsapp,\n    days: days,\n    freeze_until: freezeUntil.toISOString(),\n    executed_by: executedBy,\n    executor_name: executorName,\n    instance: instance\n  }\n}];"
+      },
+      "id": "9d606bed-3f97-4621-aa58-21ee66194213",
+      "name": "Parse Parameters2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        2032
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.instance.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook - !token_freeze').first().json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "=🔒 *CONGELAMENTO APLICADO*\n\n📱 {{ $json.data.whatsapp }}\n⏰ Congelado por {{ $json.data.days }} dias (até {{ $json.data.freeze_date }})\n🎲 Bloqueado para sorteios durante este período\n\nTokens: {{ $json.data.tokens }} | Por: {{ $('Check Parse Error').first().json.executor_name }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ 3400 }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        384,
+        2032
+      ],
+      "id": "76643655-506a-400c-bf91-f6999c24165b",
+      "name": "uazapi - send text4",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        160,
+        2032
+      ],
+      "id": "dd61bc21-da2a-49d1-abf6-f074695e90fd",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/token_freeze",
+        "authentication": "basicAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "7821d798-6328-4e9d-b84e-b9def78fb741",
+      "name": "Webhook - !token_freeze",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        2032
+      ],
+      "webhookId": "7e507b68-dc64-459c-8d98-abbaedcc496d",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse do comando sorteio com suporte a tags ou sem tags\nconst webhookData = $input.first().json.body;\n\n// Pegar o texto da mensagem (note o typo 'messag')\nconst messageText = webhookData.messag?.text || '';\n\n// Tags válidas do webhook\nconst validTags = webhookData.valid_tags || [];\n\n// Chat IDs diretamente do webhook\nconst chatIds = webhookData.chat_ids || [];\n\n// Extrair quantidade do texto\n// Formato: \"#tag1 #tag2 5\" ou apenas \"5\" ou vazio (default 1)\nlet quantity = 1;\n\nif (messageText) {\n  // Procurar números no texto\n  const numbers = messageText.match(/\\d+/g);\n  if (numbers && numbers.length > 0) {\n    // Pegar o último número encontrado\n    quantity = Math.min(parseInt(numbers[numbers.length - 1]), 50);\n  }\n}\n\n// Se não houver tags, usar 'all' para sortear de todos os grupos\nconst tagsToUse = validTags.length > 0 ? validTags : ['all'];\nconst isAllGroups = tagsToUse[0] === 'all';\n\nreturn [{\n  user: webhookData.user,\n  command_info: webhookData.command_info,\n  tags: tagsToUse,\n  is_all_groups: isAllGroups,\n  chat_ids: chatIds,\n  quantity: quantity,\n  instance_info: webhookData.instance_info,\n  message_id: webhookData.media_info?.message_id || '',\n  original_text: messageText,\n  // Dados para uso posterior\n  user_whatsapp: webhookData.user.whatsapp,\n  user_name: webhookData.user.name\n}];"
+      },
+      "id": "14dd4e52-a5ad-4ed0-a576-6b1f97ac6703",
+      "name": "Parse Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        2432
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-all-groups",
+              "leftValue": "={{ $json.is_all_groups }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "58542b5c-95e8-4459-897f-0328d8687268",
+      "name": "Check Tag Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -496,
+        2432
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Sorteio para TODOS os grupos (sem filtro de tags)\nWITH eligible_members AS (\n  SELECT DISTINCT\n    m.id as member_id,\n    m.whatsapp,\n    m.name,\n    COALESCE(m.tokens, 1) as tokens,\n    m.freeze_until,\n    m.lucky,\n    CASE \n      WHEN m.lucky = false THEN false\n      WHEN m.freeze_until IS NOT NULL AND m.freeze_until > NOW() THEN false\n      ELSE true\n    END as can_participate,\n    CASE \n      WHEN m.lucky = false THEN 'sorte_desabilitada'\n      WHEN m.freeze_until IS NOT NULL AND m.freeze_until > NOW() THEN 'tokens_congelados'\n      ELSE 'elegivel'\n    END as status_reason,\n    ARRAY['todos'] as groups,\n    ARRAY['todos'] as member_tags\n  FROM members m\n  WHERE m.tokens > 0\n),\nticket_pool AS (\n  SELECT \n    m.member_id,\n    m.whatsapp,\n    m.name,\n    m.tokens,\n    m.groups,\n    m.member_tags,\n    generate_series(1, m.tokens) as ticket_number,\n    RANDOM() as draw_order\n  FROM eligible_members m\n  WHERE m.can_participate = true\n),\nsorted_tickets AS (\n  SELECT *,\n    ROW_NUMBER() OVER (ORDER BY draw_order) as global_rank\n  FROM ticket_pool\n),\nwinning_positions AS (\n  SELECT DISTINCT ON (whatsapp)\n    member_id,\n    whatsapp,\n    name,\n    tokens,\n    groups,\n    member_tags,\n    global_rank,\n    ticket_number\n  FROM sorted_tickets\n  ORDER BY whatsapp, global_rank ASC\n),\nwinners AS (\n  SELECT *,\n    ROW_NUMBER() OVER (ORDER BY global_rank) as position\n  FROM winning_positions\n  ORDER BY global_rank\n  LIMIT LEAST($1::integer, (SELECT COUNT(DISTINCT whatsapp) FROM eligible_members WHERE can_participate = true))\n),\nlottery_summary AS (\n  SELECT \n    COUNT(*) as total_found,\n    COUNT(*) FILTER (WHERE can_participate = true) as eligible_count,\n    COUNT(*) FILTER (WHERE lucky = false) as luck_disabled,\n    COUNT(*) FILTER (WHERE freeze_until IS NOT NULL AND freeze_until > NOW()) as frozen_count,\n    SUM(tokens) FILTER (WHERE can_participate = true) as total_entries,\n    (SELECT COUNT(*) FROM ticket_pool) as total_tickets_in_pool,\n    (SELECT COUNT(DISTINCT whatsapp) FROM ticket_pool) as unique_participants\n  FROM eligible_members\n),\nsave_lottery AS (\n  INSERT INTO lottery_results (\n    tags,\n    winners,\n    total_participants,\n    executed_by,\n    created_at\n  )\n  SELECT \n    ARRAY['todos']::text[],\n    (SELECT json_agg(\n      json_build_object(\n        'whatsapp', whatsapp,\n        'name', name,\n        'tokens', tokens,\n        'position', position,\n        'global_rank', global_rank,\n        'winning_ticket', ticket_number,\n        'groups', groups,\n        'tags', member_tags\n      ) ORDER BY position\n    ) FROM winners),\n    (SELECT eligible_count FROM lottery_summary),\n    $2::text,\n    NOW()\n  WHERE (SELECT COUNT(*) FROM winners) > 0\n  RETURNING id, created_at\n),\nfreeze_winners AS (\n  UPDATE members \n  SET \n    freeze_until = NOW() + INTERVAL '30 days',\n    updated_at = NOW()\n  WHERE id IN (SELECT member_id FROM winners)\n  RETURNING id, whatsapp, freeze_until\n)\nSELECT \n  json_build_object(\n    'status', CASE \n      WHEN (SELECT eligible_count FROM lottery_summary) = 0 THEN 'no_participants'\n      ELSE 'success'\n    END,\n    'lottery_id', (SELECT id FROM save_lottery),\n    'lottery_saved_at', (SELECT created_at FROM save_lottery),\n    'algorithm_stats', (\n      SELECT json_build_object(\n        'total_tickets_generated', total_tickets_in_pool,\n        'unique_participants', unique_participants,\n        'average_tickets_per_person', ROUND(total_tickets_in_pool::decimal / NULLIF(unique_participants, 0), 2)\n      ) FROM lottery_summary\n    ),\n    'winners', COALESCE(\n      (SELECT json_agg(\n        json_build_object(\n          'whatsapp', whatsapp,\n          'name', name,\n          'tokens', tokens,\n          'position', position,\n          'global_rank', global_rank,\n          'winning_ticket', ticket_number,\n          'groups', groups,\n          'tags', member_tags,\n          'frozen_until', NOW() + INTERVAL '30 days',\n          'chance_percentage', ROUND((tokens::decimal / NULLIF((SELECT total_tickets_in_pool FROM lottery_summary), 0)) * 100, 2)\n        ) ORDER BY position\n      ) FROM winners),\n      '[]'::json\n    ),\n    'summary', (\n      SELECT json_build_object(\n        'total_found', total_found,\n        'eligible_count', eligible_count,\n        'luck_disabled', luck_disabled,\n        'frozen_count', frozen_count,\n        'total_entries', total_entries,\n        'total_tickets_in_pool', total_tickets_in_pool,\n        'tags_searched', ARRAY['todos']::text[],\n        'requested_quantity', $1::integer,\n        'actual_winners', (SELECT COUNT(*) FROM winners),\n        'winners_frozen_until', to_char(NOW() + INTERVAL '30 days', 'YYYY-MM-DD HH24:MI:SS')\n      ) FROM lottery_summary\n    ),\n    'freeze_results', (\n      SELECT json_agg(\n        json_build_object(\n          'whatsapp', whatsapp,\n          'frozen_until', freeze_until\n        )\n      ) FROM freeze_winners\n    )\n  ) as result;",
+        "options": {
+          "queryReplacement": "={{ $json.quantity }}, {{ JSON.stringify($json.user_whatsapp) }}"
+        }
+      },
+      "id": "411f08fb-ebfd-4991-879b-a2202b7e3f22",
+      "name": "Lottery All Groups",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -256,
+        2352
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Sorteio com filtro de tags específicas\nWITH tags_array AS (\n  SELECT array_agg(value::text) as tag_list\n  FROM jsonb_array_elements_text($1::jsonb)\n),\neligible_members AS (\n  SELECT DISTINCT\n    m.id as member_id,\n    m.whatsapp,\n    m.name,\n    COALESCE(m.tokens, 1) as tokens,\n    m.freeze_until,\n    m.lucky,\n    CASE \n      WHEN m.lucky = false THEN false\n      WHEN m.freeze_until IS NOT NULL AND m.freeze_until > NOW() THEN false\n      ELSE true\n    END as can_participate,\n    CASE \n      WHEN m.lucky = false THEN 'sorte_desabilitada'\n      WHEN m.freeze_until IS NOT NULL AND m.freeze_until > NOW() THEN 'tokens_congelados'\n      ELSE 'elegivel'\n    END as status_reason,\n    ARRAY_AGG(DISTINCT g.group_name) as groups,\n    ARRAY_AGG(DISTINCT t.name) as member_tags\n  FROM members m\n  JOIN member_groups mg ON m.id = mg.member_id\n  JOIN groups g ON mg.group_id = g.id  \n  JOIN group_tags gt ON g.id = gt.group_id\n  JOIN tags t ON gt.tag_id = t.id\n  CROSS JOIN tags_array ta\n  WHERE \n    t.name = ANY(ta.tag_list)\n    AND mg.is_active = true\n  GROUP BY m.id, m.whatsapp, m.name, m.tokens, m.freeze_until, m.lucky\n),\nticket_pool AS (\n  SELECT \n    m.member_id,\n    m.whatsapp,\n    m.name,\n    m.tokens,\n    m.groups,\n    m.member_tags,\n    generate_series(1, m.tokens) as ticket_number,\n    RANDOM() as draw_order\n  FROM eligible_members m\n  WHERE m.can_participate = true\n),\nsorted_tickets AS (\n  SELECT *,\n    ROW_NUMBER() OVER (ORDER BY draw_order) as global_rank\n  FROM ticket_pool\n),\nwinning_positions AS (\n  SELECT DISTINCT ON (whatsapp)\n    member_id,\n    whatsapp,\n    name,\n    tokens,\n    groups,\n    member_tags,\n    global_rank,\n    ticket_number\n  FROM sorted_tickets\n  ORDER BY whatsapp, global_rank ASC\n),\nwinners AS (\n  SELECT *,\n    ROW_NUMBER() OVER (ORDER BY global_rank) as position\n  FROM winning_positions\n  ORDER BY global_rank\n  LIMIT LEAST($2::integer, (SELECT COUNT(DISTINCT whatsapp) FROM eligible_members WHERE can_participate = true))\n),\nlottery_summary AS (\n  SELECT \n    COUNT(*) as total_found,\n    COUNT(*) FILTER (WHERE can_participate = true) as eligible_count,\n    COUNT(*) FILTER (WHERE lucky = false) as luck_disabled,\n    COUNT(*) FILTER (WHERE freeze_until IS NOT NULL AND freeze_until > NOW()) as frozen_count,\n    SUM(tokens) FILTER (WHERE can_participate = true) as total_entries,\n    (SELECT COUNT(*) FROM ticket_pool) as total_tickets_in_pool,\n    (SELECT COUNT(DISTINCT whatsapp) FROM ticket_pool) as unique_participants\n  FROM eligible_members\n),\nsave_lottery AS (\n  INSERT INTO lottery_results (\n    tags,\n    winners,\n    total_participants,\n    executed_by,\n    created_at\n  )\n  SELECT \n    (SELECT tag_list FROM tags_array),\n    (SELECT json_agg(\n      json_build_object(\n        'whatsapp', whatsapp,\n        'name', name,\n        'tokens', tokens,\n        'position', position,\n        'global_rank', global_rank,\n        'winning_ticket', ticket_number,\n        'groups', groups,\n        'tags', member_tags\n      ) ORDER BY position\n    ) FROM winners),\n    (SELECT eligible_count FROM lottery_summary),\n    $3::text,\n    NOW()\n  WHERE (SELECT COUNT(*) FROM winners) > 0\n  RETURNING id, created_at\n),\nfreeze_winners AS (\n  UPDATE members \n  SET \n    freeze_until = NOW() + INTERVAL '30 days',\n    updated_at = NOW()\n  WHERE id IN (SELECT member_id FROM winners)\n  RETURNING id, whatsapp, freeze_until\n)\nSELECT \n  json_build_object(\n    'status', CASE \n      WHEN (SELECT eligible_count FROM lottery_summary) = 0 THEN 'no_participants'\n      ELSE 'success'\n    END,\n    'lottery_id', (SELECT id FROM save_lottery),\n    'lottery_saved_at', (SELECT created_at FROM save_lottery),\n    'algorithm_stats', (\n      SELECT json_build_object(\n        'total_tickets_generated', total_tickets_in_pool,\n        'unique_participants', unique_participants,\n        'average_tickets_per_person', ROUND(total_tickets_in_pool::decimal / NULLIF(unique_participants, 0), 2)\n      ) FROM lottery_summary\n    ),\n    'winners', COALESCE(\n      (SELECT json_agg(\n        json_build_object(\n          'whatsapp', whatsapp,\n          'name', name,\n          'tokens', tokens,\n          'position', position,\n          'global_rank', global_rank,\n          'winning_ticket', ticket_number,\n          'groups', groups,\n          'tags', member_tags,\n          'frozen_until', NOW() + INTERVAL '30 days',\n          'chance_percentage', ROUND((tokens::decimal / NULLIF((SELECT total_tickets_in_pool FROM lottery_summary), 0)) * 100, 2)\n        ) ORDER BY position\n      ) FROM winners),\n      '[]'::json\n    ),\n    'summary', (\n      SELECT json_build_object(\n        'total_found', total_found,\n        'eligible_count', eligible_count,\n        'luck_disabled', luck_disabled,\n        'frozen_count', frozen_count,\n        'total_entries', total_entries,\n        'total_tickets_in_pool', total_tickets_in_pool,\n        'tags_searched', (SELECT tag_list FROM tags_array),\n        'requested_quantity', $2::integer,\n        'actual_winners', (SELECT COUNT(*) FROM winners),\n        'winners_frozen_until', to_char(NOW() + INTERVAL '30 days', 'YYYY-MM-DD HH24:MI:SS')\n      ) FROM lottery_summary\n    ),\n    'freeze_results', (\n      SELECT json_agg(\n        json_build_object(\n          'whatsapp', whatsapp,\n          'frozen_until', freeze_until\n        )\n      ) FROM freeze_winners\n    )\n  ) as result;",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify($json.tags) }}, {{ $json.quantity }}, {{ JSON.stringify($json.user_whatsapp) }}"
+        }
+      },
+      "id": "b8effc00-1f40-4798-9ba8-a4c793e2ba7c",
+      "name": "Lottery With Tags",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -256,
+        2512
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "be46f936-c890-4f5d-9727-9e72658b5423",
+      "name": "Merge Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -32,
+        2432
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.instance_info.instance.host }}/send/text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.user_whatsapp || $('Webhook - !sorteio').first().json.body.user.whatsapp }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "delay",
+              "value": "3400"
+            },
+            {
+              "name": "linkPreview",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7a7a2678-cb35-4ed3-8715-c2302917b875",
+      "name": "Send WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        608,
+        2432
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "0705130b-2c28-4a34-a126-173a52131954",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        2432
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-command/sorteio",
+        "authentication": "basicAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a8b41181-c7c1-409a-9ce8-b89b6a71681e",
+      "name": "Webhook - !sorteio",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        2432
+      ],
+      "webhookId": "fa030ff4-c7a1-4f04-9893-57802ef7563d",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "CbI3AxRi42pu2D1b",
+          "name": "Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formatar resposta do sorteio\nconst result = $input.first().json.result;\nconst originalData = $('Parse Command').first().json;\n\n// Verificar se houve erro\nif (result.status !== 'success') {\n  let errorMessage = '❌ *ERRO NO SORTEIO* ❌\\n\\n';\n  \n  if (result.status === 'no_participants') {\n    errorMessage += '🚫 Nenhum membro elegível encontrado para o sorteio.\\n\\n';\n    errorMessage += '*Possíveis motivos:*\\n';\n    errorMessage += '• Todos os membros estão com tokens congelados\\n';\n    errorMessage += '• Todos desabilitaram a participação em sorteios\\n';\n    if (originalData.tags[0] !== 'all') {\n      errorMessage += '• Nenhum membro encontrado nas tags especificadas\\n\\n';\n      errorMessage += `📋 *Tags buscadas:* ${result.summary?.tags_searched?.map(t => `#${t}`).join(' ') || 'N/A'}`;\n    }\n  } else {\n    errorMessage += `Erro: ${result.error || 'Erro desconhecido'}`;\n  }\n  \n  return [{\n    success: false,\n    message: errorMessage,\n    instance_info: originalData.instance_info\n  }];\n}\n\n// Dados do sorteio\nconst winners = result.winners || [];\nconst summary = result.summary || {};\nconst isAllGroups = summary.tags_searched?.[0] === 'todos';\nconst tags = isAllGroups ? 'TODOS OS GRUPOS' : summary.tags_searched?.map(t => `#${t}`).join(' ') || '';\nconst freezeDate = new Date(Date.now() + 30*24*60*60*1000);\n\n// Construir mensagem principal\nlet message = '🎲 *RESULTADO DO SORTEIO* 🎲\\n\\n';\n\n// Header com informações gerais\nif (!isAllGroups) {\n  message += `📋 *Tags:* ${tags}\\n`;\n} else {\n  message += `📋 *Sorteio:* ${tags}\\n`;\n}\nmessage += `👥 *Elegíveis:* ${summary.eligible_count}/${summary.total_found}\\n`;\nmessage += `🎯 *Quantidade:* ${summary.requested_quantity}\\n`;\nmessage += `🏆 *Sorteados:* ${summary.actual_winners}\\n\\n`;\n\n// Lista de ganhadores\nif (winners.length === 0) {\n  message += '❌ Nenhum ganhador foi sorteado.\\n\\n';\n} else {\n  message += '🏆 *GANHADORES:*\\n\\n';\n  \n  winners.forEach((winner, index) => {\n    const position = winner.position || (index + 1);\n    let medal = '🏅';\n    \n    if (position === 1) medal = '🥇';\n    else if (position === 2) medal = '🥈';\n    else if (position === 3) medal = '🥉';\n    \n    message += `${medal} *${position}º lugar*\\n`;\n    message += `👤 ${winner.name || 'Sem nome'}\\n`;\n    message += `📱 ${winner.whatsapp}\\n`;\n    message += `🎫 Tokens: ${winner.tokens}\\n`;\n    message += `📊 Chance: ${winner.chance_percentage || 0}%\\n`;\n    message += '\\n';\n  });\n}\n\n// Estatísticas resumidas\nmessage += '📊 *ESTATÍSTICAS:*\\n';\nmessage += `• Total de tickets: ${summary.total_tickets_in_pool || 0}\\n`;\nif (summary.frozen_count > 0) {\n  message += `• Congelados: ${summary.frozen_count}\\n`;\n}\nif (summary.luck_disabled > 0) {\n  message += `• Desabilitados: ${summary.luck_disabled}\\n`;\n}\n\n// Informação sobre freeze\nif (winners.length > 0) {\n  message += '\\n🧊 *CONGELAMENTO:*\\n';\n  message += `Ganhadores congelados até ${freezeDate.toLocaleDateString('pt-BR')}\\n`;\n}\n\n// Footer\nmessage += '\\n━━━━━━━━━━━━━━━━━━━━\\n';\nmessage += `🤖 ID: #${result.lottery_id || 'N/A'}\\n`;\nmessage += `⏰ ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}\\n`;\nmessage += `👨‍💼 Por: ${originalData.user_name}`;\n\nreturn [{\n  success: true,\n  message: message,\n  instance_info: originalData.instance_info,\n  user_whatsapp: originalData.user_whatsapp\n}];"
+      },
+      "id": "1821b45d-debc-4f89-81f6-63c30eaf72fe",
+      "name": "Format Response1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        2432
+      ]
+    }
+  ],
+  "connections": {
+    "Parse Request2": {
+      "main": [
+        [
+          {
+            "node": "API Validator - pantero-api-validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - !token_show4": {
+      "main": [
+        [
+          {
+            "node": "Parse Command5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Command5": {
+      "main": [
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "Get Ranking4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get User Tokens4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Ranking4": {
+      "main": [
+        [
+          {
+            "node": "Format Ranking4",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Webhook8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get User Tokens4": {
+      "main": [
+        [
+          {
+            "node": "Format User4",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Webhook8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Ranking4": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format User4": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge4": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Parameters1": {
+      "main": [
+        [
+          {
+            "node": "Validation Check1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation Check1": {
+      "main": [
+        [
+          {
+            "node": "UPSERT Member Tokens1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UPSERT Member Tokens1": {
+      "main": [
+        [
+          {
+            "node": "Log Transaction1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Transaction1": {
+      "main": [
+        [
+          {
+            "node": "Success Response2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Response2": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Response1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "uazapi - send text3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - !token_add": {
+      "main": [
+        [
+          {
+            "node": "Parse Parameters1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Parameters": {
+      "main": [
+        [
+          {
+            "node": "Check for Errors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Errors": {
+      "main": [
+        [
+          {
+            "node": "Execute Token Remove",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Token Remove": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send WhatsApp Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - !token_remove": {
+      "main": [
+        [
+          {
+            "node": "Parse Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Parse Error": {
+      "main": [
+        [
+          {
+            "node": "Execute Freeze",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Freeze": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return Error": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Parameters2": {
+      "main": [
+        [
+          {
+            "node": "Check Parse Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook3": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send text4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - !token_freeze": {
+      "main": [
+        [
+          {
+            "node": "Parse Parameters2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - !sorteio": {
+      "main": [
+        [
+          {
+            "node": "Parse Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Command": {
+      "main": [
+        [
+          {
+            "node": "Check Tag Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Tag Type": {
+      "main": [
+        [
+          {
+            "node": "Lottery All Groups",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lottery With Tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lottery All Groups": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lottery With Tags": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Results": {
+      "main": [
+        [
+          {
+            "node": "Format Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f75d0ce0-e61e-4dc1-99a9-273697901757",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "OnQhl5HqB79xsweq",
+  "tags": []
+}

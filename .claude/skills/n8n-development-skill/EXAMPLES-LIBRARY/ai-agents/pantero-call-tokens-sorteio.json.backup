@@ -1,0 +1,451 @@
+{
+  "name": "[Call] !tokens e !sorteio",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tokens/add",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "fe01ef97-00e1-4b74-b6e4-9331db39822b",
+      "name": "REST API - tokens add",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        80
+      ],
+      "webhookId": "GENERATE_NEW_UUID_HERE"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tokens/remove",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "4ed1e95b-211a-47d6-bc10-0fb3e876debd",
+      "name": "REST API - tokens remove",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        256
+      ],
+      "webhookId": "GENERATE_NEW_UUID_HERE"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tokens/freeze",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "938f1dee-a137-4656-bc5a-a9af3155156f",
+      "name": "REST API - tokens freeze",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        432
+      ],
+      "webhookId": "GENERATE_NEW_UUID_HERE"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lottery/draw",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "02e0d437-8cf1-4ba7-91b1-50093c4f70d9",
+      "name": "REST API - lottery draw",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        624
+      ],
+      "webhookId": "GENERATE_NEW_UUID_HERE"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tokens/show",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "8aafff8a-c7c5-4640-9e75-2314d57bbc2b",
+      "name": "REST API - tokens show",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        -96
+      ],
+      "webhookId": "GENERATE_NEW_UUID_HERE"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/functions/v1/tokens-show",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "whatsapp",
+              "value": "={{ $json.body.whatsapp }}"
+            },
+            {
+              "name": "limit",
+              "value": "={{ $json.body.limit }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        48,
+        -96
+      ],
+      "id": "3ddca218-4a8c-476b-903a-cbb7af22614a",
+      "name": "Edge function - token show"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/functions/v1/tokens-add",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "target_whatsapp",
+              "value": "={{ $json.body.target_whatsapp }}"
+            },
+            {
+              "name": "quantity",
+              "value": "={{ $json.body.quantity }}"
+            },
+            {
+              "name": "reason",
+              "value": "={{ $json.body.reason }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        48,
+        80
+      ],
+      "id": "cb23f9f7-3d36-4709-8e43-64187f71769f",
+      "name": "Edge function - tokens add"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/functions/v1/tokens-remove",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "target_whatsapp",
+              "value": "={{ $json.body.target_whatsapp }}"
+            },
+            {
+              "name": "quantity",
+              "value": "={{ $json.body.quantity }}"
+            },
+            {
+              "name": "reason",
+              "value": "={{ $json.body.reason }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        48,
+        256
+      ],
+      "id": "b46676b9-ccdf-4e2f-801d-ec5fdcf4c15f",
+      "name": "Edge function - tokens remove"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/functions/v1/tokens-freeze",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "target_whatsapp",
+              "value": "={{ $json.body.target_whatsapp }}"
+            },
+            {
+              "name": "days",
+              "value": "={{ $json.body.days }}"
+            },
+            {
+              "name": "reason",
+              "value": "={{ $json.body.reason }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        48,
+        432
+      ],
+      "id": "3bb3546b-e22a-491c-a134-acec889b6f5a",
+      "name": "Edge function - tokens freeze"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/functions/v1/lottery-draw",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tags",
+              "value": "={{ $json.body.tags }}"
+            },
+            {
+              "name": "quantity",
+              "value": "={{ $json.body.quantity }}"
+            },
+            {
+              "name": "exclude_whatsapp",
+              "value": "={{ $json.body.exclude_whatsapp }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        48,
+        624
+      ],
+      "id": "7da1bb14-1458-4f4d-af71-f61452faa976",
+      "name": "Edge function - lottery draw"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vvfgihxjonaowubldvym.supabase.co/auth/v1/token",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "password"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2ZmdpaHhqb25hb3d1YmxkdnltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAyMjk5MjUsImV4cCI6MjA0NTgwNTkyNX0.2ujO8rU0lvVV2TfvJJc9IzUSvJjm5cVdpTmUojMz1NA"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "contato.luizhms@gmail.com"
+            },
+            {
+              "name": "password",
+              "value": "152928Lu!"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        -352
+      ],
+      "id": "c041b403-9a5e-4875-93e9-9956d99b0020",
+      "name": "JWT create"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pantero-n8n-webhook.respondeaqui.com.br/webhook/tokens/show",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Inptd1ZiMFJtcEJESWhYUzMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3Z2ZmdpaHhqb25hb3d1YmxkdnltLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJhMmNiMTJhZC0xNjNlLTQ4OWYtOWI2OS00OTJiMTRkYjZiYzMiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzU1Nzk3MjkyLCJpYXQiOjE3NTU3OTM2OTIsImVtYWlsIjoiY29udGF0by5sdWl6aG1zQGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWxfdmVyaWZpZWQiOnRydWV9LCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDEiLCJhbXIiOlt7Im1ldGhvZCI6InBhc3N3b3JkIiwidGltZXN0YW1wIjoxNzU1NzkzNjkyfV0sInNlc3Npb25faWQiOiJiYWQ0ZDBjMS05MGYxLTQzN2UtOTMzOS03NDg5OTZlYjllZDQiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.-hHVXxm2HbmaDEr3XhE5iyhdUSca8XoNKhaK6XwKirA"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tags",
+              "value": "={{['teste2']}}"
+            },
+            {
+              "name": "message",
+              "value": "opaaaa"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -496,
+        -96
+      ],
+      "id": "dbe59e08-3abd-4c0f-8fca-f3ef9b2f6b5a",
+      "name": "test rest - all"
+    }
+  ],
+  "connections": {
+    "REST API - tokens add": {
+      "main": [
+        [
+          {
+            "node": "Edge function - tokens add",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "REST API - tokens remove": {
+      "main": [
+        [
+          {
+            "node": "Edge function - tokens remove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "REST API - tokens freeze": {
+      "main": [
+        [
+          {
+            "node": "Edge function - tokens freeze",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "REST API - lottery draw": {
+      "main": [
+        [
+          {
+            "node": "Edge function - lottery draw",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "REST API - tokens show": {
+      "main": [
+        [
+          {
+            "node": "Edge function - token show",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2dbb7e9e-b8ad-4579-8da4-c97c78572ba3",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "hBQbFq5QcYYZZvls",
+  "tags": []
+}

@@ -1,0 +1,171 @@
+{
+  "name": "TEST: Simple Webhook to OpenAI",
+  "nodes": [
+    {
+      "id": "aa000001-test-4a5b-8c9d-simple000001",
+      "name": "Test Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 200],
+      "parameters": {
+        "content": "## TEST WORKFLOW - Simple Pattern\n\n**What this tests:**\n- Complete workflow structure ✅\n- Webhook trigger ✅\n- Data mapping (Set node) ✅\n- OpenAI /v1/responses endpoint ✅\n- Response handling ✅\n\n**How to test:**\n1. Import this workflow to n8n\n2. Save workflow (get webhook URL)\n3. Send POST: {\"message\": \"Hello\"}\n4. Check response",
+        "height": 280,
+        "width": 500,
+        "color": 4
+      }
+    },
+    {
+      "id": "bb000002-test-4b5c-9d0e-simple000002",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 540],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-simple",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "cc000003-test-4c5d-0e1f-simple000003"
+    },
+    {
+      "id": "dd000004-test-4d5e-1f2a-simple000004",
+      "name": "Prepare Request",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 540],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ee000005-test-4e5f-2a3b-simple000005",
+              "name": "userMessage",
+              "value": "={{ $json.body.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ff000006-test-4f5a-3b4c-simple000006",
+      "name": "Call OpenAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 540],
+      "parameters": {
+        "url": "https://api.openai.com/v1/responses",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $credential.openAiApi.apiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "gpt-4o-mini"
+            },
+            {
+              "name": "input",
+              "value": "={{ $json.userMessage }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "1",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "id": "aa000007-test-4a5b-4c5d-simple000007",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [900, 540],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bb000008-test-4b5c-5d6e-simple000008",
+              "name": "success",
+              "value": "true",
+              "type": "boolean"
+            },
+            {
+              "id": "cc000009-test-4c5d-6e7f-simple000009",
+              "name": "response",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "dd000010-test-4d5e-7f8a-simple000010",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Request": {
+      "main": [
+        [
+          {
+            "node": "Call OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "versionId": "test0001-test-test-test-test00000001",
+  "tags": ["test", "validation"]
+}

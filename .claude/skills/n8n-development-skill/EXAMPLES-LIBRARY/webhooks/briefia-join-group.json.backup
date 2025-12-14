@@ -1,0 +1,668 @@
+{
+  "name": "Entrar no grupo",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "briefia/v1/novo-grupo",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "1e950145-afc8-4c5f-a8b3-910bb8a4b653",
+      "name": "Webhook Join",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -2464,
+        -464
+      ],
+      "webhookId": "550e8400-e29b-41d4-a716-446655440002"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "id_cliente",
+              "value": "={{ $json.body.id_cliente }}"
+            },
+            {
+              "key": "link_grupo",
+              "value": "={{ $json.body.link_grupo }}"
+            },
+            {
+              "key": "id_usuario_responsavel",
+              "value": "={{ $json.body.id_usuario_responsavel }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1,
+      "position": [
+        -2240,
+        -464
+      ],
+      "id": "2150f159-cc71-4501-8d53-c453ceb4555c",
+      "name": "execution data",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{(() => {\n  return {\n    status: \"error\",\n    code: 500,\n    message: \"Solicitação pendente. O WhatsApp está processando a solicitação de entrada no grupo.\",\n    type: \"pending\",\n    timestamp: new Date().toISOString(),\n    details: \"Verifique se nosso número está pendente de aprovação no grupo\"\n  };\n})()}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1360,
+        -128
+      ],
+      "id": "557339f6-612b-44c7-b0e5-b5038575702f",
+      "name": "Error Pending",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{(() => {\n  return {\n    status: \"error\",\n    code: 400,\n    message: \"Link do grupo inválido ou expirado.\",\n    type: \"invalid_link\",\n    timestamp: new Date().toISOString(),\n    details: \"Verifique se o link do grupo está correto e ainda é válido.\"\n  };\n})()}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1360,
+        32
+      ],
+      "id": "1a2ba142-663e-4f8a-9ff9-0073ed5d7779",
+      "name": "Error Invalid Link",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{(() => {\n  return {\n    status: \"error\",\n    code: 403,\n    message: \"Não foi possível entrar no grupo. Acesso negado.\",\n    type: \"unable_to_join\",\n    timestamp: new Date().toISOString(),\n    details: \"O grupo pode estar privado, cheio ou o número pode ter sido banido.\"\n  };\n})()}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1360,
+        192
+      ],
+      "id": "220331f5-aaa3-4223-b317-ae96872b95c7",
+      "name": "Error Unable to Join",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{(() => {\n  const data = $('Join WhatsApp Group').first().json.group;\n  return {\n    status: \"success\",\n    code: 200,\n    message: \"Entrada no grupo realizada com sucesso!\",\n    type: \"success\",\n    timestamp: new Date().toISOString(),\n    group_data: {\n      chat_id: data.JID.split('@')[0],\n      name: data.Name,\n      owner: data.OwnerPN.split('@')[0],\n      participant_count: data.Participants.length,\n      is_admin_only: data.IsAnnounce,\n      is_locked: data.IsLocked,\n      created_at: data.GroupCreated,\n      member_add_mode: data.MemberAddMode\n    },\n    details: \"Deu tudo certo com a entrada de nosso número no grupo.\"\n  };\n})()}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1152,
+        -768
+      ],
+      "id": "cd3c61f5-ef67-420b-95a9-b3aba3584788",
+      "name": "success",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://briefia.uazapi.com/group/join",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "inviteCode",
+              "value": "={{ $json.body.link_grupo }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "93b8680e-e0f7-4110-b24f-add19b44551b",
+      "name": "Join WhatsApp Group",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2016,
+        -464
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZtFXzJZKhheInQBf",
+          "name": "Uazapi - Briefia"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.error.status }}",
+                    "rightValue": 500,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "4783eec0-a2c0-4922-92d9-cd37dfd7010b"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pending"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "348723f8-3dc5-4ec9-bf08-3c800c2e283a",
+                    "leftValue": "={{ $json.error.status }}",
+                    "rightValue": 400,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "invalid_link"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "90e7e1d1-e975-440e-a72c-e5f2f5b3fee9",
+                    "leftValue": "={{ $json.error.status }}",
+                    "rightValue": 403,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "unable_to_join"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1616,
+        -112
+      ],
+      "id": "2c0a2183-05aa-4a1c-990a-cb3bb79b4c27",
+      "name": "Switch - Error",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "grupos",
+          "mode": "list",
+          "cachedResultName": "grupos"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "dt_update": "={{ $now }}",
+            "nome": "={{ $json.name }}",
+            "id_cliente": "={{ $('Webhook Join').item.json.body.id_cliente }}",
+            "url_convite": "={{ $('Webhook Join').item.json.body.link_grupo }}",
+            "chat_id_whatsapp": "={{ $json.wa_chatid.split(\"@\")[0] }}",
+            "url_imagem": "={{ $json.image }}",
+            "id": "={{ $('Webhook Join').item.json.body.id }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "dt_create",
+              "displayName": "dt_create",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "dt_update",
+              "displayName": "dt_update",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "id_cliente",
+              "displayName": "id_cliente",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "chat_id_whatsapp",
+              "displayName": "chat_id_whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "url_convite",
+              "displayName": "url_convite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "ativo",
+              "displayName": "ativo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "url_imagem",
+              "displayName": "url_imagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1408,
+        -768
+      ],
+      "id": "950a6447-1737-4bd8-ba8a-117e8a750336",
+      "name": "Insert or update rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://briefia.uazapi.com/chat/details",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.group.JID }}"
+            },
+            {
+              "name": "preview",
+              "value": "={{false}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1664,
+        -768
+      ],
+      "id": "58f59c92-37d2-4d98-b056-80f06f8af126",
+      "name": "Uazapi - get group picture",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZtFXzJZKhheInQBf",
+          "name": "Uazapi - Briefia"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "group.Participants",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1680,
+        -448
+      ],
+      "id": "37468f58-251e-4282-b76c-a95f59aac407",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "content": "## Cria/Atualiza dados do grupo",
+        "height": 320,
+        "width": 768,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1728,
+        -896
+      ],
+      "typeVersion": 1,
+      "id": "20c8e9ce-c32a-48f1-a895-3030a0cfbd8d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Cria/Atualiza membros do grupo",
+        "height": 240,
+        "width": 800,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1728,
+        -528
+      ],
+      "typeVersion": 1,
+      "id": "cd649389-cab0-427b-b490-94ff5dbd3331",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://briefia.uazapi.com/chat/details",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "1130a93e-667b-43d6-a7e2-a7771e115ff7"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.PhoneNumber }}"
+            },
+            {
+              "name": "preview",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1472,
+        -448
+      ],
+      "id": "e426a7b6-dc87-41ee-954c-925d33516c6f",
+      "name": "Puxa membros"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH membro_upsert AS (\n    INSERT INTO membros (nome, whatsapp, url_imagem, dt_update, ativo, lid)\n    VALUES (\n        '{{ $json.name.replace(/'/g, \"''\") }}', \n        '{{ $json.phone.replace(/\\D/g, \"\") }}', \n        '{{ $json.image }}', \n        CURRENT_TIMESTAMP, \n        TRUE,\n        '{{ $('Split Out').item.json.LID }}'\n    )\n    ON CONFLICT (whatsapp) \n    DO UPDATE SET\n        nome = EXCLUDED.nome,\n        url_imagem = EXCLUDED.url_imagem,\n        dt_update = CURRENT_TIMESTAMP,\n        ativo = TRUE,\n        lid = EXCLUDED.lid\n    RETURNING id\n)\nINSERT INTO membros_grupos (id_membro, id_grupo, ativo)\nSELECT id, {{ $('Webhook Join').item.json.body.id }}, TRUE \nFROM membro_upsert\nON CONFLICT (id_membro, id_grupo) \nDO UPDATE SET ativo = TRUE, dt_update = CURRENT_TIMESTAMP\nRETURNING id_membro;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1264,
+        -448
+      ],
+      "id": "b9fba9a0-c30f-4040-9b68-4b076ac729b9",
+      "name": "Cria/Atualiza Membros",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Join": {
+      "main": [
+        [
+          {
+            "node": "execution data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "execution data": {
+      "main": [
+        [
+          {
+            "node": "Join WhatsApp Group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Join WhatsApp Group": {
+      "main": [
+        [
+          {
+            "node": "Uazapi - get group picture",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch - Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Error": {
+      "main": [
+        [
+          {
+            "node": "Error Pending",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Invalid Link",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Unable to Join",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert or update rows in a table": {
+      "main": [
+        [
+          {
+            "node": "success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uazapi - get group picture": {
+      "main": [
+        [
+          {
+            "node": "Insert or update rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Puxa membros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Puxa membros": {
+      "main": [
+        [
+          {
+            "node": "Cria/Atualiza Membros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "Sjd5x4DDIjqnsxyQ"
+  },
+  "versionId": "7f90b752-9f1c-478b-9048-e96b1fd83d88",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "ZSCRwDImZnjSAjlc",
+  "tags": []
+}

@@ -1,0 +1,427 @@
+{
+  "name": "4.2 - Enviar os resumos gerados",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Enviar os resumos gerados",
+        "height": 80,
+        "width": 400,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1808,
+        544
+      ],
+      "id": "11cd6b44-7f4a-4251-9bcd-8a0223b3ff5a",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar resumos pendentes (CORRIGIDO - com proteção contra reenvio)\nWITH resumos_pendentes AS (\n    SELECT \n        ds.id,\n        ds.group_id,\n        ds.summary_date,\n        ds.summary_content,\n        COALESCE(ds.send_attempts, 0) as send_attempts,\n        ds.created_at,\n        g.chat_id,\n        g.name as group_name,\n        g.summary_destination_type,\n        g.summary_destination_value,\n        g.summary_send_time,\n        g.instance_id,\n        i.number as instance_number,\n        i.token as instance_token,\n        i.host as instance_host,\n        -- Verificar se já existe um resumo enviado para este grupo hoje\n        EXISTS(\n            SELECT 1 FROM daily_summaries ds2 \n            WHERE ds2.group_id = ds.group_id \n            AND DATE(ds2.summary_date) = DATE(ds.summary_date)\n            AND ds2.send_status = 'sent'\n            AND ds2.id != ds.id\n        ) as already_sent_today\n    FROM daily_summaries ds\n    JOIN groups g ON ds.group_id = g.id\n    LEFT JOIN instances i ON g.instance_id = i.id\n    WHERE \n        ds.send_status = 'pending'\n        AND g.auto_send_summary_enabled = true\n        AND g.status = 'active'\n        -- Aumentado para 5 minutos para evitar conflitos\n        AND ds.created_at <= NOW() - INTERVAL '5 minutes'\n        -- Limite de 3 tentativas\n        AND COALESCE(ds.send_attempts, 0) < 3\n        -- Só processar grupos que têm instância vinculada\n        AND g.instance_id IS NOT NULL\n        AND i.id IS NOT NULL\n        -- CORREÇÃO: Apenas resumos de hoje que ainda não foram enviados\n        AND DATE(ds.summary_date) = CURRENT_DATE\n        -- NÃO buscar se já existe um resumo enviado para este grupo hoje\n        AND NOT EXISTS(\n            SELECT 1 FROM daily_summaries ds2 \n            WHERE ds2.group_id = ds.group_id \n            AND DATE(ds2.summary_date) = CURRENT_DATE\n            AND ds2.send_status = 'sent'\n            AND ds2.id != ds.id\n        )\n    ORDER BY ds.created_at ASC\n    LIMIT 10\n)\nSELECT \n    json_build_object(\n        'status', CASE WHEN COUNT(*) > 0 THEN 'found' ELSE 'no_summaries' END,\n        'total_summaries', COUNT(*),\n        'current_time', NOW(),\n        'summaries', json_agg(\n            json_build_object(\n                'summary_id', id,\n                'group_id', group_id,\n                'group_name', group_name,\n                'chat_id', chat_id,\n                'summary_date', summary_date,\n                'summary_content', summary_content,\n                'send_attempts', send_attempts,\n                'destination_type', summary_destination_type,\n                'destination_value', summary_destination_value,\n                'send_time', summary_send_time,\n                'created_at', created_at,\n                'already_sent_today', already_sent_today,\n                'instance', json_build_object(\n                    'id', instance_id,\n                    'number', instance_number,\n                    'token', instance_token,\n                    'host', instance_host\n                )\n            )\n        ) FILTER (WHERE id IS NOT NULL)\n    ) as resultado\nFROM resumos_pendentes;",
+        "options": {}
+      },
+      "id": "9605fce8-c0cc-44ca-a7bb-fa4ad6601989",
+      "name": "PostgreSQL - Buscar Resumos Pendentes1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1552,
+        672
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "660e8400-e29b-41d4-a716-446655440003",
+              "leftValue": "={{ $json.resultado.status }}",
+              "rightValue": "found",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6dfab63a-9a3f-45b5-bc4d-3326bd1435c9",
+      "name": "IF - Tem resumos para enviar?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1328,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log inicial de debug\nconst resultado = $input.first().json.resultado;\nconsole.log('=== RESUMOS ENCONTRADOS ===');\nconsole.log('Total de resumos:', resultado.total_summaries);\nconsole.log('Hora atual:', resultado.current_time);\n\nif (resultado.status !== 'found' || !resultado.summaries) {\n  console.log('Nenhum resumo pendente encontrado');\n  return [];\n}\n\n// Log detalhado de cada resumo\nresultado.summaries.forEach((summary, index) => {\n  console.log(`\\nResumo ${index + 1}:`);\n  console.log('- Grupo:', summary.group_name);\n  console.log('- Data do resumo:', summary.summary_date);\n  console.log('- Criado em:', summary.created_at);\n  console.log('- Tentativas:', summary.send_attempts);\n  console.log('- Já enviado hoje?:', summary.already_sent_today);\n});\n\n// Filtrar resumos que já foram enviados hoje (proteção extra)\nconst resumosParaEnviar = resultado.summaries.filter(s => !s.already_sent_today);\n\nif (resumosParaEnviar.length === 0) {\n  console.log('\\n⚠️ Todos os resumos já foram enviados hoje');\n  return [];\n}\n\n// Retornar cada resumo como um item separado\nreturn resumosParaEnviar.map(summary => ({ json: summary }));"
+      },
+      "id": "16cf3039-a716-41bd-9720-dd3b7b3ef457",
+      "name": "Code - Separar Resumos1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar dados para envio\nconst resumo = $input.first().json;\n\nconsole.log('\\n=== PREPARANDO ENVIO ===');\nconsole.log('Grupo:', resumo.group_name);\nconsole.log('Tipo de destino:', resumo.destination_type);\nconsole.log('Valor do destino:', resumo.destination_value);\nconsole.log('Tentativas anteriores:', resumo.send_attempts);\n\n// Determinar o destino do envio\nlet destinoFinal;\nif (resumo.destination_type === 'phone' && resumo.destination_value) {\n  // Enviar para número de telefone específico\n  destinoFinal = resumo.destination_value;\n  console.log('Enviando para telefone:', destinoFinal);\n} else {\n  // Usar o próprio grupo como destino padrão\n  destinoFinal = resumo.chat_id;\n  console.log('Enviando para grupo:', destinoFinal);\n}\n\n// Formatar a mensagem final\nconst dataFormatada = new Date(resumo.summary_date).toLocaleDateString('pt-BR');\nconst horaAtual = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' });\n\n// Mensagem com formatação melhorada\nconst mensagemFinal = `📊 *Resumo do Dia ${dataFormatada}*\\n\\n${resumo.summary_content}\\n\\n_Resumo gerado automaticamente por IA às ${horaAtual}_`;\n\nreturn [{\n  json: {\n    summary_id: resumo.summary_id,\n    group_id: resumo.group_id,\n    group_name: resumo.group_name,\n    destino: destinoFinal,\n    destination_type: resumo.destination_type,\n    mensagem: mensagemFinal,\n    send_attempts: parseInt(resumo.send_attempts) || 0,\n    summary_date: resumo.summary_date,\n    instance: resumo.instance\n  }\n}];"
+      },
+      "id": "6e448bce-e27b-458b-8028-1681e2633f94",
+      "name": "Code - Preparar Envio1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CORREÇÃO: Verificar sucesso baseado no status HTTP, não no payload\nconst dadosEnvio = $('Code - Preparar Envio1').item.json;\nconst httpNode = $('uazapi - send message1');\n\nconsole.log('\\n=== RESULTADO DO ENVIO ===');\nconsole.log('Grupo:', dadosEnvio.group_name);\nconsole.log('ID do resumo:', dadosEnvio.summary_id);\n\n// Verificar se o node HTTP teve sucesso (não caiu no error output)\n// Se chegou aqui pelo output principal, foi sucesso\nconst isMainOutput = httpNode.itemIndex === $itemIndex;\nconst httpStatusCode = $input.first().json?.statusCode || 200;\n\n// Garantir que send_attempts seja um número\nconst tentativasAtuais = typeof dadosEnvio.send_attempts === 'number' \n  ? dadosEnvio.send_attempts \n  : parseInt(dadosEnvio.send_attempts) || 0;\n\nconst tentativas = tentativasAtuais + 1;\n\n// CORREÇÃO: Considerar sucesso se HTTP retornou 200-299\nconst sucesso = httpStatusCode >= 200 && httpStatusCode < 300;\n\nlet statusEnvio;\nif (sucesso) {\n  statusEnvio = 'sent';\n  console.log('✅ Envio bem-sucedido! (HTTP', httpStatusCode, ')');\n} else {\n  if (tentativas >= 3) {\n    statusEnvio = 'failed';\n    console.log(`❌ Falha definitiva após ${tentativas} tentativas (HTTP ${httpStatusCode})`);\n  } else {\n    statusEnvio = 'pending';\n    console.log(`⚠️ Falha na tentativa ${tentativas}, tentará novamente (HTTP ${httpStatusCode})`);\n  }\n}\n\n// Sempre registrar a data/hora se foi enviado com sucesso\nconst dataEnvio = statusEnvio === 'sent' ? new Date().toISOString() : null;\n\nreturn [{\n  json: {\n    summary_id: dadosEnvio.summary_id,\n    send_status: statusEnvio,\n    send_attempts: tentativas,\n    destination_used: dadosEnvio.destino,\n    sent_at: dataEnvio,\n    group_name: dadosEnvio.group_name,\n    success: statusEnvio === 'sent',\n    http_status: httpStatusCode\n  }\n}];"
+      },
+      "id": "dc20c196-2f03-4364-b907-1aa4c8c3794f",
+      "name": "Code - Processar Resultado1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Atualizar status do envio com validação adicional\nBEGIN;\n\n-- Verificar se não existe outro resumo já enviado para o mesmo grupo/data\nDO $$\nBEGIN\n    IF EXISTS (\n        SELECT 1 FROM daily_summaries \n        WHERE group_id = (SELECT group_id FROM daily_summaries WHERE id = $1::INTEGER)\n        AND DATE(summary_date) = DATE((SELECT summary_date FROM daily_summaries WHERE id = $1::INTEGER))\n        AND send_status = 'sent'\n        AND id != $1::INTEGER\n    ) AND $2::TEXT = 'sent' THEN\n        RAISE EXCEPTION 'Já existe um resumo enviado para este grupo hoje';\n    END IF;\nEND$$;\n\n-- Atualizar o status\nUPDATE daily_summaries \nSET \n    send_status = $2::TEXT,\n    send_attempts = $3::INTEGER,\n    sent_at = CASE \n        WHEN $2::TEXT = 'sent' AND $4::TIMESTAMPTZ IS NOT NULL \n        THEN $4::TIMESTAMPTZ \n        ELSE sent_at \n    END,\n    destination_used = CASE \n        WHEN $5::TEXT IS NOT NULL \n        THEN $5::TEXT \n        ELSE destination_used \n    END\nWHERE id = $1::INTEGER\nRETURNING \n    json_build_object(\n        'status', 'updated',\n        'summary_id', id,\n        'group_id', group_id,\n        'send_status', send_status,\n        'send_attempts', send_attempts,\n        'sent_at', sent_at,\n        'destination_used', destination_used,\n        'created_at', created_at\n    ) as resultado;\n\nCOMMIT;\n\n-- Parâmetros esperados:\n-- $1: summary_id (INTEGER)\n-- $2: send_status (TEXT) - 'pending', 'sent', 'failed'\n-- $3: send_attempts (INTEGER)\n-- $4: sent_at (TIMESTAMPTZ) - timestamp do envio\n-- $5: destination_used (TEXT) - destino efetivo usado",
+        "options": {
+          "queryReplacement": "={{ $json.summary_id }}, {{ $json.send_status }}, {{ $json.send_attempts }}, {{ $json.sent_at }}, {{ $json.destination_used }}"
+        }
+      },
+      "id": "6d654fcd-69b0-4305-9a99-1d6f77ca094b",
+      "name": "PostgreSQL - Atualizar Status1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        208,
+        672
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log final do resultado\nconst resultado = $input.first().json?.resultado || {};\nconst dadosEnvio = $('Code - Processar Resultado1').item.json;\n\nconsole.log('\\n=== RESUMO FINAL ===');\nif (dadosEnvio.success) {\n  console.log('✅ RESUMO ENVIADO COM SUCESSO');\n  console.log('Grupo:', dadosEnvio.group_name);\n  console.log('ID do resumo:', dadosEnvio.summary_id);\n  console.log('Destino:', dadosEnvio.destination_used);\n  console.log('Enviado em:', dadosEnvio.sent_at);\n  console.log('Status HTTP:', dadosEnvio.http_status);\n  if (resultado.updated_at) {\n    console.log('Banco atualizado em:', resultado.updated_at);\n  }\n} else {\n  console.log('❌ FALHA NO ENVIO');\n  console.log('Grupo:', dadosEnvio.group_name);\n  console.log('ID do resumo:', dadosEnvio.summary_id);\n  console.log('Tentativas:', dadosEnvio.send_attempts);\n  console.log('Status:', dadosEnvio.send_status);\n  console.log('Status HTTP:', dadosEnvio.http_status);\n}\nconsole.log('\\n' + '='.repeat(40));\n\nreturn [{ json: {...dadosEnvio, ...resultado} }];"
+      },
+      "id": "6eb2761a-daef-4e62-9718-b9de0a85e54f",
+      "name": "Code - Log Resultado1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.instance.host }}/send/text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "token",
+              "value": "={{ $json.instance.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.destination_type === 'group' ? ($json.destino + '@g.us') : $json.destino }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.mensagem.replace(/\\*\\*/g, '*') }}"
+            },
+            {
+              "name": "linkPreview",
+              "value": "={{false}}"
+            },
+            {
+              "name": "readchat",
+              "value": "={{ true }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -224,
+        672
+      ],
+      "id": "a33eacef-3304-460c-a229-d5ebe5239a5a",
+      "name": "uazapi - send message1",
+      "executeOnce": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 5,
+              "unit": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "1925c3d8-8d1c-409a-a2c3-da49a1e784cf",
+      "name": "Cron - A cada 5 minutos1",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -1776,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -896,
+        672
+      ],
+      "id": "2ae228ba-69e7-4721-8da2-b14406cebf80",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "group_id",
+              "value": "={{ $json.group_id }}"
+            },
+            {
+              "key": "destino",
+              "value": "={{ $json.destino }}"
+            },
+            {
+              "key": "attempt",
+              "value": "={{ $json.send_attempts + 1 }}"
+            },
+            {
+              "key": "date",
+              "value": "={{ $json.summary_date }}"
+            },
+            {
+              "key": "type",
+              "value": "send_summary"
+            },
+            {
+              "key": "destination_type",
+              "value": "={{ $json.destination_type }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -416,
+        672
+      ],
+      "id": "ab510fd8-ba72-4da5-8fb1-5219c863abc9",
+      "name": "Execution Data"
+    }
+  ],
+  "connections": {
+    "PostgreSQL - Buscar Resumos Pendentes1": {
+      "main": [
+        [
+          {
+            "node": "IF - Tem resumos para enviar?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Tem resumos para enviar?1": {
+      "main": [
+        [
+          {
+            "node": "Code - Separar Resumos1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Separar Resumos1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Envio1": {
+      "main": [
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Processar Resultado1": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Atualizar Status1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Atualizar Status1": {
+      "main": [
+        [
+          {
+            "node": "Code - Log Resultado1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Log Resultado1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "uazapi - send message1": {
+      "main": [
+        [
+          {
+            "node": "Code - Processar Resultado1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code - Processar Resultado1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron - A cada 5 minutos1": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Buscar Resumos Pendentes1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Code - Preparar Envio1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution Data": {
+      "main": [
+        [
+          {
+            "node": "uazapi - send message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d7490f4e-4588-4e5a-bade-de4d1f379e08",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "APljxNQ07APMMA7m",
+  "tags": []
+}

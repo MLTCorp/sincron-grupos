@@ -1,0 +1,419 @@
+{
+  "name": "[ENTRADA FPM] Aceitar membro no grupo",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "members/approve",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -3136,
+        400
+      ],
+      "id": "2c09da51-4c2c-4145-9724-dfd0246a4fc9",
+      "name": "Webhook - Aprovar Membros",
+      "webhookId": "28d991d6-f6d4-4575-ba3d-a6bcfa7f1952"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Extrair dados do webhook\nconst body = $json.body || $json;\n\n// Debug inicial\nconsole.log('Body recebido:', JSON.stringify(body, null, 2));\n\n// Extrair parâmetros - aceita diferentes formatos\nconst groupIdentifier = body.group_id || body.chat_id || body.group_name || body.name || '';\nlet participants = body.participants || body.members || body.usuarios || [];\n\n// Garantir que participants é um array\nif (!Array.isArray(participants)) {\n  if (typeof participants === 'string') {\n    // Se for string com vírgulas, split\n    participants = participants.includes(',') \n      ? participants.split(',').map(p => p.trim())\n      : [participants];\n  } else {\n    participants = [participants];\n  }\n}\n\n// Validar entrada\nif (!groupIdentifier) {\n  return {\n    json: {\n      error: true,\n      message: \"❌ *ERRO DE PARÂMETROS*\\n\\nInforme o grupo por:\\n• chat_id: ID do grupo (ex: 120363308883996631@g.us)\\n• group_name: Nome do grupo (ex: 'Furia Premium')\\n\\nExemplo de requisição:\\n```json\\n{\\n  \\\"group_name\\\": \\\"Furia Premium\\\",\\n  \\\"participants\\\": [\\\"5519996665555\\\", \\\"5511999887766\\\"]\\n}\\n```\"\n    }\n  };\n}\n\nif (participants.length === 0) {\n  return {\n    json: {\n      error: true,\n      message: \"❌ *ERRO DE PARÂMETROS*\\n\\nInforme ao menos um participante para aprovar.\\n\\nExemplo:\\n```json\\n{\\n  \\\"chat_id\\\": \\\"120363308883996631@g.us\\\",\\n  \\\"participants\\\": [\\\"5519996665555\\\"]\\n}\\n```\"\n    }\n  };\n}\n\n// Verificar se é chat_id ou nome\nconst isChatId = groupIdentifier.includes('@g.us') || /^\\d{15,}/.test(groupIdentifier.replace('@g.us', ''));\n\n// Limpar números dos participantes (remover caracteres não numéricos)\nconst cleanParticipants = participants.map(p => {\n  // Remove tudo exceto números\n  const cleaned = String(p).replace(/\\D/g, '');\n  // Se não começar com 55, adiciona\n  return cleaned.startsWith('55') ? cleaned : '55' + cleaned;\n}).filter(p => p.length >= 12); // Filtra números válidos\n\nif (cleanParticipants.length === 0) {\n  return {\n    json: {\n      error: true,\n      message: \"❌ *NÚMEROS INVÁLIDOS*\\n\\nOs números fornecidos não são válidos.\\n\\nFormato esperado:\\n• 5519996665555\\n• 19996665555 (será adicionado 55)\\n\\nNúmeros recebidos: \" + participants.join(', ')\n    }\n  };\n}\n\nreturn {\n  json: {\n    error: false,\n    is_chat_id: isChatId,\n    group_identifier: groupIdentifier,\n    participants: cleanParticipants,\n    original_participants: participants,\n    needs_lookup: !isChatId\n  }\n};"
+      },
+      "id": "3fb01459-f634-49ba-bdb4-1ea801a9f059",
+      "name": "Parse Parâmetros",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2896,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-error",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5e8c839a-37e4-4f0d-926a-c8478b49f47f",
+      "name": "Tem Erro?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2656,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "needs-lookup",
+              "leftValue": "={{ $json.needs_lookup }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0c36b6d0-0d7a-4b75-b46b-4f8021ed6182",
+      "name": "Precisa Buscar Chat ID?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2416,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    chat_id,\n    group_name,\n    active\nFROM groups\nWHERE \n    LOWER(group_name) = LOWER($1)\n    OR chat_id = $1\nLIMIT 1;",
+        "options": {
+          "queryReplacement": "={{ $json.group_identifier }}"
+        }
+      },
+      "id": "45e4af86-94fe-41db-bf32-9837b09d2078",
+      "name": "Buscar Grupo por Nome",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2176,
+        208
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "zShyLAVUPe1KWNat",
+          "name": "Postgres - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const dbResult = $json;\nconst params = $node[\"Parse Parâmetros\"].json;\n\nif (!dbResult.chat_id) {\n  return {\n    json: {\n      error: true,\n      message: `❌ *GRUPO NÃO ENCONTRADO*\\n\\nO grupo '${params.group_identifier}' não foi encontrado no sistema.\\n\\nVerifique o nome ou use o chat_id diretamente.\\n\\n💡 Use \\`!grupos_listar\\` para ver os grupos disponíveis.`\n    }\n  };\n}\n\n// Adicionar @g.us se necessário\nconst chatId = dbResult.chat_id.includes('@g.us') \n  ? dbResult.chat_id \n  : dbResult.chat_id + '@g.us';\n\nreturn {\n  json: {\n    error: false,\n    chat_id: chatId,\n    group_name: dbResult.group_name,\n    tag: dbResult.tag,\n    participants: params.participants,\n    found_by_name: true,\n    is_active: dbResult.is_active,\n    member_count: dbResult.member_count\n  }\n};"
+      },
+      "id": "465d5f20-a4be-4c42-801c-2cb6bff07c5e",
+      "name": "Formatar Resultado Busca",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1936,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const params = $json;\n\n// Adicionar @g.us se necessário\nconst chatId = params.group_identifier.includes('@g.us') \n  ? params.group_identifier \n  : params.group_identifier + '@g.us';\n\nreturn {\n  json: {\n    error: false,\n    chat_id: chatId,\n    group_name: null,\n    participants: params.participants,\n    found_by_name: false\n  }\n};"
+      },
+      "id": "1a15d68c-8522-4114-a33c-0e0371e3c16d",
+      "name": "Formatar Chat ID Direto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2176,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-error-2",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c25edd62-87de-4ae6-af50-25a9c9e2e63c",
+      "name": "Tem Erro?2",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1456,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mgm.uazapi.com/group/updateParticipants",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"groupjid\": \"{{ $json.chat_id }}\",\n  \"action\": \"approve\",\n  \"participants\": {{ JSON.stringify($json.participants) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1216,
+        208
+      ],
+      "id": "3da2b089-eb5c-43ce-a44e-eb242b3c8cec",
+      "name": "Aprovar Membros API",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0QZZSAYnqSXfkl1b",
+          "name": "Uazapi - Pantero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const apiResult = $json;\nconst params = $node[\"Merge Caminhos\"].json;\n\nlet message = `✅ *MEMBROS APROVADOS*\\n\\n`;\n\nif (params.found_by_name) {\n  message += `📋 Grupo: ${params.group_name}\\n`;\n  message += `🆔 Chat ID: \\`${params.chat_id}\\`\\n`;\n  if (params.tag) {\n    message += `🏷️ Tag: ${params.tag}\\n`;\n  }\n} else {\n  message += `🆔 Chat ID: \\`${params.chat_id}\\`\\n`;\n}\n\nmessage += `\\n👥 *Participantes Aprovados:*\\n`;\nparams.participants.forEach(p => {\n  message += `• ${p}\\n`;\n});\n\nmessage += `\\n✨ Total: ${params.participants.length} participante(s) aprovado(s)`;\n\nif (params.member_count) {\n  message += `\\n📊 Membros no grupo: ${params.member_count}`;\n}\n\nreturn {\n  json: {\n    success: true,\n    message: message,\n    chat_id: params.chat_id,\n    group_name: params.group_name,\n    participants_approved: params.participants,\n    api_response: apiResult\n  }\n};"
+      },
+      "id": "b56b7276-0af3-4126-bc82-14e4e0feb1b4",
+      "name": "Formatar Resposta Sucesso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -976,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "3aab392b-e030-4eff-a3f0-8d0fafb6c5ed",
+      "name": "Merge Respostas",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -736,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "58d06505-b27d-4123-adf1-2aa0add3e715",
+      "name": "Resposta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -496,
+        384
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Aprovar Membros": {
+      "main": [
+        [
+          {
+            "node": "Parse Parâmetros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Parâmetros": {
+      "main": [
+        [
+          {
+            "node": "Tem Erro?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem Erro?": {
+      "main": [
+        [
+          {
+            "node": "Precisa Buscar Chat ID?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Respostas",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Precisa Buscar Chat ID?": {
+      "main": [
+        [
+          {
+            "node": "Buscar Grupo por Nome",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatar Chat ID Direto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Grupo por Nome": {
+      "main": [
+        [
+          {
+            "node": "Formatar Resultado Busca",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Resultado Busca": {
+      "main": [
+        [
+          {
+            "node": "Tem Erro?2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Chat ID Direto": {
+      "main": [
+        [
+          {
+            "node": "Tem Erro?2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem Erro?2": {
+      "main": [
+        [
+          {
+            "node": "Aprovar Membros API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Respostas",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Aprovar Membros API": {
+      "main": [
+        [
+          {
+            "node": "Formatar Resposta Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Resposta Sucesso": {
+      "main": [
+        [
+          {
+            "node": "Merge Respostas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Respostas": {
+      "main": [
+        [
+          {
+            "node": "Resposta Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e767d92d-feba-423b-8a32-5cdcd3eb1b07",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "2SFXnm4XGVv7Qwlf",
+  "tags": []
+}

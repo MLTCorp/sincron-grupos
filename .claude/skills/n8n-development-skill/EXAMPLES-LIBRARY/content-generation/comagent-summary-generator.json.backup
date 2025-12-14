@@ -1,0 +1,501 @@
+{
+  "name": "4.1 - Gerador de resumos",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "assign1",
+              "name": "group_id",
+              "value": "={{ $('Webhook - Processar com IA1').item.json.body.group_data.group_id }}",
+              "type": "number"
+            },
+            {
+              "id": "assign2",
+              "name": "group_name",
+              "value": "={{ $('Webhook - Processar com IA1').item.json.body.group_data.name }}",
+              "type": "string"
+            },
+            {
+              "id": "assign3",
+              "name": "chat_id",
+              "value": "={{ $('Webhook - Processar com IA1').item.json.body.group_data.chat_id }}",
+              "type": "string"
+            },
+            {
+              "id": "assign4",
+              "name": "summary_date",
+              "value": "={{ new Date().toLocaleDateString('en-CA') }}",
+              "type": "string"
+            },
+            {
+              "id": "assign5",
+              "name": "total_messages",
+              "value": "={{ $('Webhook - Processar com IA1').item.json.body.group_data.total_messages }}",
+              "type": "number"
+            },
+            {
+              "id": "assign6",
+              "name": "summary_content",
+              "value": "=📋 *Resumo das conversas de hoje no grupo {{ $('Webhook - Processar com IA1').item.json.body.group_data.name }}*\n\n{{ $json.message.content }}",
+              "type": "string"
+            },
+            {
+              "id": "assign7",
+              "name": "destination_type",
+              "value": "={{ $('Webhook - Processar com IA1').item.json.body.group_data.destination_type }}",
+              "type": "string"
+            },
+            {
+              "id": "assign8",
+              "name": "destination_value",
+              "value": "={{ $('Webhook - Processar com IA1').item.json.body.group_data.destination_value }}",
+              "type": "string"
+            },
+            {
+              "id": "assign9",
+              "name": "processed_at",
+              "value": "={{ new Date().toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'}) }}",
+              "type": "string"
+            },
+            {
+              "id": "assign10",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "96c0794d-6255-4df1-9a92-69570ffece27",
+      "name": "Set - Processar Resposta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "process-summary-ia",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "e1299f4e-6b28-4a11-a300-dea22a85fb06",
+      "name": "Webhook - Processar com IA1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        64
+      ],
+      "webhookId": "550e8400-e29b-41d4-a716-446655440099"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH ins AS (\n    INSERT INTO daily_summaries (\n        group_id,\n        summary_date,\n        total_messages,\n        total_members_active,\n        summary_content,\n        send_status,\n        created_at\n    ) \n    VALUES (\n        $1::INTEGER,\n        $2::DATE,\n        $3::INTEGER,\n        (\n            SELECT COUNT(DISTINCT member_id) \n            FROM messages \n            WHERE group_id = $1::INTEGER \n            AND (timestamp AT TIME ZONE 'America/Sao_Paulo')::DATE = $2::DATE\n        ),\n        ($4::JSONB->>'content')::TEXT,\n        'pending',\n        NOW() AT TIME ZONE 'America/Sao_Paulo'\n    )\n    RETURNING\n        'created'::TEXT AS status,\n        id,\n        group_id,\n        summary_date,\n        total_messages,\n        send_status,\n        created_at AT TIME ZONE 'America/Sao_Paulo' AS created_at_brasilia\n)\nSELECT json_agg(ins) FROM ins;\n",
+        "options": {
+          "queryReplacement": "={{ $json.group_id }}, {{ $json.summary_date }}, {{ $json.total_messages }}, {{ JSON.stringify({content: $json.summary_content}) }}"
+        }
+      },
+      "id": "1d3ade99-2ebf-4444-8e49-f11eefffce5d",
+      "name": "PostgreSQL - Salvar Resumo1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        656,
+        -112
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.json_agg }}",
+        "options": {}
+      },
+      "id": "a99f82f8-ede4-446c-a7ce-9637c66d63b8",
+      "name": "Respond - Sucesso1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Gerar resumos",
+        "height": 80,
+        "width": 400,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        -64
+      ],
+      "id": "935c98e9-f00c-4c0d-9084-d6c5b98fef23",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "id"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=VOcê é um exímio assistente de resumo de conversas de chat que trás um contexto do que os membros conversaram ou debateram no grupo de whats\n.\nVocê irá resumir a conversa, destacando por tópicos informando em parágrafos quais são os assuntos, o que cada membro está falando, o conteúdo e principalmente sugestões de links caso tenha.\n\nSeja direto na entrega do tópico, foque no resultado da conversa.\nPontue as dicas, insights, sugestões e ações caso tenha. Isso é importante. Se não houver, traga os assuntos diversos e animados do grupo.\nPriorize links de cada topico caso tenha\nresuma os tópicos em formato de parágrafos\nEnfatize na mensagem caso ela tenha sido em áudio\nMostre os horários dos assuntos corretamente\n\nIgnore apresentações\nJamais critique os usuários, nunca!\n---\n\nPontue cada tópico com o que foi dito e concluido pelos membros. Priorize as conclusões e insigths. Caso tenha muitas conversas, pegue as mais importantes seguindo o tom do grupo. \nPiorize os links sugeridos para cada topico caso tenha\n\n!importente: caso não tenha links no topico jamais invente e não dê exemplos. Apenas informe sobre links se realmente houver e forem úteis!\nrespeite e informe corretamente os horários dos tópicos\nelimine assuntos que possam ter gerado desconforto entre os membros\nVocê receberá as mensagens em ordem com o horário do último resumo até o horário da última mensagem, mantenha a ordem.\nnão esqueça de mencionar caso a mensagem tenha sido em áudio\ne tente pegar assuntos dos mais variados horários possíveis\n\n---\nelimine mensagens repetidas\n\nPontue o máximo de tópicos abordados detalhando o que foi dito entre os membros\nJamais invente algo e mantenha o seu resumo fiel ao que o usuário disse.",
+              "role": "system"
+            },
+            {
+              "content": "=Faça um resumo conciso da seguinte conversa. START:\nConversa:\n\n{{ $json.body.messages_data.messages.map(msg => {\n  // Converte timestamp para horário de São Paulo\n  const date = new Date(msg.timestamp);\n  const spTime = new Date(date.toLocaleString(\"en-US\", {timeZone: \"America/Sao_Paulo\"}));\n  const hours = String(spTime.getHours()).padStart(2, '0');\n  const minutes = String(spTime.getMinutes()).padStart(2, '0');\n  const time = `[${hours}:${minutes}]`;\n  \n  // Pega o primeiro nome\n  const firstName = msg.member_name.split(' ')[0];\n  \n  // Processa o conteúdo\n  let content = msg.message || '';\n  \n  // Remove aspas extras e decodifica HTML entities\n  content = content.replace(/^\"|\"$/g, '').replace(/&#44;/g, ',');\n  \n  // Se for áudio e tiver transcrição, adiciona indicador\n  if (msg.type === 'audio' && content) {\n    content = `[audio] ${content}`;\n  } else if (!content) {\n    // Se não tiver conteúdo, indica o tipo\n    if (msg.type === 'image') content = '[imagem]';\n    else if (msg.type === 'video') content = '[vídeo]';\n    else if (msg.type === 'document') content = '[documento]';\n    else if (msg.type === 'sticker') content = '[sticker]';\n    else if (msg.type === 'audio') content = '[audio sem transcrição]';\n    else content = `[${msg.type}]`;\n  }\n  \n  return `${time} ${firstName}: ${content}`;\n}).join('\\n') }}"
+            }
+          ]
+        },
+        "simplify": "={{ true }}",
+        "options": {
+          "temperature": 0.8
+        }
+      },
+      "id": "198e8380-2ef8-423f-bc00-d8b7383d39ed",
+      "name": "Message a model",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.3,
+      "position": [
+        -352,
+        64
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "openAiApi": {
+          "id": "n54CK3O57Rvt7BgD",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "id"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Você é um assistente que cria uma newsletters baseada na conversa do grupo e posta anunciando a newsletter do grupo e trazendo os resumos dos tópicos abordados pelos membros\n\n- Inclua emojis em todos os tópicos\n- não use markdown, apenas deixe os títulos em *negrito*\n- contextualize brevemente cada assunto, incluindo o que os membros disseram e seus insights\n- seu tom: informativo\n- seu estilo: ...\n\n- é interessante ter no resumo conteúdos desse tipo: exemplos a colocar\n\n- elimine completamente no resumo conteúdos desse tipo: nenhum por enquanto\n\nObserve a sequencia de horários das mensagens e mantenha a ordem dos tópicos seguindo o horário corretamente\nA newsletter precisa conter apenas os tópicos e uma lista de links importantes no fim mantendo a originalidade do conteúdo da conversa.",
+              "role": "system"
+            },
+            {
+              "content": "=Faça um outline das conversas enviadas para você.\n      Nomeie os tópicos dessa forma: \n      (emoji) Título do tópico/assunto (horário hh:mm):\n\n      Termine os parágrafos mostrando a dica, ação ou sugestões apresentadas\nPriorize links sugeridos para cada topico caso tenha, informe no corpo do topico\nFaça um paragrafo para cada topico, insira as informações neste parágrafo de {{ $('Webhook - Processar com IA1').item.json.body.group_data.total_messages > 140 ? \"25~45\" :\n( $('Webhook - Processar com IA1').item.json.body.group_data.total_messages > 80 ? \"35~60\" : \"35~70\") }} palavras\n      \n\n      COMECE: \n{{ $json.message.content }}\n<Fim das mensagens>\n\n<Algumas observaçõpes sobre a newsletter>\n----- Use um emoji no titulo de cada topico!\n----- Caso tenha link, informe o link dentro do topico.\n----- Informe os horários dos tópicos entre parenteses na frente dos titulos do topico\n----- Apenas caso a mensagem tenha sido em audio, enfatize na mensagem. \n----- Caso o tópico tenha informações estatísticas ou algo do tipo, traga essas informações em destaque.\nExplore o máximo de horários, e use apenas os tópicos abordados e nada mais!\nImportante! Não informe a data de hoje\n</fim das observações>\nMantenha um tom conforme as conversas do grupo\n---\nignore mensagens repetidas"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.8
+        }
+      },
+      "id": "ac80aa0e-959a-4a2b-8ca5-4fb96ff7cc8b",
+      "name": "Message a model1",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.3,
+      "position": [
+        64,
+        64
+      ],
+      "executeOnce": false,
+      "retryOnFail": true,
+      "credentials": {
+        "openAiApi": {
+          "id": "n54CK3O57Rvt7BgD",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "group_id",
+              "value": "={{ $json.body.group_data.group_id }}"
+            },
+            {
+              "key": "chat_id",
+              "value": "={{ $json.body.group_data.chat_id }}"
+            },
+            {
+              "key": "total_msg",
+              "value": "={{ $json.body.group_data.total_messages }}"
+            },
+            {
+              "key": "date",
+              "value": "={{ $json.body.group_data.summary_date }}"
+            },
+            {
+              "key": "time",
+              "value": "={{ $json.body.group_data.scheduled_time }}"
+            },
+            {
+              "key": "type",
+              "value": "summary_gen"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -576,
+        64
+      ],
+      "id": "193d4788-f5de-44f4-b6ff-41befdef4bbc",
+      "name": "Execution Data1"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "daily_summaries",
+          "mode": "list",
+          "cachedResultName": "daily_summaries"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "total_messages": "={{ $json.total_messages }}",
+            "total_members_active": "={{ $('Webhook - Processar com IA1').item.json.body.group_data.active_members }}",
+            "summary_content": "={{ $json.summary_content }}",
+            "send_status": "pending",
+            "group_id": "={{ $json.group_id }}",
+            "summary_date": "={{ $json.summary_date }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "group_id",
+              "displayName": "group_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary_date",
+              "displayName": "summary_date",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total_messages",
+              "displayName": "total_messages",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total_members_active",
+              "displayName": "total_members_active",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary_content",
+              "displayName": "summary_content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "send_status",
+              "displayName": "send_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sent_at",
+              "displayName": "sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "destination_used",
+              "displayName": "destination_used",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "send_attempts",
+              "displayName": "send_attempts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        656,
+        64
+      ],
+      "id": "4aadf468-30bd-4404-809c-70071fdf6cde",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Set - Processar Resposta": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Processar com IA1": {
+      "main": [
+        [
+          {
+            "node": "Execution Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Set - Processar Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution Data1": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Respond - Sucesso1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "005d649f-6053-437f-8c9f-1df6dde6de9c",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "u8yQOHHj3bMnfID6",
+  "tags": []
+}

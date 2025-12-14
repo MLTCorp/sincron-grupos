@@ -1,0 +1,427 @@
+{
+  "name": "4. Criar resumos de grupos",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 10,
+              "unit": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "4838fc21-3b9b-4a97-ac42-e3e630080434",
+      "name": "Cron - A cada 10 minutos - Gerar newsletters",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -1488,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Buscar grupos para resumo",
+        "height": 80,
+        "width": 400,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1520,
+        16
+      ],
+      "id": "cf93410c-d687-434f-9d24-bac19669c6f1",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- QUERY CORRIGIDA FINAL: Buscar grupos para resumo diário\nWITH configuracoes AS (\n    SELECT \n        NOW() AT TIME ZONE 'America/Sao_Paulo' as agora_sp,\n        (NOW() AT TIME ZONE 'America/Sao_Paulo')::DATE as hoje_sp,\n        (NOW() AT TIME ZONE 'America/Sao_Paulo')::TIME as hora_atual_sp,\n        ((NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '10 minutes')::TIME as hora_limite_sp\n),\ngrupos_pendentes_resumo AS (\n    SELECT \n        g.id,\n        g.chat_id,\n        g.name,\n        g.summary_destination_type,\n        g.summary_destination_value,\n        g.summary_send_time,\n        -- Contar mensagens válidas do dia\n        (\n            SELECT COUNT(*) \n            FROM messages m \n            WHERE m.group_id = g.id \n            AND DATE(m.timestamp AT TIME ZONE 'America/Sao_Paulo') = (SELECT hoje_sp FROM configuracoes)\n            AND EXTRACT(YEAR FROM m.timestamp) BETWEEN 2020 AND 2030\n            AND m.type != 'reaction'\n        ) as total_messages,\n        -- Contar membros ativos no dia\n        (\n            SELECT COUNT(DISTINCT m.member_id) \n            FROM messages m \n            WHERE m.group_id = g.id \n            AND DATE(m.timestamp AT TIME ZONE 'America/Sao_Paulo') = (SELECT hoje_sp FROM configuracoes)\n            AND EXTRACT(YEAR FROM m.timestamp) BETWEEN 2020 AND 2030\n            AND m.type != 'reaction'\n        ) as active_members\n    FROM groups g, configuracoes c\n    WHERE \n        g.daily_summary_enabled = true\n        AND g.auto_send_summary_enabled = true\n        AND g.status = 'active'\n        -- Horário de envio deve estar entre 00:00 e (agora + 10 minutos)\n        AND g.summary_send_time >= '00:00:00'::TIME\n        AND g.summary_send_time <= c.hora_limite_sp\n        -- NÃO existe resumo para HOJE (usando a data correta)\n        AND NOT EXISTS (\n            SELECT 1 \n            FROM daily_summaries ds \n            WHERE ds.group_id = g.id \n            AND ds.summary_date = (SELECT hoje_sp FROM configuracoes)\n        )\n)\nSELECT \n    json_build_object(\n        'status', CASE WHEN COUNT(*) > 0 THEN 'groups_found' ELSE 'no_groups_in_time_window' END,\n        'execution_info', json_build_object(\n            'timestamp', (SELECT agora_sp FROM configuracoes),\n            'current_date', (SELECT hoje_sp FROM configuracoes),\n            'current_time', (SELECT hora_atual_sp FROM configuracoes),\n            'time_limit', (SELECT hora_limite_sp FROM configuracoes),\n            'time_window', '00:00:00 até ' || (SELECT hora_limite_sp::TEXT FROM configuracoes),\n            'total_groups', COUNT(*)\n        ),\n        'groups', COALESCE(\n            json_agg(\n                json_build_object(\n                    'group_id', id,\n                    'chat_id', chat_id,\n                    'name', name,\n                    'destination', json_build_object(\n                        'type', summary_destination_type,\n                        'value', COALESCE(summary_destination_value, chat_id),\n                        'send_to', CASE \n                            WHEN summary_destination_type = 'group' THEN 'Enviar para o próprio grupo'\n                            WHEN summary_destination_type = 'phone' THEN 'Enviar para número específico'\n                            ELSE 'Configuração desconhecida'\n                        END\n                    ),\n                    'scheduled_time', summary_send_time,\n                    'activity_stats', json_build_object(\n                        'total_messages', total_messages,\n                        'active_members', active_members,\n                        'has_activity', total_messages > 0\n                    ),\n                    'ready_for_summary', true\n                ) ORDER BY summary_send_time, name\n            ) FILTER (WHERE id IS NOT NULL),\n            '[]'::json\n        )\n    ) as resultado\nFROM grupos_pendentes_resumo;",
+        "options": {}
+      },
+      "id": "896944d3-f309-4d56-8406-5e3704fc6c00",
+      "name": "PostgreSQL - Buscar Grupos1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1248,
+        144
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440003",
+              "leftValue": "={{ $json.resultado.status }}",
+              "rightValue": "groups_found",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "77ccaaf1-6bcc-46d2-93e7-e23c9b83ec8b",
+      "name": "IF - Tem grupos para processar?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1056,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega o resultado da query\nconst queryResult = items[0].json;\n\n// Verifica se a estrutura existe\nif (!queryResult || !queryResult.resultado) {\n  return [{\n    json: {\n      status: 'invalid_data',\n      message: 'Estrutura de dados inválida'\n    }\n  }];\n}\n\n// Extrai os grupos do resultado\nconst grupos = queryResult.resultado.groups || [];\n\n// Se não houver grupos, retorna mensagem\nif (grupos.length === 0) {\n  return [{\n    json: {\n      status: 'no_groups_found',\n      message: 'Nenhum grupo encontrado na janela de tempo especificada'\n    }\n  }];\n}\n\n// Extrai informações de execução com valores padrão\nconst executionInfo = queryResult.resultado.execution_info || {};\nconst currentDate = executionInfo.current_date || new Date().toISOString().split('T')[0];\nconst timestamp = executionInfo.timestamp || new Date().toISOString();\n\n// Mapeia cada grupo para um item separado\nreturn grupos.map(grupo => ({\n  json: {\n    group_id: grupo.group_id,\n    chat_id: grupo.chat_id,\n    name: grupo.name,\n    destination_type: grupo.destination.type,\n    destination_value: grupo.destination.value,\n    scheduled_time: grupo.scheduled_time,\n    total_messages: grupo.activity_stats.total_messages,\n    active_members: grupo.activity_stats.active_members,\n    has_activity: grupo.activity_stats.has_activity,\n    summary_date: currentDate,\n    execution_timestamp: timestamp\n  }\n}));"
+      },
+      "id": "528748c9-30f3-4cd6-ac2c-9246d9cf34dc",
+      "name": "Code - Separar Grupos1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -832,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Buscar mensagens do dia que não foram processadas para newsletter\nWITH messages_to_process AS (\n    SELECT \n        m.id,\n        m.message_id,\n        m.message,\n        m.type,\n        m.timestamp,\n        m.response_to,\n        mem.name as member_name,\n        mem.phone as member_phone\n    FROM messages m\n    JOIN members mem ON m.member_id = mem.id\n    WHERE \n        m.group_id = $1::INTEGER\n        AND m.timestamp::DATE = CURRENT_DATE\n        AND m.newsletter_processed = false\n        AND m.type IN ('text', 'audio', 'image', 'video', 'document')\n        AND m.message IS NOT NULL\n        AND LENGTH(TRIM(m.message)) > 0\n    ORDER BY m.timestamp ASC\n)\nSELECT \n    json_build_object(\n        'status', CASE WHEN COUNT(*) > 0 THEN 'found' ELSE 'no_messages' END,\n        'group_id', $1::INTEGER,\n        'total_messages', COUNT(*),\n        'messages', json_agg(\n            json_build_object(\n                'id', id,\n                'message_id', message_id,\n                'message', message,\n                'type', type,\n                'timestamp', timestamp,\n                'response_to', response_to,\n                'member_name', member_name,\n                'member_phone', member_phone\n            )\n        ) FILTER (WHERE id IS NOT NULL),\n        'message_ids', array_agg(id) FILTER (WHERE id IS NOT NULL)\n    ) as resultado\nFROM messages_to_process;",
+        "options": {
+          "queryReplacement": "={{ $json.group_id }}"
+        }
+      },
+      "id": "1cb57a49-cae4-457b-b0aa-f77f3105e163",
+      "name": "PostgreSQL - Buscar Mensagens do Dia1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -208,
+        144
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440007",
+              "leftValue": "={{ $json.resultado.status }}",
+              "rightValue": "found",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "5684abce-7fe0-44eb-8339-eb5aa9b72b67",
+              "leftValue": "={{ $json.resultado.total_messages }}",
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "92dd9c8b-9b11-4d8e-bab7-436e862bfa27",
+      "name": "IF - Tem mensagens para processar?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        16,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Marcar TODAS as mensagens anteriores a hoje como processadas (CORRIGIDO)\nUPDATE messages \nSET \n    newsletter_processed = true,\n    newsletter_processed_at = NOW() AT TIME ZONE 'America/Sao_Paulo'\nWHERE group_id = $1::INTEGER \n  AND (timestamp AT TIME ZONE 'America/Sao_Paulo')::DATE < (NOW() AT TIME ZONE 'America/Sao_Paulo')::DATE\n  AND newsletter_processed = false\n  AND type IN ('text', 'audio', 'image', 'video', 'document')\n  AND message IS NOT NULL\nRETURNING \n    json_build_object(\n        'status', 'historical_messages_processed',\n        'group_id', group_id,\n        'processed_date', (NOW() AT TIME ZONE 'America/Sao_Paulo')::DATE,\n        'message_id', id,\n        'note', 'Mensagem histórica marcada como processada'\n    ) as resultado;",
+        "options": {
+          "queryReplacement": "={{ $json.group_id }}"
+        }
+      },
+      "id": "0f6033fb-5e44-410e-8b26-8915ea31d764",
+      "name": "PostgreSQL - Marcar Mensagens Processadas1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        480,
+        160
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pJxCPVxdffoOYTKt",
+          "name": "Postgres - m7 growth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://webhook.m7growth.com/webhook/process-summary-ia",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "group_data",
+              "value": "={{ $('Code - Separar Grupos1').item.json }}"
+            },
+            {
+              "name": "messages_data",
+              "value": "={{ $('PostgreSQL - Buscar Mensagens do Dia1').item.json.resultado }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "55f52b93-f189-497a-8ae8-627962cef4c1",
+      "name": "HTTP - Chamar Processamento IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        256,
+        144
+      ],
+      "executeOnce": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -608,
+        144
+      ],
+      "id": "1f096191-9dcb-4c2d-a8cc-482e31c3f45c",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "group_id",
+              "value": "={{ $json.group_id }}"
+            },
+            {
+              "key": "chat_id",
+              "value": "={{ $json.chat_id }}"
+            },
+            {
+              "key": "total_msg",
+              "value": "={{ $json.total_messages }}"
+            },
+            {
+              "key": "date",
+              "value": "={{ $json.summary_date }}"
+            },
+            {
+              "key": "time",
+              "value": "={{ $json.scheduled_time }}"
+            },
+            {
+              "key": "type",
+              "value": "message_push"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -400,
+        144
+      ],
+      "id": "85d81834-bff1-4b70-90e3-65fa794e647b",
+      "name": "Execution Data"
+    }
+  ],
+  "connections": {
+    "Cron - A cada 10 minutos - Gerar newsletters": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Buscar Grupos1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Tem grupos para processar?1": {
+      "main": [
+        [
+          {
+            "node": "Code - Separar Grupos1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Separar Grupos1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Buscar Mensagens do Dia1": {
+      "main": [
+        [
+          {
+            "node": "IF - Tem mensagens para processar?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Tem mensagens para processar?1": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Chamar Processamento IA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Marcar Mensagens Processadas1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Chamar Processamento IA": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Marcar Mensagens Processadas1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Buscar Grupos1": {
+      "main": [
+        [
+          {
+            "node": "IF - Tem grupos para processar?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution Data": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Buscar Mensagens do Dia1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "09e7b191-5549-4c9b-aef2-b9699d7885fe",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "UuYrS4zYkdlKmhNy",
+  "tags": []
+}

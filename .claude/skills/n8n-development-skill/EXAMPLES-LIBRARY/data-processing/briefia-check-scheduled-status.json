@@ -1,0 +1,776 @@
+{
+  "name": "[SCHEDULE] Verifica Status Mensagem Programada",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Padroniza Dados1').item.json.instance.url }}/sender/listmessages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "folder_id",
+              "value": "={{ $json.agendamento_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -688,
+        176
+      ],
+      "id": "c0439c9c-3910-4066-89f2-91044a28692b",
+      "name": "Verifica status",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZtFXzJZKhheInQBf",
+          "name": "Uazapi - Briefia"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "## mapear status:\nSent - enviado\nscheduled - agendado\nDelivered - Entregue ?",
+        "height": 288,
+        "width": 320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -800,
+        64
+      ],
+      "typeVersion": 1,
+      "id": "5b65316b-80e7-4202-90ff-838d1ad90e96",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1264,
+        176
+      ],
+      "id": "6a6f1762-8a35-4a60-b722-58f068eb40dc",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messages.status }}",
+                    "rightValue": "Sent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "7044de36-797e-464a-b66d-9fd31873f55c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Enviado"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f81df6b6-8de5-4e67-b5bb-12c793be3c5f",
+                    "leftValue": "={{ $json.messages.status }}",
+                    "rightValue": "Delivered",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Entregue"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "17bc5eea-0a79-44b0-b408-a12cfc3a801f",
+                    "leftValue": "={{ $json.messages.status }}",
+                    "rightValue": "scheduled",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Agendada"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "6171bb70-c0e2-4326-8b8b-4f79377a61d8",
+                    "leftValue": "={{ $json.messages.status }}",
+                    "rightValue": "Failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Failed"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -224,
+        144
+      ],
+      "id": "aaf06c5c-857d-4ce2-b968-b0cab1dc0e3b",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "status",
+              "value": "={{ $json.messages.status }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -208,
+        -64
+      ],
+      "id": "8eb7cbd7-711a-469c-9aa9-189e26f96dc3",
+      "name": "Execution Data"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "messages",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        160
+      ],
+      "id": "15014b6f-1f99-4f4f-ad52-b0c9fd94fd57",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "mensagens_programadas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "agendamento_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.messages.send_folder_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "dt_enviada",
+              "fieldValue": "={{ DateTime.fromMillis($json.messages.messageTimestamp).toFormat('yyyy-MM-dd HH:mm:ss') }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "enviada"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        144,
+        64
+      ],
+      "id": "4584726d-82c9-46dc-a87b-b30e18f28751",
+      "name": "Atualiza Status",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s4stma8E9rLogINA",
+          "name": "Supabase - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    mp.*,\n    g.nome as nome_grupo,\n    g.chat_id_whatsapp,\n    c.nome as nome_cliente\nFROM mensagens_programadas mp\nINNER JOIN grupos g ON mp.id_grupo = g.id\nINNER JOIN clientes c ON g.id_cliente = c.id\nWHERE mp.dt_programada <= NOW()\n  AND mp.status = 'agendada'\n  AND mp.agendamento_id is not null\nORDER BY mp.dt_programada ASC;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -896,
+        176
+      ],
+      "id": "eb423ce3-007a-4882-a0d1-36af7d5efe53",
+      "name": "Busca Mensagens Programadas",
+      "credentials": {
+        "postgres": {
+          "id": "IMoldVZAsafkZEdg",
+          "name": "Postgres - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Verifica status da mensagem programada\nConsulta as mensagens programadas para identificar se já foram enviadas e atualiza no banco de dados.",
+        "height": 400,
+        "width": 768,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1344,
+        -32
+      ],
+      "typeVersion": 1,
+      "id": "52838e2f-0d24-482d-b20f-05448d58638a",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "tableId": "logs_auditoria",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "acao",
+              "fieldValue": "briefia/v1/schedule/mensagem-programada"
+            },
+            {
+              "fieldId": "dados_novos",
+              "fieldValue": "={{ $json }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        592
+      ],
+      "id": "2285bb7e-3603-41fc-9051-20ea2f9cdf8a",
+      "name": "[ERRO] Cria log1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s4stma8E9rLogINA",
+          "name": "Supabase - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "errorMessage": "Erro ao criar agendamento!"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        416
+      ],
+      "id": "f64b3b35-7848-416a-a460-34a9374dc4e7",
+      "name": "Stop and Error1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "mensagens_programadas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "agendamento_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.agendamento_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "erro"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        416
+      ],
+      "id": "7a33b75c-0b1f-4638-bf41-972bef2779ea",
+      "name": "[ERRO] Atualiza Status1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s4stma8E9rLogINA",
+          "name": "Supabase - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e9870027-348c-4f4e-8313-0e92fc65fe1d",
+              "name": "instance.url",
+              "value": "https://briefia.uazapi.com",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1072,
+        176
+      ],
+      "id": "c1bd7fa7-adcb-47d3-8404-73dc8efb48a7",
+      "name": "Padroniza Dados1"
+    },
+    {
+      "parameters": {
+        "tableId": "logs_auditoria",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "acao",
+              "fieldValue": "briefia/v1/schedule/mensagem-programada"
+            },
+            {
+              "fieldId": "dados_novos",
+              "fieldValue": "={{ $json }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        160,
+        400
+      ],
+      "id": "055486d1-d30b-4392-aa9b-2a4080ccfe49",
+      "name": "[ERRO] Cria log2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s4stma8E9rLogINA",
+          "name": "Supabase - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "errorMessage": "Erro ao criar agendamento!"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        368,
+        224
+      ],
+      "id": "2e07ae49-48b6-44f6-8c34-ee1d0bf4906c",
+      "name": "Stop and Error2",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "mensagens_programadas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "agendamento_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.messages.send_folder_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "erro"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        160,
+        224
+      ],
+      "id": "29c3c850-8255-4fa1-ad43-8621f168a0c4",
+      "name": "[ERRO] Atualiza Status2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s4stma8E9rLogINA",
+          "name": "Supabase - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "briefia-tracker/sender",
+        "options": {}
+      },
+      "id": "de99e7d9-0d97-4596-980b-fd5c470aed1f",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -1264,
+        880
+      ],
+      "webhookId": "3d853676-2cd8-4b99-b015-05d0a876b979"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2cbc8457-08f7-45ec-aec6-546cfdc33c5f",
+              "leftValue": "={{ $json.body.status }}",
+              "rightValue": "done",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1024,
+        880
+      ],
+      "id": "91fe380a-7fac-4d1b-9ebc-60886cc447c9",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "mensagens_programadas",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "agendamento_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.body.folderID }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "dt_enviada",
+              "fieldValue": "={{ DateTime.fromMillis($json.body.completedAt).toFormat('yyyy-MM-dd HH:mm:ss') }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "enviada"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -752,
+        864
+      ],
+      "id": "7f2b814c-db31-434c-8abb-d48e7d9496f6",
+      "name": "Atualiza Status1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s4stma8E9rLogINA",
+          "name": "Supabase - Briefia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "status",
+              "value": "={{ $json.body.status }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -1040,
+        640
+      ],
+      "id": "4207f1c5-e28e-4775-b13d-296a449581bc",
+      "name": "Execution Data1"
+    }
+  ],
+  "connections": {
+    "Verifica status": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "[ERRO] Atualiza Status1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "[ERRO] Cria log1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Padroniza Dados1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Atualiza Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Atualiza Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [
+          {
+            "node": "[ERRO] Atualiza Status2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "[ERRO] Cria log2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Mensagens Programadas": {
+      "main": [
+        [
+          {
+            "node": "Verifica status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[ERRO] Atualiza Status1": {
+      "main": [
+        [
+          {
+            "node": "Stop and Error1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Padroniza Dados1": {
+      "main": [
+        [
+          {
+            "node": "Busca Mensagens Programadas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "[ERRO] Atualiza Status2": {
+      "main": [
+        [
+          {
+            "node": "Stop and Error2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execution Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Atualiza Status1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "Sjd5x4DDIjqnsxyQ"
+  },
+  "versionId": "04df233f-5449-4511-8dc7-acd43ca2e52f",
+  "meta": {
+    "instanceId": "00000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "id": "JYberGOeBXGyopfB",
+  "tags": []
+}
