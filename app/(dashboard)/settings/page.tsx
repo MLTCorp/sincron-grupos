@@ -72,6 +72,58 @@ export default function SettingsPage() {
   // Organization state
   const [orgName, setOrgName] = useState("Sincron Grupos Ltda")
 
+  // Loading states
+  const [isSavingAccount, setIsSavingAccount] = useState(false)
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false)
+
+  // Original values for reset
+  const defaultAccount = { name: "Michelle Santos", email: "michelle@sincron.com", phone: "+55 11 99999-9999", role: "admin" }
+  const defaultPreferences = { language: "pt-BR", timezone: "America/Sao_Paulo", dateFormat: "DD/MM/YYYY", theme: "light" }
+
+  // Reset account form
+  const handleCancelAccount = () => {
+    setName(defaultAccount.name)
+    setEmail(defaultAccount.email)
+    setPhone(defaultAccount.phone)
+    setRole(defaultAccount.role)
+  }
+
+  // Save account (placeholder - would connect to API)
+  const handleSaveAccount = async () => {
+    setIsSavingAccount(true)
+    try {
+      // Simular chamada API
+      await new Promise(resolve => setTimeout(resolve, 500))
+      toast.success("Informacoes da conta salvas!")
+    } catch {
+      toast.error("Erro ao salvar")
+    } finally {
+      setIsSavingAccount(false)
+    }
+  }
+
+  // Reset preferences
+  const handleResetPreferences = () => {
+    setLanguage(defaultPreferences.language)
+    setTimezone(defaultPreferences.timezone)
+    setDateFormat(defaultPreferences.dateFormat)
+    setTheme(defaultPreferences.theme)
+    toast.info("Preferencias restauradas")
+  }
+
+  // Save preferences (placeholder - would connect to API)
+  const handleSavePreferences = async () => {
+    setIsSavingPreferences(true)
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500))
+      toast.success("Preferencias salvas!")
+    } catch {
+      toast.error("Erro ao salvar")
+    } finally {
+      setIsSavingPreferences(false)
+    }
+  }
+
   // Handle password update
   const handlePasswordUpdate = async () => {
     // Validation
@@ -196,8 +248,13 @@ export default function SettingsPage() {
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" className="h-8 text-xs">Cancelar</Button>
-              <Button>Salvar Alteracoes</Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleCancelAccount}>
+                Cancelar
+              </Button>
+              <Button size="sm" className="h-8 text-xs" onClick={handleSaveAccount} disabled={isSavingAccount}>
+                {isSavingAccount && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                Salvar Alteracoes
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -401,8 +458,13 @@ export default function SettingsPage() {
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" className="h-8 text-xs">Restaurar</Button>
-              <Button size="sm" className="h-8 text-xs">Salvar</Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleResetPreferences}>
+                Restaurar
+              </Button>
+              <Button size="sm" className="h-8 text-xs" onClick={handleSavePreferences} disabled={isSavingPreferences}>
+                {isSavingPreferences && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                Salvar
+              </Button>
             </div>
           </CardContent>
         </Card>

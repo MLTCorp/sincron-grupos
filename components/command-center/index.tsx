@@ -13,6 +13,7 @@ import { AIAgentsDrawer } from "./ai-agents-drawer"
 import { SyncGroupsDialog } from "./sync-groups-dialog"
 import { MassMessageModal } from "./mass-message-modal"
 import Link from "next/link"
+import { cn } from "@/lib/utils"
 import {
   Users,
   Zap,
@@ -24,16 +25,9 @@ import {
   RefreshCw,
   Check,
   UserPlus,
-  Bell
+  Bell,
+  ArrowRight
 } from "lucide-react"
-
-// Onboarding steps
-const onboardingSteps = [
-  { id: 1, title: "Conectar WhatsApp", description: "Escaneie o QR Code para vincular seu numero.", completed: false },
-  { id: 2, title: "Sincronizar grupos", description: "Importe seus grupos do WhatsApp.", completed: false },
-  { id: 3, title: "Criar categorias", description: "Organize grupos por tags (Vendas, Suporte, etc).", completed: false },
-  { id: 4, title: "Configurar primeiro gatilho", description: "Crie uma automacao para moderar ou responder.", completed: false },
-]
 
 export function CommandCenter() {
   const {
@@ -91,6 +85,21 @@ export function CommandCenter() {
     if (stats.categorias > 0) completed++
     if (stats.gatilhosAtivos > 0) completed++
     return { completed, total: 4, percentage: (completed / 4) * 100 }
+  }, [stats])
+
+  // Onboarding state - determina o que está habilitado
+  const onboardingState = useMemo(() => {
+    const hasInstance = stats.instanciasConectadas > 0
+    const hasGroups = stats.grupos > 0
+    // Se não tem instância, só habilita conectar instância
+    // Se tem instância mas não grupos, habilita sincronizar grupos
+    // Se tem grupos, tudo liberado
+    return {
+      hasInstance,
+      hasGroups,
+      isComplete: hasInstance && hasGroups,
+      currentStep: !hasInstance ? 1 : !hasGroups ? 2 : 3
+    }
   }, [stats])
 
   // Refresh all data
@@ -155,70 +164,88 @@ export function CommandCenter() {
         </div>
       </div>
 
-      {/* Onboarding Checklist */}
-      {onboardingProgress.completed < 4 && (
-        <Card>
+      {/* Onboarding - Quando não completou os passos básicos */}
+      {!onboardingState.isComplete && (
+        <Card className="border-2 border-primary/50 bg-primary/5">
           <CardContent className="p-4">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center mb-4">
               <div>
                 <h3 className="text-sm font-semibold">Bem-vindo ao Sincron Grupos</h3>
-                <p className="text-xs text-muted-foreground">Complete os passos para comecar.</p>
+                <p className="text-xs text-muted-foreground">
+                  {!onboardingState.hasInstance
+                    ? "Conecte seu WhatsApp para comecar"
+                    : "Sincronize seus grupos para continuar"}
+                </p>
               </div>
               <div className="flex items-center gap-3">
-                <Progress value={onboardingProgress.percentage} className="w-24 h-1.5" />
-                <span className="text-xs font-medium text-primary">{onboardingProgress.completed}/4</span>
+                <Progress value={onboardingState.currentStep === 1 ? 0 : 50} className="w-24 h-1.5" />
+                <span className="text-xs font-medium text-primary">{onboardingState.currentStep - 1}/2</span>
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className={`flex items-center gap-2 p-2 rounded-lg bg-muted/50 ${stats.instanciasConectadas > 0 ? "" : "opacity-60"}`}>
-                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs ${
-                  stats.instanciasConectadas > 0 ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"
-                }`}>
-                  {stats.instanciasConectadas > 0 ? <Check className="h-3 w-3" /> : "1"}
+            {/* Passo 1: Conectar WhatsApp */}
+            {!onboardingState.hasInstance && (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/30">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground">
+                    <Smartphone className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Conectar WhatsApp</p>
+                    <p className="text-xs text-muted-foreground">Escaneie o QR Code para vincular</p>
+                  </div>
                 </div>
-                <span className="text-xs font-medium">Conectar WhatsApp</span>
+                <Button size="sm" className="h-8" asChild>
+                  <Link href="/instances">
+                    Conectar
+                    <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                  </Link>
+                </Button>
               </div>
+            )}
 
-              <div className={`flex items-center gap-2 p-2 rounded-lg bg-muted/50 ${stats.grupos > 0 ? "" : "opacity-60"}`}>
-                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs ${
-                  stats.grupos > 0 ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"
-                }`}>
-                  {stats.grupos > 0 ? <Check className="h-3 w-3" /> : "2"}
+            {/* Passo 2: Sincronizar Grupos */}
+            {onboardingState.hasInstance && !onboardingState.hasGroups && (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/30">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground">
+                    <Users className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Sincronizar Grupos</p>
+                    <p className="text-xs text-muted-foreground">Importe seus grupos do WhatsApp</p>
+                  </div>
                 </div>
-                <span className="text-xs font-medium">Sincronizar grupos</span>
+                <Button size="sm" className="h-8" onClick={() => setSyncDialogOpen(true)}>
+                  Sincronizar
+                  <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                </Button>
               </div>
-
-              <div className={`flex items-center gap-2 p-2 rounded-lg bg-muted/50 ${stats.categorias > 0 ? "" : "opacity-60"}`}>
-                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs ${
-                  stats.categorias > 0 ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"
-                }`}>
-                  {stats.categorias > 0 ? <Check className="h-3 w-3" /> : "3"}
-                </div>
-                <span className="text-xs font-medium">Criar categorias</span>
-              </div>
-
-              <div className={`flex items-center gap-2 p-2 rounded-lg bg-muted/50 ${stats.gatilhosAtivos > 0 ? "" : "opacity-60"}`}>
-                <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs ${
-                  stats.gatilhosAtivos > 0 ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"
-                }`}>
-                  {stats.gatilhosAtivos > 0 ? <Check className="h-3 w-3" /> : "4"}
-                </div>
-                <span className="text-xs font-medium">Criar gatilho</span>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       )}
 
       {/* Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* Card Instância - sempre habilitado, destacado quando é o próximo passo */}
         <Link href="/instances">
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+          <Card className={cn(
+            "transition-all cursor-pointer",
+            !onboardingState.hasInstance
+              ? "border-2 border-primary ring-2 ring-primary/20 hover:border-primary"
+              : "hover:border-primary/50"
+          )}>
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 flex items-center justify-center bg-green-100 rounded">
-                  <Smartphone className="h-3.5 w-3.5 text-green-600" />
+                <div className={cn(
+                  "w-7 h-7 flex items-center justify-center rounded",
+                  !onboardingState.hasInstance ? "bg-primary" : "bg-green-100"
+                )}>
+                  <Smartphone className={cn(
+                    "h-3.5 w-3.5",
+                    !onboardingState.hasInstance ? "text-primary-foreground" : "text-green-600"
+                  )} />
                 </div>
                 <span className="text-xs font-medium text-muted-foreground">Instancia</span>
               </div>
@@ -230,12 +257,26 @@ export function CommandCenter() {
           </Card>
         </Link>
 
-        <Link href="/groups">
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        {/* Card Grupos - habilitado após instância, destacado quando é o próximo passo */}
+        <Link href="/groups" className={cn(!onboardingState.hasInstance && "pointer-events-none")}>
+          <Card className={cn(
+            "transition-all",
+            !onboardingState.hasInstance
+              ? "opacity-40 cursor-not-allowed"
+              : onboardingState.hasInstance && !onboardingState.hasGroups
+                ? "border-2 border-primary ring-2 ring-primary/20 hover:border-primary cursor-pointer"
+                : "hover:border-primary/50 cursor-pointer"
+          )}>
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 flex items-center justify-center bg-blue-100 rounded">
-                  <Users className="h-3.5 w-3.5 text-blue-600" />
+                <div className={cn(
+                  "w-7 h-7 flex items-center justify-center rounded",
+                  onboardingState.hasInstance && !onboardingState.hasGroups ? "bg-primary" : "bg-blue-100"
+                )}>
+                  <Users className={cn(
+                    "h-3.5 w-3.5",
+                    onboardingState.hasInstance && !onboardingState.hasGroups ? "text-primary-foreground" : "text-blue-600"
+                  )} />
                 </div>
                 <span className="text-xs font-medium text-muted-foreground">Grupos</span>
               </div>
@@ -244,8 +285,12 @@ export function CommandCenter() {
           </Card>
         </Link>
 
-        <Link href="/triggers">
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        {/* Cards restantes - só habilitados após grupos */}
+        <Link href="/triggers" className={cn(!onboardingState.isComplete && "pointer-events-none")}>
+          <Card className={cn(
+            "transition-all",
+            !onboardingState.isComplete ? "opacity-40 cursor-not-allowed" : "hover:border-primary/50 cursor-pointer"
+          )}>
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 flex items-center justify-center bg-yellow-100 rounded">
@@ -258,8 +303,11 @@ export function CommandCenter() {
           </Card>
         </Link>
 
-        <Link href="/messages">
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <Link href="/messages" className={cn(!onboardingState.isComplete && "pointer-events-none")}>
+          <Card className={cn(
+            "transition-all",
+            !onboardingState.isComplete ? "opacity-40 cursor-not-allowed" : "hover:border-primary/50 cursor-pointer"
+          )}>
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 flex items-center justify-center bg-indigo-100 rounded">
@@ -272,8 +320,11 @@ export function CommandCenter() {
           </Card>
         </Link>
 
-        <Link href="/ai">
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <Link href="/ai" className={cn(!onboardingState.isComplete && "pointer-events-none")}>
+          <Card className={cn(
+            "transition-all",
+            !onboardingState.isComplete ? "opacity-40 cursor-not-allowed" : "hover:border-primary/50 cursor-pointer"
+          )}>
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 flex items-center justify-center bg-purple-100 rounded">
@@ -286,8 +337,11 @@ export function CommandCenter() {
           </Card>
         </Link>
 
-        <Link href="/transcription">
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <Link href="/transcription" className={cn(!onboardingState.isComplete && "pointer-events-none")}>
+          <Card className={cn(
+            "transition-all",
+            !onboardingState.isComplete ? "opacity-40 cursor-not-allowed" : "hover:border-primary/50 cursor-pointer"
+          )}>
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 flex items-center justify-center bg-pink-100 rounded">
@@ -301,62 +355,66 @@ export function CommandCenter() {
         </Link>
       </div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold">Acoes Rapidas</h3>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" className="h-7 text-xs" onClick={() => setMessageModalOpen(true)}>
-                <Plus className="h-3 w-3 mr-1" />
-                Mensagem
-              </Button>
-              <Button size="sm" variant="secondary" className="h-7 text-xs" asChild>
-                <Link href="/triggers/new">
+      {/* Quick Actions - só mostra quando onboarding está completo */}
+      {onboardingState.isComplete && (
+        <Card>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold">Acoes Rapidas</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" className="h-7 text-xs" onClick={() => setMessageModalOpen(true)}>
                   <Plus className="h-3 w-3 mr-1" />
-                  Gatilho
-                </Link>
-              </Button>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setSyncDialogOpen(true)}>
-                <RefreshCw className="h-3 w-3 mr-1" />
-                Sincronizar
-              </Button>
+                  Mensagem
+                </Button>
+                <Button size="sm" variant="secondary" className="h-7 text-xs" asChild>
+                  <Link href="/triggers/new">
+                    <Plus className="h-3 w-3 mr-1" />
+                    Gatilho
+                  </Link>
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setSyncDialogOpen(true)}>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Sincronizar
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Recent Activity */}
-      <Card>
-        <CardContent className="p-3">
-          <h3 className="text-sm font-semibold mb-3">Atividade Recente</h3>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs">
-              <span className="h-5 w-5 rounded-full bg-accent flex items-center justify-center">
-                <Zap className="h-2.5 w-2.5 text-accent-foreground" />
-              </span>
-              <span className="flex-1">Gatilho <span className="font-medium text-primary">&quot;Boas-vindas&quot;</span> ativado</span>
-              <span className="text-muted-foreground">2 min</span>
+      {/* Recent Activity - só mostra quando onboarding está completo */}
+      {onboardingState.isComplete && (
+        <Card>
+          <CardContent className="p-3">
+            <h3 className="text-sm font-semibold mb-3">Atividade Recente</h3>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="h-5 w-5 rounded-full bg-accent flex items-center justify-center">
+                  <Zap className="h-2.5 w-2.5 text-accent-foreground" />
+                </span>
+                <span className="flex-1">Gatilho <span className="font-medium text-primary">&quot;Boas-vindas&quot;</span> ativado</span>
+                <span className="text-muted-foreground">2 min</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="h-5 w-5 rounded-full bg-muted-foreground flex items-center justify-center">
+                  <Users className="h-2.5 w-2.5 text-white" />
+                </span>
+                <span className="flex-1">Sincronizacao: <span className="font-medium">2 grupos</span> adicionados</span>
+                <span className="text-muted-foreground">1h</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                  <UserPlus className="h-2.5 w-2.5 text-primary-foreground" />
+                </span>
+                <span className="flex-1"><span className="font-medium">Carlos</span> adicionado a equipe</span>
+                <span className="text-muted-foreground">3h</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="h-5 w-5 rounded-full bg-muted-foreground flex items-center justify-center">
-                <Users className="h-2.5 w-2.5 text-white" />
-              </span>
-              <span className="flex-1">Sincronizacao: <span className="font-medium">2 grupos</span> adicionados</span>
-              <span className="text-muted-foreground">1h</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                <UserPlus className="h-2.5 w-2.5 text-primary-foreground" />
-              </span>
-              <span className="flex-1"><span className="font-medium">Carlos</span> adicionado a equipe</span>
-              <span className="text-muted-foreground">3h</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Footer */}
       <footer className="py-2 text-center text-xs text-muted-foreground">
