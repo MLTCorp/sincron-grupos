@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -16,6 +17,27 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Users,
   Plus,
   Check,
@@ -25,16 +47,16 @@ import {
   Trash2,
   AlertTriangle,
   RefreshCw,
-  Tags,
-  Zap,
+  MoreVertical,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
   Smartphone,
 } from "lucide-react"
 import { Label } from "@/components/ui/label"
-import { GroupsTable } from "@/components/command-center/groups-table"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { PageHeader, EmptyState } from "@/components/dashboard"
 import Link from "next/link"
 
 interface WhatsAppGroup {
@@ -58,8 +80,10 @@ interface GrupoCadastrado {
   foto_url?: string | null
   id_categoria?: number | null
   ativo: boolean
-  categorias?: number[] // IDs das categorias (tabela N:N)
+  categorias?: number[]
 }
+
+const ITEMS_PER_PAGE = 10
 
 export default function GroupsPage() {
   const [whatsappGroups, setWhatsappGroups] = useState<WhatsAppGroup[]>([])
@@ -71,14 +95,19 @@ export default function GroupsPage() {
   const [instanceId, setInstanceId] = useState<number | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [activeTab, setActiveTab] = useState("all")
+
+  // Filters
+  const [searchFilter, setSearchFilter] = useState("")
+  const [categoryFilter, setCategoryFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Modal state
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
   const [selectedCategories, setSelectedCategories] = useState<Record<string, number[]>>({})
   const [saving, setSaving] = useState(false)
-  const [searchFilter, setSearchFilter] = useState("")
+  const [modalSearchFilter, setModalSearchFilter] = useState("")
 
   // Edit group state
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -107,7 +136,6 @@ export default function GroupsPage() {
 
       if (!usuarioSistema) return
 
-      // Buscar instancia conectada
       const { data: instancia } = await supabase
         .from("instancias_whatsapp")
         .select("id, api_key, status")
@@ -121,7 +149,6 @@ export default function GroupsPage() {
         setIsConnected(true)
       }
 
-      // Buscar categorias
       const { data: cats } = await supabase
         .from("categorias")
         .select("id, nome, cor")
@@ -131,19 +158,16 @@ export default function GroupsPage() {
 
       setCategorias(cats || [])
 
-      // Buscar grupos ja cadastrados
       const { data: grupos } = await supabase
         .from("grupos")
         .select("*")
         .eq("id_organizacao", usuarioSistema.id_organizacao)
         .order("nome", { ascending: true })
 
-      // Buscar categorias dos grupos (tabela N:N)
       const { data: gruposCategorias } = await supabase
         .from("grupos_categorias")
         .select("id_grupo, id_categoria")
 
-      // Mapear categorias por grupo
       const categoriasPorGrupo: Record<number, number[]> = {}
       gruposCategorias?.forEach(gc => {
         if (!categoriasPorGrupo[gc.id_grupo]) {
@@ -152,7 +176,6 @@ export default function GroupsPage() {
         categoriasPorGrupo[gc.id_grupo].push(gc.id_categoria)
       })
 
-      // Adicionar categorias aos grupos
       const gruposComCategorias = grupos?.map(g => ({
         ...g,
         categorias: categoriasPorGrupo[g.id] || (g.id_categoria ? [g.id_categoria] : [])
@@ -166,7 +189,6 @@ export default function GroupsPage() {
     }
   }, [supabase])
 
-  // Buscar grupos do WhatsApp
   const fetchWhatsAppGroups = useCallback(async (showRefresh = false) => {
     if (!instanceToken) return
 
@@ -204,20 +226,38 @@ export default function GroupsPage() {
     }
   }, [instanceToken, fetchWhatsAppGroups])
 
-  // Grupos nao cadastrados (para mostrar na previa)
+  // Filtered and paginated groups
+  const filteredGrupos = useMemo(() => {
+    return gruposCadastrados.filter(grupo => {
+      const matchesSearch = grupo.nome.toLowerCase().includes(searchFilter.toLowerCase())
+
+      const matchesCategory = categoryFilter === "all" ||
+        (grupo.categorias && grupo.categorias.includes(Number(categoryFilter))) ||
+        grupo.id_categoria === Number(categoryFilter)
+
+      const matchesStatus = statusFilter === "all" ||
+        (statusFilter === "active" && grupo.ativo) ||
+        (statusFilter === "archived" && !grupo.ativo)
+
+      return matchesSearch && matchesCategory && matchesStatus
+    })
+  }, [gruposCadastrados, searchFilter, categoryFilter, statusFilter])
+
+  const totalPages = Math.ceil(filteredGrupos.length / ITEMS_PER_PAGE)
+  const paginatedGrupos = filteredGrupos.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchFilter, categoryFilter, statusFilter])
+
   const gruposNaoCadastrados = whatsappGroups.filter(
     (g) => !gruposCadastrados.some((gc) => gc.chat_id_whatsapp === g.id)
   )
 
-  // Contagens para tabs
-  const withCategoryCount = gruposCadastrados.filter(g =>
-    (g.categorias && g.categorias.length > 0) || g.id_categoria
-  ).length
-  const withoutCategoryCount = gruposCadastrados.filter(g =>
-    !g.categorias || g.categorias.length === 0
-  ).length
-
-  // Toggle selecao de grupo
   const toggleGroupSelection = (groupId: string) => {
     const newSelected = new Set(selectedGroups)
     if (newSelected.has(groupId)) {
@@ -231,7 +271,6 @@ export default function GroupsPage() {
     setSelectedGroups(newSelected)
   }
 
-  // Toggle categoria para grupo (multiplas)
   const toggleCategoryForGroup = (groupId: string, categoryId: number) => {
     const current = selectedCategories[groupId] || []
     if (current.includes(categoryId)) {
@@ -247,7 +286,6 @@ export default function GroupsPage() {
     }
   }
 
-  // Salvar grupos selecionados
   const handleSaveGroups = async () => {
     if (selectedGroups.size === 0) {
       toast.error("Selecione pelo menos um grupo")
@@ -267,16 +305,15 @@ export default function GroupsPage() {
 
       if (!usuarioSistema) return
 
-      // Primeiro, inserir os grupos
       const gruposParaSalvar = Array.from(selectedGroups).map((groupId) => {
         const group = whatsappGroups.find((g) => g.id === groupId)!
         const cats = selectedCategories[groupId] || []
         return {
           id_organizacao: usuarioSistema.id_organizacao,
-          id_instancia: instanceId, // Vincula o grupo a instancia conectada
+          id_instancia: instanceId,
           chat_id_whatsapp: groupId,
           nome: group.name,
-          id_categoria: cats.length > 0 ? cats[0] : null, // Campo legado
+          id_categoria: cats.length > 0 ? cats[0] : null,
           ativo: true,
         }
       })
@@ -286,12 +323,8 @@ export default function GroupsPage() {
         .insert(gruposParaSalvar)
         .select("id, chat_id_whatsapp")
 
-      if (error) {
-        console.error("Supabase error details:", JSON.stringify(error, null, 2))
-        throw new Error(error.message || "Erro ao inserir grupos")
-      }
+      if (error) throw new Error(error.message)
 
-      // Depois, inserir as relacoes N:N com categorias
       if (gruposInseridos) {
         const relacoes: { id_grupo: number; id_categoria: number }[] = []
         gruposInseridos.forEach(grupo => {
@@ -319,14 +352,12 @@ export default function GroupsPage() {
     }
   }
 
-  // Abrir dialog de edicao
   const handleOpenEditDialog = (grupo: GrupoCadastrado) => {
     setEditingGroup(grupo)
     setEditGroupCategories(grupo.categorias || (grupo.id_categoria ? [grupo.id_categoria] : []))
     setEditDialogOpen(true)
   }
 
-  // Toggle categoria no grupo em edicao
   const toggleEditCategory = (catId: number) => {
     setEditGroupCategories(prev => {
       if (prev.includes(catId)) {
@@ -337,19 +368,16 @@ export default function GroupsPage() {
     })
   }
 
-  // Salvar edicao do grupo
   const handleSaveEdit = async () => {
     if (!editingGroup) return
 
     setSavingEdit(true)
     try {
-      // Primeiro, remover todas as categorias antigas
       await supabase
         .from("grupos_categorias")
         .delete()
         .eq("id_grupo", editingGroup.id)
 
-      // Inserir novas categorias
       if (editGroupCategories.length > 0) {
         await supabase
           .from("grupos_categorias")
@@ -359,7 +387,6 @@ export default function GroupsPage() {
           })))
       }
 
-      // Atualizar o campo legado id_categoria (pegar a primeira categoria ou null)
       await supabase
         .from("grupos")
         .update({ id_categoria: editGroupCategories[0] || null })
@@ -377,25 +404,21 @@ export default function GroupsPage() {
     }
   }
 
-  // Abrir dialog de exclusao
   const handleOpenDeleteDialog = (grupo: GrupoCadastrado) => {
     setGroupToDelete(grupo)
     setDeleteDialogOpen(true)
   }
 
-  // Excluir grupo
   const handleDeleteGroup = async () => {
     if (!groupToDelete) return
 
     setDeletingGroup(true)
     try {
-      // Remover categorias do grupo
       await supabase
         .from("grupos_categorias")
         .delete()
         .eq("id_grupo", groupToDelete.id)
 
-      // Excluir o grupo
       const { error } = await supabase
         .from("grupos")
         .delete()
@@ -415,139 +438,287 @@ export default function GroupsPage() {
     }
   }
 
+  const getCategoryColor = (catId: number) => {
+    const cat = categorias.find(c => c.id === catId)
+    return cat?.cor || "#64748b"
+  }
+
+  const getCategoryName = (catId: number) => {
+    const cat = categorias.find(c => c.id === catId)
+    return cat?.nome || "Categoria"
+  }
+
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="flex-1 space-y-6 p-8">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
             <Skeleton className="h-8 w-32" />
             <Skeleton className="h-4 w-48" />
           </div>
-          <Skeleton className="h-9 w-28" />
         </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-9 w-20" />
-          <Skeleton className="h-9 w-28" />
-          <Skeleton className="h-9 w-28" />
+        <div className="flex gap-4">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-48" />
         </div>
-        <Skeleton className="h-64" />
+        <Skeleton className="h-96" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Grupos"
-        description="Gerencie os grupos do WhatsApp"
-        tabs={[
-          { label: "Todos", value: "all", count: gruposCadastrados.length },
-          { label: "Categorizados", value: "with-category", count: withCategoryCount },
-          { label: "Sem Categoria", value: "without-category", count: withoutCategoryCount },
-        ]}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        actions={
-          <div className="flex items-center gap-2">
-            {isConnected && (
-              <>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9"
-                  onClick={() => fetchWhatsAppGroups(true)}
-                  disabled={isRefreshing}
-                >
-                  <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-                </Button>
-                <Button onClick={() => setDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar
-                </Button>
-              </>
+    <div className="flex-1 space-y-6 p-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Grupos</h2>
+          <p className="text-muted-foreground">Visualize e gerencie seus grupos do WhatsApp.</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon">
+            <Bell className="h-5 w-5 text-muted-foreground" />
+          </Button>
+          {isConnected && (
+            <Button onClick={() => setDialogOpen(true)}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Sincronizar Grupos
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome..."
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Categoria: Todas" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Categoria: Todas</SelectItem>
+            {categorias.map(cat => (
+              <SelectItem key={cat.id} value={String(cat.id)}>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: cat.cor }} />
+                  {cat.nome}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Status: Todos" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Status: Todos</SelectItem>
+            <SelectItem value="active">Ativo</SelectItem>
+            <SelectItem value="archived">Arquivado</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Groups Table */}
+      {gruposCadastrados.length > 0 ? (
+        <Card>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="font-medium">Nome do Grupo</TableHead>
+                  <TableHead className="font-medium">Categorias</TableHead>
+                  <TableHead className="font-medium">Membros</TableHead>
+                  <TableHead className="font-medium">Status</TableHead>
+                  <TableHead className="font-medium text-right">Acoes</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedGrupos.map((grupo) => (
+                  <TableRow
+                    key={grupo.id}
+                    className="hover:bg-muted/50 cursor-pointer"
+                    onClick={() => handleOpenEditDialog(grupo)}
+                  >
+                    <TableCell className="font-medium">{grupo.nome}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {grupo.categorias && grupo.categorias.length > 0 ? (
+                          grupo.categorias.map(catId => (
+                            <Badge
+                              key={catId}
+                              variant="secondary"
+                              className="text-xs"
+                              style={{
+                                backgroundColor: getCategoryColor(catId) + "20",
+                                color: getCategoryColor(catId),
+                              }}
+                            >
+                              <span
+                                className="w-1.5 h-1.5 rounded-full mr-1"
+                                style={{ backgroundColor: getCategoryColor(catId) }}
+                              />
+                              {getCategoryName(catId)}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>-</TableCell>
+                    <TableCell>
+                      <Badge variant={grupo.ativo ? "default" : "secondary"} className={cn(
+                        grupo.ativo
+                          ? "bg-green-100 text-green-800 hover:bg-green-100"
+                          : "bg-red-100 text-red-800 hover:bg-red-100"
+                      )}>
+                        {grupo.ativo ? "Ativo" : "Arquivado"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation()
+                            handleOpenEditDialog(grupo)
+                          }}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleOpenDeleteDialog(grupo)
+                            }}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between p-4 border-t">
+            <span className="text-sm text-muted-foreground">
+              Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredGrupos.length)} de {filteredGrupos.length} grupos
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              {Array.from({ length: Math.min(totalPages, 3) }, (_, i) => {
+                const page = i + 1
+                return (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </Button>
+                )
+              })}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <Card className="p-12">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Nenhum grupo cadastrado</h3>
+            <p className="text-muted-foreground mb-6">
+              {isConnected
+                ? "Adicione grupos do WhatsApp para gerencia-los"
+                : "Conecte uma instancia WhatsApp primeiro"}
+            </p>
+            {isConnected ? (
+              <Button onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Grupos
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link href="/instances">
+                  <Smartphone className="h-4 w-4 mr-2" />
+                  Ver Instancias
+                </Link>
+              </Button>
             )}
           </div>
-        }
-      />
-
-      {/* Lista de grupos cadastrados */}
-      {gruposCadastrados.length > 0 ? (
-        <GroupsTable
-          grupos={gruposCadastrados}
-          categorias={categorias}
-          onConfigGroup={handleOpenEditDialog}
-        />
-      ) : (
-        <EmptyState
-          icon={Users}
-          title={activeTab === "all" ? "Nenhum grupo cadastrado" : `Nenhum grupo ${activeTab === "with-category" ? "categorizado" : "sem categoria"}`}
-          description={
-            activeTab === "all"
-              ? isConnected
-                ? "Adicione grupos do WhatsApp para gerencia-los com a IA"
-                : "Conecte uma instancia WhatsApp primeiro para sincronizar grupos"
-              : activeTab === "with-category"
-                ? "Nenhum grupo foi categorizado ainda"
-                : "Todos os grupos estao categorizados"
-          }
-          action={
-            activeTab === "all"
-              ? isConnected
-                ? { label: "Adicionar Grupos", onClick: () => setDialogOpen(true), icon: Plus }
-                : { label: "Ver Instancias", href: "/instances", icon: Smartphone }
-              : undefined
-          }
-          secondaryActions={
-            activeTab === "all" && isConnected
-              ? [
-                  {
-                    icon: Tags,
-                    title: "Criar Categorias",
-                    description: "Organize seus grupos por categorias",
-                    href: "/categories",
-                  },
-                  {
-                    icon: Zap,
-                    title: "Configurar Gatilhos",
-                    description: "Automatize acoes nos grupos",
-                    href: "/triggers",
-                  },
-                ]
-              : undefined
-          }
-        />
+        </Card>
       )}
 
-      {/* Modal de selecao de grupos - Compacto */}
+      {/* Footer */}
+      <footer className="py-4 text-center text-sm text-muted-foreground border-t">
+        <p>Copyright &copy; 2025 Sincron Grupos</p>
+      </footer>
+
+      {/* Sync Groups Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => {
         setDialogOpen(open)
-        if (!open) setSearchFilter("")
+        if (!open) setModalSearchFilter("")
       }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col p-4 sm:p-6">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-              Adicionar Grupos
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Sincronizar Grupos
             </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
+            <DialogDescription>
               Selecione grupos e categorias
             </DialogDescription>
           </DialogHeader>
 
-          {/* Campo de pesquisa */}
           {gruposNaoCadastrados.length > 0 && (
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Pesquisar..."
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                className="pl-8 h-8 sm:h-9 text-sm"
+                value={modalSearchFilter}
+                onChange={(e) => setModalSearchFilter(e.target.value)}
+                className="pl-9"
               />
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto py-2 space-y-1.5">
+          <div className="flex-1 overflow-y-auto py-2 space-y-2">
             {loadingGroups ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -557,47 +728,45 @@ export default function GroupsPage() {
                 <div className="p-3 rounded-xl bg-muted mb-3">
                   <Check className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-sm font-semibold">Todos ja adicionados!</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <h3 className="font-semibold">Todos ja adicionados!</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">
                   Nenhum grupo disponivel
                 </p>
               </div>
             ) : (
               gruposNaoCadastrados
-                .filter((g) => g.name.toLowerCase().includes(searchFilter.toLowerCase()))
+                .filter((g) => g.name.toLowerCase().includes(modalSearchFilter.toLowerCase()))
                 .map((group) => (
                 <div
                   key={group.id}
                   className={cn(
-                    "rounded-lg border transition-all p-2.5 sm:p-3",
+                    "rounded-lg border transition-all p-3",
                     selectedGroups.has(group.id)
-                      ? "ring-2 ring-foreground bg-muted/50"
+                      ? "ring-2 ring-primary bg-muted/50"
                       : "hover:bg-muted/30"
                   )}
                 >
-                  <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex items-center gap-3">
                     <Checkbox
                       checked={selectedGroups.has(group.id)}
                       onCheckedChange={() => toggleGroupSelection(group.id)}
-                      className="h-4 w-4"
                     />
-                    <Avatar className="h-8 w-8 shrink-0 grayscale">
+                    <Avatar className="h-10 w-10 shrink-0">
                       <AvatarImage src={group.picture || undefined} />
                       <AvatarFallback className="bg-muted">
                         <Users className="h-4 w-4 text-muted-foreground" />
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{group.name}</p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">
-                        {group.participants ? `${group.participants} part.` : "WhatsApp"}
+                      <p className="font-medium truncate">{group.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {group.participants ? `${group.participants} participantes` : "WhatsApp"}
                       </p>
                     </div>
                   </div>
 
-                  {/* Categorias - aparece quando grupo esta selecionado */}
                   {selectedGroups.has(group.id) && categorias.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t">
+                    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
                       {categorias.map((cat) => {
                         const isSelected = (selectedCategories[group.id] || []).includes(cat.id)
                         return (
@@ -606,7 +775,7 @@ export default function GroupsPage() {
                             type="button"
                             onClick={() => toggleCategoryForGroup(group.id, cat.id)}
                             className={cn(
-                              "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium transition-all",
+                              "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all",
                               !isSelected && "opacity-60 hover:opacity-100"
                             )}
                             style={{
@@ -614,15 +783,14 @@ export default function GroupsPage() {
                               borderColor: cat.cor,
                               color: cat.cor,
                               border: `1px solid ${cat.cor}`,
-                              boxShadow: isSelected ? `0 0 0 1px ${cat.cor}40` : "none"
                             }}
                           >
                             <div
-                              className="h-1.5 w-1.5 rounded-full"
+                              className="h-2 w-2 rounded-full"
                               style={{ backgroundColor: cat.cor }}
                             />
                             {cat.nome}
-                            {isSelected && <Check className="h-2.5 w-2.5" />}
+                            {isSelected && <Check className="h-3 w-3" />}
                           </button>
                         )
                       })}
@@ -631,197 +799,119 @@ export default function GroupsPage() {
                 </div>
               ))
             )}
-            {gruposNaoCadastrados.length > 0 &&
-             searchFilter &&
-             gruposNaoCadastrados.filter((g) => g.name.toLowerCase().includes(searchFilter.toLowerCase())).length === 0 && (
-              <div className="flex flex-col items-center justify-center py-6 text-center">
-                <Search className="h-6 w-6 text-muted-foreground mb-2" />
-                <p className="text-xs text-muted-foreground">
-                  Nenhum resultado para &quot;{searchFilter}&quot;
-                </p>
-              </div>
-            )}
           </div>
 
-          <DialogFooter className="border-t pt-3 flex-col sm:flex-row gap-2">
-            <p className="text-xs text-muted-foreground sm:flex-1">
+          <DialogFooter className="border-t pt-4">
+            <p className="text-sm text-muted-foreground flex-1">
               {selectedGroups.size} selecionado(s)
             </p>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 sm:flex-initial h-8"
-                onClick={() => {
-                  setDialogOpen(false)
-                  setSelectedGroups(new Set())
-                  setSelectedCategories({})
-                }}
-                disabled={saving}
-              >
-                Cancelar
-              </Button>
-              <Button
-                size="sm"
-                className="flex-1 sm:flex-initial h-8"
-                onClick={handleSaveGroups}
-                disabled={saving || selectedGroups.size === 0}
-              >
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Check className="h-4 w-4 sm:mr-1.5" />
-                    <span className="hidden sm:inline">Adicionar</span>
-                  </>
-                )}
-              </Button>
-            </div>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveGroups} disabled={saving || selectedGroups.size === 0}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de edicao de grupo - Compacto */}
+      {/* Edit Group Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-sm p-4 sm:p-6">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <Pencil className="h-4 w-4" />
-              Editar Grupo
-            </DialogTitle>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Grupo</DialogTitle>
           </DialogHeader>
 
           {editingGroup && (
-            <div className="space-y-3">
-              {/* Nome do grupo */}
-              <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/50">
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-medium text-sm truncate">{editingGroup.nome}</p>
-                  <p className="text-[10px] text-muted-foreground">WhatsApp</p>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-muted-foreground text-sm">Nome do grupo</Label>
+                <Input value={editingGroup.nome} disabled className="bg-muted mt-1" />
+              </div>
+
+              <div>
+                <Label className="text-sm">Categorias</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {categorias.map(cat => {
+                    const isSelected = editGroupCategories.includes(cat.id)
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => toggleEditCategory(cat.id)}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all border",
+                          isSelected && "ring-2 ring-offset-1"
+                        )}
+                        style={{
+                          backgroundColor: isSelected ? cat.cor + "20" : "transparent",
+                          borderColor: cat.cor,
+                          color: cat.cor,
+                          boxShadow: isSelected ? `0 0 0 2px ${cat.cor}40` : "none",
+                        }}
+                      >
+                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: cat.cor }} />
+                        {cat.nome}
+                        {isSelected && <Check className="h-3 w-3" />}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
-              {/* Seletor de categorias (multiplas) */}
-              <div className="space-y-1.5">
-                <Label className="text-sm">Categorias</Label>
-                <div className="space-y-1.5">
-                  {categorias.map(cat => (
-                    <label
-                      key={cat.id}
-                      className={cn(
-                        "flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors",
-                        editGroupCategories.includes(cat.id)
-                          ? "border-foreground bg-muted/50"
-                          : "border-border hover:bg-muted/30"
-                      )}
-                    >
-                      <Checkbox
-                        checked={editGroupCategories.includes(cat.id)}
-                        onCheckedChange={() => toggleEditCategory(cat.id)}
-                        className="h-4 w-4"
-                      />
-                      <div
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: cat.cor }}
-                      />
-                      <span className="font-medium text-sm">{cat.nome}</span>
-                    </label>
-                  ))}
-                </div>
-                {editGroupCategories.length === 0 && (
-                  <p className="text-[10px] text-muted-foreground">
-                    Sem categoria selecionada
-                  </p>
-                )}
+              <div>
+                <Label className="text-muted-foreground text-sm">ID WhatsApp</Label>
+                <Input value={editingGroup.chat_id_whatsapp} disabled className="bg-muted mt-1 text-xs" />
               </div>
             </div>
           )}
 
-          <DialogFooter className="pt-3 gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8"
-              onClick={() => setEditDialogOpen(false)}
-              disabled={savingEdit}
-            >
+          <DialogFooter className="bg-muted -mx-6 -mb-6 mt-6 p-4 rounded-b-lg">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} disabled={savingEdit}>
               Cancelar
             </Button>
-            <Button size="sm" className="h-8" onClick={handleSaveEdit} disabled={savingEdit}>
-              {savingEdit ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <Check className="h-4 w-4 mr-1.5" />
-                  Salvar
-                </>
-              )}
+            <Button onClick={handleSaveEdit} disabled={savingEdit}>
+              {savingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar Alteracoes"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de confirmacao de exclusao - Compacto */}
+      {/* Delete Group Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-sm p-4 sm:p-6">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="flex items-center gap-2 text-base text-destructive">
-              <AlertTriangle className="h-4 w-4" />
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
               Excluir Grupo
             </DialogTitle>
           </DialogHeader>
 
           {groupToDelete && (
-            <div className="space-y-3">
-              {/* Nome do grupo */}
-              <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/50">
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
+                <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center">
+                  <Users className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <div className="min-w-0">
-                  <p className="font-medium text-sm truncate">{groupToDelete.nome}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {groupToDelete.categorias && groupToDelete.categorias.length > 0
-                      ? `${groupToDelete.categorias.length} cat.`
-                      : "Sem categoria"}
+                <div>
+                  <p className="font-medium">{groupToDelete.nome}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {groupToDelete.categorias?.length || 0} categoria(s)
                   </p>
                 </div>
               </div>
-
-              <p className="text-xs text-muted-foreground">
-                Sera removido do sistema mas continuara no WhatsApp.
+              <p className="text-sm text-muted-foreground">
+                O grupo sera removido do sistema mas continuara no WhatsApp.
               </p>
             </div>
           )}
 
-          <DialogFooter className="pt-3 gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8"
-              onClick={() => setDeleteDialogOpen(false)}
-              disabled={deletingGroup}
-            >
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deletingGroup}>
               Cancelar
             </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              className="h-8"
-              onClick={handleDeleteGroup}
-              disabled={deletingGroup}
-            >
-              {deletingGroup ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <Trash2 className="h-4 w-4 mr-1.5" />
-                  Excluir
-                </>
-              )}
+            <Button variant="destructive" onClick={handleDeleteGroup} disabled={deletingGroup}>
+              {deletingGroup ? <Loader2 className="h-4 w-4 animate-spin" /> : "Excluir"}
             </Button>
           </DialogFooter>
         </DialogContent>

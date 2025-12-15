@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -24,12 +25,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
-  Megaphone,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
   Plus,
   Send,
   Clock,
-  CheckCircle2,
-  XCircle,
   Loader2,
   FileText,
   Image,
@@ -38,21 +53,33 @@ import {
   Calendar,
   Users,
   Tag,
+  Search,
+  Bell,
+  CheckCheck,
+  MoreVertical,
+  Pencil,
   Trash2,
+  Filter,
+  Download,
+  Lightbulb,
+  Bold,
+  Italic,
+  Link as LinkIcon,
+  Smile,
+  Save,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
 
 type TipoMensagem = "texto" | "imagem" | "video" | "audio"
 type TipoDestinatario = "grupos" | "categoria"
-type StatusMensagem = "pendente" | "enviando" | "concluido" | "erro" | "cancelado"
+type StatusMensagem = "pendente" | "enviando" | "concluido" | "erro" | "cancelado" | "rascunho"
 
 interface Categoria {
   id: number
   nome: string
+  cor?: string
 }
 
 interface Grupo {
@@ -64,6 +91,7 @@ interface Grupo {
 
 interface MensagemProgramada {
   id: number
+  titulo?: string
   tipo_mensagem: TipoMensagem
   conteudo_texto: string | null
   url_midia: string | null
@@ -85,14 +113,6 @@ const TIPOS_MENSAGEM = [
   { value: "audio" as TipoMensagem, label: "Audio", icon: AudioLines },
 ]
 
-const STATUS_CONFIG: Record<StatusMensagem, { label: string; color: string; icon: typeof Clock }> = {
-  pendente: { label: "Pendente", color: "bg-muted text-muted-foreground", icon: Clock },
-  enviando: { label: "Enviando", color: "bg-muted text-foreground", icon: Loader2 },
-  concluido: { label: "Concluido", color: "bg-foreground text-background", icon: CheckCircle2 },
-  erro: { label: "Erro", color: "bg-destructive text-destructive-foreground", icon: XCircle },
-  cancelado: { label: "Cancelado", color: "bg-muted text-muted-foreground", icon: XCircle },
-}
-
 export default function MessagesPage() {
   const [mensagens, setMensagens] = useState<MensagemProgramada[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -100,13 +120,17 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true)
   const [instanceToken, setInstanceToken] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
-  const [filtroStatus, setFiltroStatus] = useState<"todas" | StatusMensagem>("todas")
+
+  // Filter state
+  const [searchFilter, setSearchFilter] = useState("")
+  const [activeTab, setActiveTab] = useState("all")
 
   // Modal state
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
   // Form state
+  const [tituloMensagem, setTituloMensagem] = useState("")
   const [tipoMensagem, setTipoMensagem] = useState<TipoMensagem>("texto")
   const [tipoDestinatario, setTipoDestinatario] = useState<TipoDestinatario>("grupos")
   const [gruposSelecionados, setGruposSelecionados] = useState<Set<number>>(new Set())
@@ -119,6 +143,44 @@ export default function MessagesPage() {
   const [horaAgendamento, setHoraAgendamento] = useState("")
 
   const supabase = createClient()
+
+  // Contagens para tabs
+  const counts = useMemo(() => {
+    const all = mensagens.length
+    const scheduled = mensagens.filter(m => m.status === "pendente" && m.dt_agendamento).length
+    const sent = mensagens.filter(m => m.status === "concluido").length
+    const drafts = mensagens.filter(m => m.status === "rascunho").length
+    return { all, scheduled, sent, drafts }
+  }, [mensagens])
+
+  // Mensagens filtradas por tab e busca
+  const filteredMensagens = useMemo(() => {
+    return mensagens.filter(m => {
+      const matchesSearch = !searchFilter ||
+        (m.titulo?.toLowerCase().includes(searchFilter.toLowerCase())) ||
+        (m.conteudo_texto?.toLowerCase().includes(searchFilter.toLowerCase()))
+
+      let matchesTab = true
+      switch (activeTab) {
+        case "scheduled":
+          matchesTab = m.status === "pendente" && !!m.dt_agendamento
+          break
+        case "sent":
+          matchesTab = m.status === "concluido"
+          break
+        case "drafts":
+          matchesTab = m.status === "rascunho"
+          break
+      }
+
+      return matchesSearch && matchesTab
+    })
+  }, [mensagens, searchFilter, activeTab])
+
+  // Agrupar por tipo
+  const agendadas = filteredMensagens.filter(m => m.status === "pendente" && m.dt_agendamento)
+  const enviadas = filteredMensagens.filter(m => m.status === "concluido")
+  const rascunhos = filteredMensagens.filter(m => m.status === "rascunho")
 
   const loadData = useCallback(async () => {
     try {
@@ -149,7 +211,7 @@ export default function MessagesPage() {
       // Buscar categorias
       const { data: cats } = await supabase
         .from("categorias")
-        .select("id, nome")
+        .select("id, nome, cor")
         .eq("id_organizacao", usuarioSistema.id_organizacao)
         .eq("ativo", true)
         .order("ordem", { ascending: true })
@@ -186,6 +248,7 @@ export default function MessagesPage() {
   }, [loadData])
 
   const resetForm = () => {
+    setTituloMensagem("")
     setTipoMensagem("texto")
     setTipoDestinatario("grupos")
     setGruposSelecionados(new Set())
@@ -208,27 +271,36 @@ export default function MessagesPage() {
     setGruposSelecionados(newSet)
   }
 
-  const handleSaveMensagem = async () => {
-    // Validacoes
-    if (tipoDestinatario === "grupos" && gruposSelecionados.size === 0) {
-      toast.error("Selecione pelo menos um grupo")
-      return
+  const selectAllGrupos = () => {
+    if (gruposSelecionados.size === grupos.length) {
+      setGruposSelecionados(new Set())
+    } else {
+      setGruposSelecionados(new Set(grupos.map(g => g.id)))
     }
-    if (tipoDestinatario === "categoria" && !categoriaSelecionada) {
-      toast.error("Selecione uma categoria")
-      return
-    }
-    if (tipoMensagem === "texto" && !conteudoTexto.trim()) {
-      toast.error("Digite o texto da mensagem")
-      return
-    }
-    if (tipoMensagem !== "texto" && !urlMidia.trim()) {
-      toast.error("Informe a URL da midia")
-      return
-    }
-    if (!enviarAgora && (!dataAgendamento || !horaAgendamento)) {
-      toast.error("Informe data e hora do agendamento")
-      return
+  }
+
+  const handleSaveMensagem = async (saveAsDraft = false) => {
+    if (!saveAsDraft) {
+      if (tipoDestinatario === "grupos" && gruposSelecionados.size === 0) {
+        toast.error("Selecione pelo menos um grupo")
+        return
+      }
+      if (tipoDestinatario === "categoria" && !categoriaSelecionada) {
+        toast.error("Selecione uma categoria")
+        return
+      }
+      if (tipoMensagem === "texto" && !conteudoTexto.trim()) {
+        toast.error("Digite o texto da mensagem")
+        return
+      }
+      if (tipoMensagem !== "texto" && !urlMidia.trim()) {
+        toast.error("Informe a URL da midia")
+        return
+      }
+      if (!enviarAgora && (!dataAgendamento || !horaAgendamento)) {
+        toast.error("Informe data e hora do agendamento")
+        return
+      }
     }
 
     setSaving(true)
@@ -244,25 +316,24 @@ export default function MessagesPage() {
 
       if (!usuarioSistema) throw new Error("Usuario nao encontrado")
 
-      // Montar data de agendamento
       let dtAgendamento: string | null = null
       if (!enviarAgora && dataAgendamento && horaAgendamento) {
         dtAgendamento = new Date(`${dataAgendamento}T${horaAgendamento}`).toISOString()
       }
 
-      // Inserir mensagem
       const { data: novaMensagem, error } = await supabase
         .from("mensagens_programadas")
         .insert({
           id_organizacao: usuarioSistema.id_organizacao,
+          titulo: tituloMensagem || null,
           tipo_mensagem: tipoMensagem,
           conteudo_texto: tipoMensagem === "texto" ? conteudoTexto : legendaMidia || null,
           url_midia: tipoMensagem !== "texto" ? urlMidia : null,
           grupos_ids: tipoDestinatario === "grupos" ? Array.from(gruposSelecionados) : null,
           categoria_id: tipoDestinatario === "categoria" ? categoriaSelecionada : null,
-          enviar_agora: enviarAgora,
+          enviar_agora: saveAsDraft ? false : enviarAgora,
           dt_agendamento: dtAgendamento,
-          status: enviarAgora ? "enviando" : "pendente",
+          status: saveAsDraft ? "rascunho" : (enviarAgora ? "enviando" : "pendente"),
           criado_por: usuarioSistema.id,
         })
         .select()
@@ -270,12 +341,11 @@ export default function MessagesPage() {
 
       if (error) throw error
 
-      // Se for enviar agora, processar envio
-      if (enviarAgora && instanceToken && novaMensagem) {
+      if (!saveAsDraft && enviarAgora && instanceToken && novaMensagem) {
         await processarEnvio(novaMensagem as MensagemProgramada)
       }
 
-      toast.success(enviarAgora ? "Mensagem enviada!" : "Mensagem agendada!")
+      toast.success(saveAsDraft ? "Rascunho salvo!" : (enviarAgora ? "Mensagem enviada!" : "Mensagem agendada!"))
       setDialogOpen(false)
       resetForm()
       loadData()
@@ -291,7 +361,6 @@ export default function MessagesPage() {
     if (!instanceToken) return
 
     try {
-      // Determinar grupos para enviar
       let gruposParaEnviar: Grupo[] = []
 
       if (mensagem.grupos_ids && mensagem.grupos_ids.length > 0) {
@@ -304,7 +373,6 @@ export default function MessagesPage() {
         throw new Error("Nenhum grupo encontrado para enviar")
       }
 
-      // Enviar para cada grupo
       let erros: string[] = []
       for (const grupo of gruposParaEnviar) {
         try {
@@ -342,14 +410,12 @@ export default function MessagesPage() {
             erros.push(`Erro ao enviar para ${grupo.nome}`)
           }
 
-          // Pequeno delay entre envios
           await new Promise(resolve => setTimeout(resolve, 500))
         } catch {
           erros.push(`Erro ao enviar para ${grupo.nome}`)
         }
       }
 
-      // Atualizar status
       await supabase
         .from("mensagens_programadas")
         .update({
@@ -358,7 +424,6 @@ export default function MessagesPage() {
           erro_mensagem: erros.length > 0 ? erros.join("; ") : null,
         })
         .eq("id", mensagem.id)
-
     } catch (err) {
       console.error("Erro no processamento:", err)
       await supabase
@@ -368,20 +433,6 @@ export default function MessagesPage() {
           erro_mensagem: err instanceof Error ? err.message : "Erro desconhecido",
         })
         .eq("id", mensagem.id)
-    }
-  }
-
-  const handleCancelar = async (mensagemId: number) => {
-    try {
-      await supabase
-        .from("mensagens_programadas")
-        .update({ status: "cancelado" })
-        .eq("id", mensagemId)
-
-      toast.success("Mensagem cancelada")
-      loadData()
-    } catch {
-      toast.error("Erro ao cancelar mensagem")
     }
   }
 
@@ -399,389 +450,564 @@ export default function MessagesPage() {
     }
   }
 
-  const mensagensFiltradas = filtroStatus === "todas"
-    ? mensagens
-    : mensagens.filter(m => m.status === filtroStatus)
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "-"
+    const date = new Date(dateStr)
+    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) +
+      " as " + date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+  }
 
-  const getDestinatarioLabel = (mensagem: MensagemProgramada) => {
+  const getTimeAgo = (dateStr: string | null) => {
+    if (!dateStr) return "-"
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffDays > 0) return diffDays === 1 ? "Enviado ontem" : `Enviado ha ${diffDays} dias`
+    if (diffHours > 0) return `Enviado ha ${diffHours} hora${diffHours > 1 ? 's' : ''}`
+    return "Enviado agora"
+  }
+
+  const getGruposCount = (mensagem: MensagemProgramada) => {
+    if (mensagem.grupos_ids) return mensagem.grupos_ids.length
     if (mensagem.categoria_id) {
-      const cat = categorias.find(c => c.id === mensagem.categoria_id)
-      return `Categoria: ${cat?.nome || "?"}`
+      return grupos.filter(g => g.id_categoria === mensagem.categoria_id).length
     }
-    if (mensagem.grupos_ids && mensagem.grupos_ids.length > 0) {
-      return `${mensagem.grupos_ids.length} grupo(s)`
-    }
-    return "-"
+    return 0
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Card className="p-6">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </Card>
+      <div className="flex-1 space-y-6 p-8">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+        </div>
+        <Skeleton className="h-10 w-full" />
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-32" />)}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      {/* Header - Compacto */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Mensagens</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Envio em massa
-          </p>
+    <div className="flex-1 space-y-6 p-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Mensagens em Massa</h2>
+          <p className="text-muted-foreground">Gerencie e programe mensagens para seus grupos.</p>
         </div>
-        {isConnected && (
-          <Button size="sm" className="shrink-0 h-8 sm:h-9" onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Nova</span>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon">
+            <Bell className="h-5 w-5 text-muted-foreground" />
           </Button>
-        )}
+        </div>
       </div>
 
-      {/* Filtros - Compactos */}
-      <div className="flex gap-1.5 flex-wrap">
-        <Button
-          variant={filtroStatus === "todas" ? "default" : "outline"}
-          size="sm"
-          className="h-7 text-xs px-2"
-          onClick={() => setFiltroStatus("todas")}
-        >
-          Todas
-        </Button>
-        <Button
-          variant={filtroStatus === "pendente" ? "default" : "outline"}
-          size="sm"
-          className="h-7 text-xs px-2"
-          onClick={() => setFiltroStatus("pendente")}
-        >
-          <Clock className="h-3 w-3 mr-1" />
-          Pend.
-        </Button>
-        <Button
-          variant={filtroStatus === "concluido" ? "default" : "outline"}
-          size="sm"
-          className="h-7 text-xs px-2"
-          onClick={() => setFiltroStatus("concluido")}
-        >
-          <CheckCircle2 className="h-3 w-3 mr-1" />
-          Enviadas
-        </Button>
-        <Button
-          variant={filtroStatus === "erro" ? "default" : "outline"}
-          size="sm"
-          className="h-7 text-xs px-2"
-          onClick={() => setFiltroStatus("erro")}
-        >
-          <XCircle className="h-3 w-3 mr-1" />
-          Erros
-        </Button>
+      {/* Actions & Search */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          {isConnected && (
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Mensagem
+            </Button>
+          )}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon">
+              <Filter className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="relative w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar mensagens..."
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="pl-9"
+          />
+        </div>
       </div>
 
-      {/* Lista de mensagens - Compacta */}
-      {mensagensFiltradas.length > 0 ? (
-        <Card>
-          <CardHeader className="p-3 sm:p-4 pb-2">
-            <div className="flex items-center gap-2">
-              <Megaphone className="h-4 w-4 text-muted-foreground" />
-              <CardTitle className="text-sm sm:text-base font-medium">Historico</CardTitle>
-              <Badge variant="secondary" className="text-[10px] ml-auto">
-                {mensagensFiltradas.length}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y">
-              {mensagensFiltradas.map((mensagem) => {
-                const StatusIcon = STATUS_CONFIG[mensagem.status].icon
-                const tipoConfig = TIPOS_MENSAGEM.find(t => t.value === mensagem.tipo_mensagem)
-                const TipoIcon = tipoConfig?.icon || FileText
+      {/* Tabs */}
+      <div className="border-b">
+        <div className="flex items-center gap-6">
+          <button
+            onClick={() => setActiveTab("all")}
+            className={cn(
+              "pb-3 border-b-2 transition-colors",
+              activeTab === "all"
+                ? "border-primary text-primary font-semibold"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Todas
+            <Badge variant="secondary" className={cn("ml-1.5", activeTab === "all" ? "bg-primary/10 text-primary" : "")}>
+              {counts.all}
+            </Badge>
+          </button>
+          <button
+            onClick={() => setActiveTab("scheduled")}
+            className={cn(
+              "pb-3 border-b-2 transition-colors",
+              activeTab === "scheduled"
+                ? "border-primary text-primary font-semibold"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Agendadas
+            <Badge variant="secondary" className="ml-1.5">{counts.scheduled}</Badge>
+          </button>
+          <button
+            onClick={() => setActiveTab("sent")}
+            className={cn(
+              "pb-3 border-b-2 transition-colors",
+              activeTab === "sent"
+                ? "border-primary text-primary font-semibold"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Enviadas
+            <Badge variant="secondary" className="ml-1.5">{counts.sent}</Badge>
+          </button>
+          <button
+            onClick={() => setActiveTab("drafts")}
+            className={cn(
+              "pb-3 border-b-2 transition-colors",
+              activeTab === "drafts"
+                ? "border-primary text-primary font-semibold"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Rascunhos
+            <Badge variant="secondary" className="ml-1.5">{counts.drafts}</Badge>
+          </button>
+        </div>
+      </div>
 
-                return (
-                  <div key={mensagem.id} className="px-3 sm:px-4 py-2.5 hover:bg-muted/30 transition-colors group/item">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                        <TipoIcon className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">
-                          {mensagem.tipo_mensagem === "texto"
-                            ? mensagem.conteudo_texto?.substring(0, 40) + (mensagem.conteudo_texto && mensagem.conteudo_texto.length > 40 ? "..." : "")
-                            : `${tipoConfig?.label || mensagem.tipo_mensagem}${mensagem.conteudo_texto ? `: ${mensagem.conteudo_texto.substring(0, 20)}...` : ""}`
-                          }
-                        </p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                          {getDestinatarioLabel(mensagem)}
-                          {mensagem.dt_agendamento && !mensagem.enviar_agora && (
-                            <span className="hidden sm:inline"> • {format(new Date(mensagem.dt_agendamento), "dd/MM HH:mm", { locale: ptBR })}</span>
-                          )}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Badge className={cn("text-[10px] px-1.5 py-0 h-5", STATUS_CONFIG[mensagem.status].color)}>
-                          <StatusIcon className={cn("h-2.5 w-2.5 mr-0.5", mensagem.status === "enviando" && "animate-spin")} />
-                          <span className="hidden sm:inline">{STATUS_CONFIG[mensagem.status].label}</span>
-                        </Badge>
-                        {mensagem.status === "pendente" && (
-                          <Button variant="ghost" size="sm" className="h-7 text-xs sm:opacity-0 sm:group-hover/item:opacity-100" onClick={() => handleCancelar(mensagem.id)}>
-                            <XCircle className="h-3.5 w-3.5 sm:mr-1" />
-                            <span className="hidden sm:inline">Cancelar</span>
-                          </Button>
-                        )}
-                        {(mensagem.status === "concluido" || mensagem.status === "erro" || mensagem.status === "cancelado") && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 sm:opacity-0 sm:group-hover/item:opacity-100" onClick={() => handleExcluir(mensagem.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    {mensagem.erro_mensagem && (
-                      <p className="text-[10px] text-destructive mt-1 ml-10 truncate">
-                        {mensagem.erro_mensagem}
-                      </p>
-                    )}
-                  </div>
-                )
-              })}
+      {/* Messages Content */}
+      {filteredMensagens.length === 0 ? (
+        <Card className="p-12">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+              <Send className="h-8 w-8 text-muted-foreground" />
             </div>
-          </CardContent>
+            <h3 className="text-lg font-semibold mb-2">Nenhuma mensagem</h3>
+            <p className="text-muted-foreground mb-6">
+              {isConnected
+                ? "Crie sua primeira mensagem para seus grupos"
+                : "Conecte uma instancia primeiro"}
+            </p>
+            {isConnected ? (
+              <Button onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Mensagem
+              </Button>
+            ) : (
+              <a href="/instances">
+                <Button variant="outline">Ver Instancias</Button>
+              </a>
+            )}
+          </div>
         </Card>
       ) : (
-        <Card className="p-6 text-center">
-          <div className="mx-auto w-fit p-3 rounded-xl bg-muted mb-3">
-            <Megaphone className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-base font-semibold mb-1">
-            {filtroStatus === "todas" ? "Nenhuma mensagem" : `Nenhuma ${STATUS_CONFIG[filtroStatus as StatusMensagem]?.label.toLowerCase()}`}
-          </h3>
-          <p className="text-muted-foreground text-sm mb-4 max-w-xs mx-auto">
-            {isConnected
-              ? "Crie sua primeira mensagem"
-              : "Conecte uma instancia primeiro"}
-          </p>
-          {isConnected ? (
-            <Button size="sm" onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova
-            </Button>
-          ) : (
-            <a href="/instances">
-              <Button variant="outline" size="sm">Ver Instancias</Button>
-            </a>
+        <div className="space-y-8">
+          {/* Agendadas */}
+          {(activeTab === "all" || activeTab === "scheduled") && agendadas.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold">Mensagens Agendadas</h3>
+                <span className="text-sm text-muted-foreground">{agendadas.length} mensagens</span>
+              </div>
+
+              {agendadas.map(msg => (
+                <Card key={msg.id} className="p-5 hover:border-primary transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                        <Clock className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-semibold">{msg.titulo || "Mensagem agendada"}</h4>
+                          <Badge variant="secondary" className="bg-accent/10 text-accent text-xs">Agendada</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
+                          {msg.conteudo_texto || "-"}
+                        </p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(msg.dt_agendamento)}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <Users className="h-3 w-3" />
+                            {getGruposCount(msg)} grupos
+                          </span>
+                          {msg.categoria_id && (
+                            <span className="flex items-center gap-1.5">
+                              <Tag className="h-3 w-3" />
+                              {categorias.find(c => c.id === msg.categoria_id)?.nome || "Categoria"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Pencil className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir mensagem?</AlertDialogTitle>
+                            <AlertDialogDescription>Esta acao nao pode ser desfeita.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleExcluir(msg.id)} className="bg-destructive text-destructive-foreground">
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </section>
           )}
-        </Card>
+
+          {/* Enviadas */}
+          {(activeTab === "all" || activeTab === "sent") && enviadas.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold">Mensagens Enviadas Recentemente</h3>
+                <span className="text-sm text-muted-foreground">{enviadas.length} mensagens</span>
+              </div>
+
+              {enviadas.map(msg => (
+                <Card key={msg.id} className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
+                        <CheckCheck className="h-5 w-5 text-accent" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-semibold">{msg.titulo || "Mensagem enviada"}</h4>
+                          <Badge variant="secondary" className="bg-accent/10 text-accent text-xs">Enviada</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
+                          {msg.conteudo_texto || "-"}
+                        </p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="h-3 w-3" />
+                            {getTimeAgo(msg.dt_enviado)}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <Users className="h-3 w-3" />
+                            {getGruposCount(msg)} grupos
+                          </span>
+                          <span className="flex items-center gap-1.5 text-accent">
+                            <CheckCheck className="h-3 w-3" />
+                            Entregue a todos
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleExcluir(msg.id)} className="text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </Card>
+              ))}
+            </section>
+          )}
+
+          {/* Rascunhos */}
+          {(activeTab === "all" || activeTab === "drafts") && rascunhos.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold">Rascunhos</h3>
+                <span className="text-sm text-muted-foreground">{rascunhos.length} mensagens</span>
+              </div>
+
+              {rascunhos.map(msg => (
+                <Card key={msg.id} className="p-5 border-dashed hover:border-primary transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-semibold">{msg.titulo || "Rascunho"}</h4>
+                          <Badge variant="secondary" className="text-xs">Rascunho</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
+                          {msg.conteudo_texto || "-"}
+                        </p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="h-3 w-3" />
+                            Editado {getTimeAgo(msg.dt_create).replace("Enviado", "")}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <Users className="h-3 w-3" />
+                            {getGruposCount(msg) > 0 ? `${getGruposCount(msg)} grupos` : "Sem grupos selecionados"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Pencil className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir rascunho?</AlertDialogTitle>
+                            <AlertDialogDescription>Esta acao nao pode ser desfeita.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleExcluir(msg.id)} className="bg-destructive text-destructive-foreground">
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </section>
+          )}
+        </div>
       )}
 
-      {/* Modal de nova mensagem - Compacto */}
+      {/* Footer */}
+      <footer className="py-4 text-center text-sm text-muted-foreground border-t">
+        <p>Copyright &copy; 2025 Sincron Grupos</p>
+      </footer>
+
+      {/* New Message Modal */}
       <Dialog open={dialogOpen} onOpenChange={(open) => {
         setDialogOpen(open)
         if (!open) resetForm()
       }}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto p-4 sm:p-6">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Megaphone className="h-4 w-4 sm:h-5 sm:w-5" />
-              Nova Mensagem
-            </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
-              Envie ou agende para seus grupos
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nova Mensagem em Massa</DialogTitle>
+            <DialogDescription>
+              Envie ou agende mensagens para seus grupos.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            {/* Tipo de conteudo */}
-            <div className="space-y-1.5">
-              <Label className="text-sm">Tipo</Label>
-              <div className="grid grid-cols-4 gap-1.5">
-                {TIPOS_MENSAGEM.map((tipo) => (
+          <div className="space-y-5">
+            {/* Titulo */}
+            <div className="space-y-2">
+              <Label>Titulo da Mensagem</Label>
+              <Input
+                placeholder="Ex: Promocao Black Friday"
+                value={tituloMensagem}
+                onChange={(e) => setTituloMensagem(e.target.value)}
+              />
+            </div>
+
+            {/* Conteudo */}
+            <div className="space-y-2">
+              <Label>Conteudo da Mensagem</Label>
+              <Textarea
+                placeholder="Digite sua mensagem aqui..."
+                value={conteudoTexto}
+                onChange={(e) => setConteudoTexto(e.target.value)}
+                rows={6}
+              />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Bold className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Italic className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <LinkIcon className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Smile className="h-4 w-4" />
+                  </Button>
+                </div>
+                <span className="text-xs text-muted-foreground">{conteudoTexto.length} / 4096 caracteres</span>
+              </div>
+            </div>
+
+            {/* Selecionar Grupos */}
+            <div className="space-y-2">
+              <Label>Selecionar Grupos</Label>
+              <div className="bg-muted border rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Checkbox
+                    checked={gruposSelecionados.size === grupos.length && grupos.length > 0}
+                    onCheckedChange={selectAllGrupos}
+                  />
+                  <Label className="cursor-pointer">Selecionar todos os grupos ({grupos.length})</Label>
+                </div>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {grupos.map(grupo => (
+                    <div key={grupo.id} className="flex items-center gap-2 p-2 hover:bg-card rounded">
+                      <Checkbox
+                        checked={gruposSelecionados.has(grupo.id)}
+                        onCheckedChange={() => toggleGrupo(grupo.id)}
+                      />
+                      <Label className="cursor-pointer flex-1">{grupo.nome}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">Ou filtre por categoria abaixo</p>
+            </div>
+
+            {/* Filtrar por Categoria */}
+            <div className="space-y-2">
+              <Label>Filtrar por Categorias</Label>
+              <div className="flex flex-wrap gap-2">
+                {categorias.map(cat => (
                   <Button
-                    key={tipo.value}
-                    type="button"
-                    variant={tipoMensagem === tipo.value ? "default" : "outline"}
+                    key={cat.id}
+                    variant="secondary"
                     size="sm"
-                    onClick={() => setTipoMensagem(tipo.value)}
-                    className="h-8 text-xs"
+                    onClick={() => {
+                      setTipoDestinatario("categoria")
+                      setCategoriaSelecionada(cat.id)
+                      const gruposDaCategoria = grupos.filter(g => g.id_categoria === cat.id)
+                      setGruposSelecionados(new Set(gruposDaCategoria.map(g => g.id)))
+                    }}
+                    className={cn(
+                      categoriaSelecionada === cat.id && "bg-primary text-primary-foreground"
+                    )}
                   >
-                    <tipo.icon className="h-3.5 w-3.5 sm:mr-1" />
-                    <span className="hidden sm:inline">{tipo.label}</span>
+                    <Tag className="h-3 w-3 mr-1" />
+                    {cat.nome} ({grupos.filter(g => g.id_categoria === cat.id).length})
                   </Button>
                 ))}
               </div>
             </div>
 
-            {/* Destinatarios */}
-            <div className="space-y-2">
-              <Label className="text-sm">Destinatarios</Label>
-              <div className="flex gap-3 text-sm">
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="tipoDestinatario"
-                    checked={tipoDestinatario === "grupos"}
-                    onChange={() => setTipoDestinatario("grupos")}
-                    className="w-3.5 h-3.5"
-                  />
-                  <Users className="h-3.5 w-3.5" />
-                  Grupos
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="tipoDestinatario"
-                    checked={tipoDestinatario === "categoria"}
-                    onChange={() => setTipoDestinatario("categoria")}
-                    className="w-3.5 h-3.5"
-                  />
-                  <Tag className="h-3.5 w-3.5" />
-                  Categoria
-                </label>
-              </div>
-
-              {tipoDestinatario === "grupos" && (
-                <div className="max-h-32 overflow-y-auto border rounded-lg p-2 space-y-1.5">
-                  {grupos.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Nenhum grupo</p>
-                  ) : (
-                    grupos.map((grupo) => (
-                      <label key={grupo.id} className="flex items-center gap-2 cursor-pointer">
-                        <Checkbox
-                          checked={gruposSelecionados.has(grupo.id)}
-                          onCheckedChange={() => toggleGrupo(grupo.id)}
-                          className="h-4 w-4"
-                        />
-                        <span className="text-xs truncate">{grupo.nome}</span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              )}
-
-              {tipoDestinatario === "categoria" && (
-                <Select
-                  value={categoriaSelecionada?.toString() || ""}
-                  onValueChange={(v) => setCategoriaSelecionada(parseInt(v))}
-                >
-                  <SelectTrigger className="h-8 sm:h-9 text-sm">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categorias.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id.toString()}>
-                        {cat.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            {/* Conteudo */}
-            <div className="space-y-1.5">
-              <Label className="text-sm">
-                {tipoMensagem === "texto" ? "Mensagem" : "URL"}
-              </Label>
-              {tipoMensagem === "texto" ? (
-                <Textarea
-                  placeholder="Digite sua mensagem..."
-                  value={conteudoTexto}
-                  onChange={(e) => setConteudoTexto(e.target.value)}
-                  rows={3}
-                  className="text-sm"
-                />
-              ) : (
-                <div className="space-y-2">
-                  <Input
-                    placeholder={`URL do ${tipoMensagem}`}
-                    value={urlMidia}
-                    onChange={(e) => setUrlMidia(e.target.value)}
-                    className="h-8 sm:h-9 text-sm"
-                  />
-                  {tipoMensagem !== "audio" && (
-                    <Input
-                      placeholder="Legenda (opcional)"
-                      value={legendaMidia}
-                      onChange={(e) => setLegendaMidia(e.target.value)}
-                      className="h-8 sm:h-9 text-sm"
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-
             {/* Agendamento */}
             <div className="space-y-2">
-              <Label className="text-sm">Quando enviar</Label>
-              <div className="flex gap-3 text-sm">
-                <label className="flex items-center gap-1.5 cursor-pointer">
+              <Label>Agendamento</Label>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
-                    name="enviarAgora"
                     checked={enviarAgora}
                     onChange={() => setEnviarAgora(true)}
-                    className="w-3.5 h-3.5"
                   />
-                  <Send className="h-3.5 w-3.5" />
-                  Agora
+                  <span>Enviar agora</span>
                 </label>
-                <label className="flex items-center gap-1.5 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
-                    name="enviarAgora"
                     checked={!enviarAgora}
                     onChange={() => setEnviarAgora(false)}
-                    className="w-3.5 h-3.5"
                   />
-                  <Calendar className="h-3.5 w-3.5" />
-                  Agendar
+                  <span>Agendar envio</span>
                 </label>
               </div>
-
               {!enviarAgora && (
-                <div className="flex gap-2">
-                  <Input
-                    type="date"
-                    value={dataAgendamento}
-                    onChange={(e) => setDataAgendamento(e.target.value)}
-                    min={new Date().toISOString().split("T")[0]}
-                    className="flex-1 h-8 text-sm"
-                  />
-                  <Input
-                    type="time"
-                    value={horaAgendamento}
-                    onChange={(e) => setHoraAgendamento(e.target.value)}
-                    className="w-24 h-8 text-sm"
-                  />
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Data</Label>
+                    <Input
+                      type="date"
+                      value={dataAgendamento}
+                      onChange={(e) => setDataAgendamento(e.target.value)}
+                      min={new Date().toISOString().split("T")[0]}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Hora</Label>
+                    <Input
+                      type="time"
+                      value={horaAgendamento}
+                      onChange={(e) => setHoraAgendamento(e.target.value)}
+                    />
+                  </div>
                 </div>
               )}
+            </div>
+
+            {/* Personalizacao */}
+            <div className="bg-muted border rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Lightbulb className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-sm mb-1">Personalizacao</h4>
+                  <p className="text-xs text-muted-foreground mb-2">Use variaveis para personalizar sua mensagem:</p>
+                  <div className="flex flex-wrap gap-2">
+                    <code className="bg-card px-2 py-1 rounded text-xs text-primary">{"{{nome}}"}</code>
+                    <code className="bg-card px-2 py-1 rounded text-xs text-primary">{"{{grupo}}"}</code>
+                    <code className="bg-card px-2 py-1 rounded text-xs text-primary">{"{{data}}"}</code>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <DialogFooter className="pt-3 gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8"
-              onClick={() => {
-                setDialogOpen(false)
-                resetForm()
-              }}
-              disabled={saving}
-            >
+          <DialogFooter className="flex items-center justify-between">
+            <Button variant="ghost" onClick={() => { setDialogOpen(false); resetForm() }} disabled={saving}>
               Cancelar
             </Button>
-            <Button size="sm" className="h-8" onClick={handleSaveMensagem} disabled={saving}>
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  {enviarAgora ? <Send className="h-4 w-4 mr-1.5" /> : <Clock className="h-4 w-4 mr-1.5" />}
-                  {enviarAgora ? "Enviar" : "Agendar"}
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button variant="secondary" onClick={() => handleSaveMensagem(true)} disabled={saving}>
+                <Save className="h-4 w-4 mr-2" />
+                Salvar Rascunho
+              </Button>
+              <Button onClick={() => handleSaveMensagem(false)} disabled={saving}>
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    {enviarAgora ? "Enviar" : "Agendar"}
+                  </>
+                )}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
