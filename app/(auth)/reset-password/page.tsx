@@ -9,29 +9,49 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { CheckCircle, Eye, EyeOff } from "lucide-react";
+import { CheckCircle, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // O Supabase automaticamente processa o token da URL
-    // quando o usuario clica no link do email
-    const supabase = createClient();
+    const checkSession = async () => {
+      const supabase = createClient();
 
-    // Verificar se ha uma sessao de recuperacao
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        // Usuario esta no modo de recuperacao de senha
-        console.log("Modo de recuperacao de senha ativo");
+      try {
+        // Verificar se ha uma sessao ativa (do callback de recovery)
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error("Erro ao verificar sessao:", sessionError);
+          setError("Erro ao verificar sessao. Tente novamente.");
+          setChecking(false);
+          return;
+        }
+
+        if (session) {
+          setHasSession(true);
+        } else {
+          setError("Link de recuperacao expirado ou invalido. Solicite um novo link.");
+        }
+      } catch (err) {
+        console.error("Erro:", err);
+        setError("Erro ao verificar sessao. Tente novamente.");
+      } finally {
+        setChecking(false);
       }
-    });
+    };
+
+    checkSession();
   }, []);
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -62,6 +82,9 @@ export default function ResetPasswordPage() {
         return;
       }
 
+      // Fazer logout apos alterar senha para forcar novo login
+      await supabase.auth.signOut();
+
       setSuccess(true);
       toast.success("Senha alterada com sucesso!");
 
@@ -77,6 +100,57 @@ export default function ResetPasswordPage() {
     }
   };
 
+  // Estado de verificacao
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+              <Loader2 className="h-6 w-6 text-primary animate-spin" />
+            </div>
+            <CardTitle className="text-2xl">Verificando...</CardTitle>
+            <CardDescription>
+              Aguarde enquanto verificamos seu link de recuperacao
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  // Estado de erro (link invalido ou expirado)
+  if (error || !hasSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <CardTitle className="text-2xl">Link invalido</CardTitle>
+            <CardDescription>
+              {error || "O link de recuperacao expirou ou e invalido."}
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="flex flex-col gap-2">
+            <Link href="/forgot-password" className="w-full">
+              <Button className="w-full">
+                Solicitar novo link
+              </Button>
+            </Link>
+            <Link href="/login" className="w-full">
+              <Button variant="ghost" className="w-full">
+                Voltar ao login
+              </Button>
+            </Link>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  // Estado de sucesso
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4">
@@ -95,6 +169,7 @@ export default function ResetPasswordPage() {
     );
   }
 
+  // Formulario de reset
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4">
       <Card className="w-full max-w-md">

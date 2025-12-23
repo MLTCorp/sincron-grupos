@@ -37,27 +37,25 @@ test.describe('Password Recovery Flow', () => {
     await expect(page.locator('text=contato.luizhms@gmail.com')).toBeVisible();
   });
 
-  test('should show reset password page', async ({ page }) => {
+  test('should show reset password page with loading state', async ({ page }) => {
     await page.goto('/reset-password');
 
-    // Check page loaded correctly
-    await expect(page.locator('text=Redefinir senha')).toBeVisible();
-    await expect(page.locator('input#password')).toBeVisible();
-    await expect(page.locator('input#confirmPassword')).toBeVisible();
+    // Should show verifying state first, then error (no session)
+    // Wait for either verifying or error state
+    await page.waitForTimeout(2000);
+
+    // Should show error since there's no valid recovery session
+    await expect(page.locator('text=Link invalido').or(page.locator('text=Verificando'))).toBeVisible();
   });
 
-  test('should validate password match', async ({ page }) => {
+  test('should show error when accessing reset-password without session', async ({ page }) => {
     await page.goto('/reset-password');
 
-    // Fill different passwords
-    await page.fill('input#password', 'newpassword123');
-    await page.fill('input#confirmPassword', 'differentpassword');
+    // Wait for verification to complete
+    await page.waitForTimeout(3000);
 
-    // Click submit
-    await page.click('button:has-text("Alterar senha")');
-
-    // Should show error toast (passwords don't match)
-    // The toast library should show an error
-    await page.waitForTimeout(500);
+    // Should show invalid link error
+    await expect(page.locator('text=Link invalido')).toBeVisible();
+    await expect(page.locator('text=Solicitar novo link')).toBeVisible();
   });
 });
