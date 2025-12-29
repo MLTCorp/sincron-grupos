@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+            <script>
+            // tailwind.config (IMPORTANT FOR STYLES)
+            tailwind.config = {
+                        theme: {
+                            extend: {
+                                colors: {
+                                    "border": "var(--border)",
+                                    "input": "var(--input)",
+                                    "ring": "var(--ring)",
+                                    "background": "var(--background)",
+                                    "foreground": "var(--foreground)",
+                                    "primary": {
+                                        "DEFAULT": "var(--primary)",
+                                        "foreground": "var(--primary-foreground)",
+                                    },
+                                    "secondary": {
+                                        "DEFAULT": "var(--secondary)",
+                                        "foreground": "var(--secondary-foreground)",
+                                    },
+                                    "destructive": {
+                                        "DEFAULT": "var(--destructive)",
+                                        "foreground": "var(--destructive-foreground)",
+                                    },
+                                    "muted": {
+                                        "DEFAULT": "var(--muted)",
+                                        "foreground": "var(--muted-foreground)",
+                                    },
+                                    "accent": {
+                                        "DEFAULT": "var(--accent)",
+                                        "foreground": "var(--accent-foreground)",
+                                    },
+                                    "popover": {
+                                        "DEFAULT": "var(--popover)",
+                                        "foreground": "var(--popover-foreground)",
+                                    },
+                                    "card": {
+                                        "DEFAULT": "var(--card)",
+                                        "foreground": "var(--card-foreground)",
+                                    },
+                                    "sidebar": {
+                                        "DEFAULT": "var(--sidebar)",
+                                        "foreground": "var(--sidebar-foreground)",
+                                        "primary": "var(--sidebar-primary)",
+                                        "primary-foreground": "var(--sidebar-primary-foreground)",
+                                        "accent": "var(--sidebar-accent)",
+                                        "accent-foreground": "var(--sidebar-accent-foreground)",
+                                        "border": "var(--sidebar-border)",
+                                        "ring": "var(--sidebar-ring)",
+                                    },
+                                    "chart": {
+                                        "1": "var(--chart-1)",
+                                        "2": "var(--chart-2)",
+                                        "3": "var(--chart-3)",
+                                        "4": "var(--chart-4)",
+                                        "5": "var(--chart-5)",
+                                    },
+                                },
+                                "borderRadius": {
+                                    "lg": "var(--radius)",
+                                    "md": "calc(var(--radius) - 2px)",
+                                    "sm": "calc(var(--radius) - 4px)",
+                                },
+                                "fontFamily": {
+                                    "sans": ["var(--font-sans)"],
+                                    "serif": ["var(--font-serif)"],
+                                    "mono": ["var(--font-mono)"],
+                                },
+                                "boxShadow": {
+                                    "2xs": "var(--shadow-2xs)",
+                                    "xs": "var(--shadow-xs)",
+                                    "sm": "var(--shadow-sm)",
+                                    "DEFAULT": "var(--shadow)",
+                                    "md": "var(--shadow-md)",
+                                    "lg": "var(--shadow-lg)",
+                                    "xl": "var(--shadow-xl)",
+                                    "2xl": "var(--shadow-2xl)",
+                                },
+                            },
+                        }
+                    }
+            </script>
+            
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Georgia&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest' };</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        :root {
+            --background: #FAFAFA;
+            --foreground: #0f172a;
+            --card: #ffffff;
+            --card-foreground: #0f172a;
+            --primary: #55B52C;
+            --primary-foreground: #ffffff;
+            --secondary: #64748b;
+            --secondary-foreground: #ffffff;
+            --muted: #FAFAFA;
+            --muted-foreground: #64748b;
+            --accent: #3DB36A;
+            --accent-foreground: #ffffff;
+            --destructive: #ef4444;
+            --destructive-foreground: #ffffff;
+            --border: #EEE;
+            --input: #FFFFFF;
+            --ring: #94a3b8;
+            --font-sans: 'Inter', sans-serif;
+            --font-serif: 'Georgia', serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --radius: 10px;
+            --shadow: -2px 4px 12px 4px rgba(51,51,51,0.05);
+        }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--background);
+            color: var(--foreground);
+        }
+        .bg-background { background-color: var(--background); }
+        .bg-card { background-color: var(--card); }
+        .bg-primary { background-color: var(--primary); }
+        .bg-secondary { background-color: var(--secondary); }
+        .bg-muted { background-color: var(--muted); }
+        .bg-accent { background-color: var(--accent); }
+        .bg-destructive { background-color: var(--destructive); }
+        .text-foreground { color: var(--foreground); }
+        .text-card-foreground { color: var(--card-foreground); }
+        .text-primary-foreground { color: var(--primary-foreground); }
+        .text-secondary-foreground { color: var(--secondary-foreground); }
+        .text-muted-foreground { color: var(--muted-foreground); }
+        .text-accent-foreground { color: var(--accent-foreground); }
+        .text-destructive-foreground { color: var(--destructive-foreground); }
+        .text-primary { color: var(--primary); }
+        .border-border { border-color: var(--border); }
+        .border-input { border-color: var(--input); }
+        .ring-ring { ring-color: var(--ring); }
+        .rounded-lg { border-radius: var(--radius); }
+        .shadow-md { box-shadow: var(--shadow); }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-background">
+    <div id="app-layout" class="flex h-screen">
+        <aside id="sidebar" class="w-64 bg-card border-r border-border flex flex-col flex-shrink-0">
+            <div class="h-20 flex items-center px-6 border-b border-border">
+                <h1 class="text-xl font-bold text-foreground">Sincron Grupos</h1>
+            </div>
+            <nav class="flex-1 px-4 py-6 space-y-2">
+                <a href="Dashboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium bg-muted text-primary rounded-lg">
+                    <i class="fa-solid fa-chart-pie w-6 text-center"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="Instâncias.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-primary rounded-lg transition-colors">
+                    <i class="fa-brands fa-whatsapp w-6 text-center"></i>
+                    <span>Instâncias</span>
+                </a>
+                <a href="Grupos.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-primary rounded-lg transition-colors">
+                    <i class="fa-solid fa-users w-6 text-center"></i>
+                    <span>Grupos</span>
+                </a>
+                <a href="#" class="flex items-center px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-primary rounded-lg transition-colors">
+                    <i class="fa-solid fa-tags w-6 text-center"></i>
+                    <span>Categorias</span>
+                </a>
+                <a href="Criar Gatilho.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-primary rounded-lg transition-colors">
+                    <i class="fa-solid fa-bolt w-6 text-center"></i>
+                    <span>Gatilhos</span>
+                </a>
+                <a href="Mensagens em Massa.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-primary rounded-lg transition-colors">
+                    <i class="fa-solid fa-paper-plane w-6 text-center"></i>
+                    <span>Mensagens</span>
+                </a>
+                <a href="Gerenciar Agentes IA.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-primary rounded-lg transition-colors">
+                    <i class="fa-solid fa-robot w-6 text-center"></i>
+                    <span>Agentes IA</span>
+                </a>
+                <a href="Transcrições por Categoria.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-primary rounded-lg transition-colors">
+                    <i class="fa-solid fa-file-audio w-6 text-center"></i>
+                    <span>Transcrição</span>
+                </a>
+                <a href="Equipe.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-primary rounded-lg transition-colors">
+                    <i class="fa-solid fa-user-group w-6 text-center"></i>
+                    <span>Equipe</span>
+                </a>
+                <a href="Configurações.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-primary rounded-lg transition-colors">
+                    <i class="fa-solid fa-cog w-6 text-center"></i>
+                    <span>Configurações</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-border">
+                <div class="flex items-center">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-10 h-10 rounded-full">
+                    <div class="ml-3">
+                        <p class="text-sm font-semibold text-foreground">Michelle</p>
+                        <p class="text-xs text-muted-foreground">michelle@sincron.com</p>
+                    </div>
+                    <button class="ml-auto text-muted-foreground hover:text-foreground">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <main id="main-content" class="flex-1 flex flex-col overflow-y-auto">
+            <header id="header" class="h-20 bg-card border-b border-border flex items-center justify-between px-8 flex-shrink-0">
+                <div>
+                    <h2 class="text-2xl font-bold text-foreground">Dashboard</h2>
+                    <p class="text-sm text-muted-foreground">Visão geral da sua organização.</p>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <button class="text-muted-foreground hover:text-primary">
+                        <i class="fa-regular fa-bell fa-lg"></i>
+                    </button>
+                    <div class="flex items-center space-x-3">
+                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-10 h-10 rounded-full">
+                        <div>
+                             <p class="text-sm font-semibold text-foreground">Michelle</p>
+                            <p class="text-xs text-muted-foreground">Owner</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="p-8 space-y-8">
+                <section id="onboarding-checklist" class="bg-card border border-border rounded-lg p-6 shadow-md">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-semibold text-card-foreground">Bem-vindo ao Sincron Grupos</h3>
+                            <p class="text-sm text-muted-foreground mt-1">Complete os passos para começar a usar a plataforma.</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-primary">Progresso: 1/4</p>
+                            <div class="w-32 h-2 bg-muted rounded-full mt-2 overflow-hidden">
+                                <div class="h-full bg-primary" style="width: 25%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground flex-shrink-0 mt-1">
+                                <i class="fa-solid fa-check"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-card-foreground">1. Conectar WhatsApp</h4>
+                                <p class="text-sm text-muted-foreground">Escaneie o QR Code para vincular seu número.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-4 opacity-60">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full bg-card border-2 border-border text-muted-foreground flex-shrink-0 mt-1">
+                                2
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-card-foreground">2. Sincronizar grupos</h4>
+                                <p class="text-sm text-muted-foreground">Importe seus grupos do WhatsApp.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-4 opacity-60">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full bg-card border-2 border-border text-muted-foreground flex-shrink-0 mt-1">
+                                3
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-card-foreground">3. Criar categorias</h4>
+                                <p class="text-sm text-muted-foreground">Organize grupos por tags (Vendas, Suporte, etc).</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-4 opacity-60">
+                             <div class="flex items-center justify-center w-8 h-8 rounded-full bg-card border-2 border-border text-muted-foreground flex-shrink-0 mt-1">
+                                4
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-card-foreground">4. Configurar primeiro gatilho</h4>
+                                <p class="text-sm text-muted-foreground">Crie uma automação para moderar ou responder.</p>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="pt-6 border-t border-border mt-6 text-right">
+                        <a href="#" class="text-sm font-medium text-secondary hover:text-primary">Pular setup</a>
+                    </div>
+                </section>
+                
+                <section id="metric-cards">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-card p-5 rounded-lg border border-border shadow-md">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-semibold text-card-foreground">Instância</h4>
+                                <div class="w-8 h-8 flex items-center justify-center bg-green-100 rounded-lg">
+                                    <i class="fa-brands fa-whatsapp text-green-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-2xl font-bold text-foreground mt-4 flex items-center"><span class="w-3 h-3 rounded-full bg-primary mr-2"></span>Conectada</p>
+                            <p class="text-sm text-muted-foreground">+55 11 99999-9999</p>
+                        </div>
+                        <div class="bg-card p-5 rounded-lg border border-border shadow-md">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-semibold text-card-foreground">Grupos</h4>
+                                <div class="w-8 h-8 flex items-center justify-center bg-blue-100 rounded-lg">
+                                    <i class="fa-solid fa-users text-blue-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-2xl font-bold text-foreground mt-4">47 grupos</p>
+                            <p class="text-sm text-muted-foreground">5 categorias</p>
+                        </div>
+                        <div class="bg-card p-5 rounded-lg border border-border shadow-md">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-semibold text-card-foreground">Gatilhos</h4>
+                                <div class="w-8 h-8 flex items-center justify-center bg-yellow-100 rounded-lg">
+                                    <i class="fa-solid fa-bolt text-yellow-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-2xl font-bold text-foreground mt-4">12 ativos</p>
+                            <p class="text-sm text-muted-foreground">3 pausados</p>
+                        </div>
+                        <div class="bg-card p-5 rounded-lg border border-border shadow-md">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-semibold text-card-foreground">Mensagens</h4>
+                                <div class="w-8 h-8 flex items-center justify-center bg-indigo-100 rounded-lg">
+                                    <i class="fa-solid fa-paper-plane text-indigo-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-2xl font-bold text-foreground mt-4">3 agendadas</p>
+                            <p class="text-sm text-muted-foreground">156 enviadas</p>
+                        </div>
+                        <div class="bg-card p-5 rounded-lg border border-border shadow-md">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-semibold text-card-foreground">Agentes IA</h4>
+                                <div class="w-8 h-8 flex items-center justify-center bg-purple-100 rounded-lg">
+                                    <i class="fa-solid fa-robot text-purple-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-2xl font-bold text-foreground mt-4">2 ativos</p>
+                            <p class="text-sm text-muted-foreground">Bot Vendas</p>
+                        </div>
+                        <div class="bg-card p-5 rounded-lg border border-border shadow-md">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-semibold text-card-foreground">Transcrição</h4>
+                                <div class="w-8 h-8 flex items-center justify-center bg-pink-100 rounded-lg">
+                                    <i class="fa-solid fa-file-audio text-pink-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-2xl font-bold text-foreground mt-4">23 grupos</p>
+                            <p class="text-sm text-muted-foreground">configurados</p>
+                        </div>
+                    </div>
+                </section>
+                
+                <section id="quick-actions" class="bg-card p-6 rounded-lg border border-border shadow-md">
+                    <h3 class="text-lg font-semibold text-card-foreground">Ações Rápidas</h3>
+                    <p class="text-sm text-muted-foreground mt-1">Execute tarefas comuns com um único clique.</p>
+                    <div class="mt-6 flex items-center space-x-4">
+                        <button class="px-5 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center space-x-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Nova mensagem</span>
+                        </button>
+                        <button class="px-5 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center space-x-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Novo gatilho</span>
+                        </button>
+                        <button class="px-5 py-2.5 bg-card border border-border text-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors flex items-center space-x-2">
+                            <i class="fa-solid fa-sync-alt"></i>
+                            <span>Sincronizar grupos</span>
+                        </button>
+                    </div>
+                </section>
+
+                 <section id="recent-activity" class="bg-card p-6 rounded-lg border border-border shadow-md">
+                    <h3 class="text-lg font-semibold text-card-foreground">Atividade Recente</h3>
+                    <p class="text-sm text-muted-foreground mt-1">Últimas ações realizadas na plataforma.</p>
+                    <div class="mt-4 flow-root">
+                        <ul role="list" class="-mb-8">
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-border" aria-hidden="true"></span>
+                                    <div class="relative flex space-x-3">
+                                        <div>
+                                            <span class="h-8 w-8 rounded-full bg-accent flex items-center justify-center ring-8 ring-card">
+                                                <i class="fa-solid fa-bolt text-accent-foreground"></i>
+                                            </span>
+                                        </div>
+                                        <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                            <div>
+                                                <p class="text-sm text-foreground">Gatilho <span class="font-medium text-primary">"Boas-vindas"</span> foi ativado no grupo <span class="font-medium">Vendas SP</span>.</p>
+                                            </div>
+                                            <div class="text-right text-sm whitespace-nowrap text-muted-foreground">
+                                                <time>2 min atrás</time>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-border" aria-hidden="true"></span>
+                                    <div class="relative flex space-x-3">
+                                        <div>
+                                            <span class="h-8 w-8 rounded-full bg-secondary flex items-center justify-center ring-8 ring-card">
+                                                <i class="fa-solid fa-users text-secondary-foreground"></i>
+                                            </span>
+                                        </div>
+                                        <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                            <div>
+                                                <p class="text-sm text-foreground">Sincronização completada. <span class="font-medium">2 novos grupos</span> adicionados.</p>
+                                            </div>
+                                            <div class="text-right text-sm whitespace-nowrap text-muted-foreground">
+                                                <time>1 hora atrás</time>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                             <li>
+                                <div class="relative">
+                                    <div class="relative flex space-x-3">
+                                        <div>
+                                            <span class="h-8 w-8 rounded-full bg-primary flex items-center justify-center ring-8 ring-card">
+                                                <i class="fa-solid fa-user-plus text-primary-foreground"></i>
+                                            </span>
+                                        </div>
+                                        <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                            <div>
+                                                <p class="text-sm text-foreground">Usuário <span class="font-medium">Carlos</span> foi adicionado à equipe.</p>
+                                            </div>
+                                            <div class="text-right text-sm whitespace-nowrap text-muted-foreground">
+                                                <time>3 horas atrás</time>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+                
+            </div>
+            <footer id="footer" class="py-4 px-8 text-center text-sm text-muted-foreground border-t border-border mt-auto">
+                <p>Copyright © 2025 Sincron Grupos. Todos os direitos reservados.</p>
+            </footer>
+        </main>
+    </div>
+</body>
+</html>

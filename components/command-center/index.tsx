@@ -2,19 +2,32 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useOrganizationData, type Instancia, type Categoria } from "@/hooks/use-organization-data"
-import { PageHeader } from "@/components/dashboard/page-header"
-import { StatsCard, StatsGrid } from "@/components/dashboard/stats-card"
-import { InstancePanel } from "./instance-panel"
-import { GroupsPanel } from "./groups-panel"
-import { ActionsPanel } from "./actions-panel"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
 import { CategoryConfigDrawer } from "./category-config-drawer"
 import { TriggersOverviewDrawer } from "./triggers-overview-drawer"
 import { AIAgentsDrawer } from "./ai-agents-drawer"
 import { SyncGroupsDialog } from "./sync-groups-dialog"
 import { MassMessageModal } from "./mass-message-modal"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
-import { Users, Zap, Smartphone, MessageSquare, RefreshCw } from "lucide-react"
+import Link from "next/link"
+import { cn } from "@/lib/utils"
+import {
+  Users,
+  Zap,
+  Smartphone,
+  Send,
+  Bot,
+  FileAudio,
+  Plus,
+  RefreshCw,
+  Check,
+  UserPlus,
+  Bell,
+  ArrowRight
+} from "lucide-react"
 
 export function CommandCenter() {
   const {
@@ -36,13 +49,11 @@ export function CommandCenter() {
 
   // Estado da instancia selecionada
   const [selectedInstance, setSelectedInstance] = useState<Instancia | null>(null)
-  const [activeTab, setActiveTab] = useState("overview")
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Drawers e modais
   const [categoryConfigOpen, setCategoryConfigOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<Categoria | null>(null)
-
   const [triggersDrawerOpen, setTriggersDrawerOpen] = useState(false)
   const [aiDrawerOpen, setAIDrawerOpen] = useState(false)
   const [syncDialogOpen, setSyncDialogOpen] = useState(false)
@@ -59,11 +70,37 @@ export function CommandCenter() {
   const stats = useMemo(() => ({
     grupos: grupos.length,
     gatilhosAtivos: gatilhos.filter(g => g.ativo).length,
+    gatilhosPausados: gatilhos.filter(g => !g.ativo).length,
     instanciasConectadas: instancias.filter(i => i.status === "conectado").length,
     totalInstancias: instancias.length,
     categorias: categorias.length,
     agentesAtivos: agentes.filter(a => a.ativo).length,
   }), [grupos, gatilhos, instancias, categorias, agentes])
+
+  // Calcular progresso do onboarding
+  const onboardingProgress = useMemo(() => {
+    let completed = 0
+    if (stats.instanciasConectadas > 0) completed++
+    if (stats.grupos > 0) completed++
+    if (stats.categorias > 0) completed++
+    if (stats.gatilhosAtivos > 0) completed++
+    return { completed, total: 4, percentage: (completed / 4) * 100 }
+  }, [stats])
+
+  // Onboarding state - determina o que está habilitado
+  const onboardingState = useMemo(() => {
+    const hasInstance = stats.instanciasConectadas > 0
+    const hasGroups = stats.grupos > 0
+    // Se não tem instância, só habilita conectar instância
+    // Se tem instância mas não grupos, habilita sincronizar grupos
+    // Se tem grupos, tudo liberado
+    return {
+      hasInstance,
+      hasGroups,
+      isComplete: hasInstance && hasGroups,
+      currentStep: !hasInstance ? 1 : !hasGroups ? 2 : 3
+    }
+  }, [stats])
 
   // Refresh all data
   const handleRefresh = async () => {
@@ -85,118 +122,304 @@ export function CommandCenter() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="flex-1 space-y-4 p-4 md:p-6">
         <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-32" />
-            <Skeleton className="h-4 w-48" />
+          <div className="space-y-1">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-3 w-36" />
           </div>
-          <Skeleton className="h-9 w-28" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-28" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="h-20" />
           ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 lg:gap-6">
-          <div className="space-y-4">
-            <Skeleton className="h-48" />
-            <Skeleton className="h-64" />
-          </div>
-          <Skeleton className="h-[500px]" />
-        </div>
+        <Skeleton className="h-12" />
+        <Skeleton className="h-24" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="flex-1 space-y-4 p-4 md:p-6 animate-fade-in">
       {/* Header */}
-      <PageHeader
-        title="Dashboard"
-        description="Visao geral do seu workspace"
-        tabs={[
-          { label: "Visao Geral", value: "overview" },
-          { label: "Atividade", value: "activity" },
-        ]}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        actions={
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Dashboard</h2>
+          <p className="text-sm text-muted-foreground">Visao geral da sua organizacao.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Bell className="h-4 w-4 text-muted-foreground" />
+          </Button>
           <Button
             variant="outline"
             size="icon"
-            className="h-9 w-9"
+            className="h-8 w-8"
             onClick={handleRefresh}
             disabled={isRefreshing}
           >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
           </Button>
-        }
-      />
-
-      {/* Stats Row */}
-      <StatsGrid columns={4}>
-        <StatsCard
-          label="Grupos"
-          value={stats.grupos}
-          icon={Users}
-          description={`${stats.categorias} categorias`}
-          href="/groups"
-        />
-        <StatsCard
-          label="Gatilhos Ativos"
-          value={stats.gatilhosAtivos}
-          icon={Zap}
-          description={`${gatilhos.length} configurados`}
-          href="/triggers"
-        />
-        <StatsCard
-          label="Instancias"
-          value={`${stats.instanciasConectadas}/${stats.totalInstancias}`}
-          icon={Smartphone}
-          description={stats.instanciasConectadas > 0 ? "Conectadas" : "Nenhuma conectada"}
-          href="/instances"
-        />
-        <StatsCard
-          label="Agentes IA"
-          value={stats.agentesAtivos}
-          icon={MessageSquare}
-          description={`${agentes.length} configurados`}
-          href="/ai-agents"
-        />
-      </StatsGrid>
-
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 lg:gap-6">
-        {/* Sidebar esquerda */}
-        <div className="space-y-4">
-          <InstancePanel
-            instancia={selectedInstance || instanciaConectada || instancias[0]}
-            onRefresh={refreshInstancias}
-          />
-          <ActionsPanel
-            gatilhosAtivos={gatilhos.filter(g => g.ativo).length}
-            agentesAtivos={agentes.filter(a => a.ativo).length}
-            onOpenTriggers={() => setTriggersDrawerOpen(true)}
-            onOpenAI={() => setAIDrawerOpen(true)}
-            onOpenMessages={() => setMessageModalOpen(true)}
-            onAddCategory={() => {
-              // TODO: Implementar criacao de categoria inline
-            }}
-          />
         </div>
-
-        {/* Area principal - Grupos */}
-        <GroupsPanel
-          grupos={grupos}
-          categorias={categorias}
-          gruposPorCategoria={gruposPorCategoria}
-          instanceToken={selectedInstance?.api_key || instanciaConectada?.api_key}
-          onSync={() => setSyncDialogOpen(true)}
-          onConfigCategory={handleOpenCategoryConfig}
-          onRefresh={refreshGrupos}
-        />
       </div>
+
+      {/* Onboarding - Quando não completou os passos básicos */}
+      {!onboardingState.isComplete && (
+        <Card className="border-2 border-primary/50 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-sm font-semibold">Bem-vindo ao Sincron Grupos</h3>
+                <p className="text-xs text-muted-foreground">
+                  {!onboardingState.hasInstance
+                    ? "Conecte seu WhatsApp para comecar"
+                    : "Sincronize seus grupos para continuar"}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Progress value={onboardingState.currentStep === 1 ? 0 : 50} className="w-24 h-1.5" />
+                <span className="text-xs font-medium text-primary">{onboardingState.currentStep - 1}/2</span>
+              </div>
+            </div>
+
+            {/* Passo 1: Conectar WhatsApp */}
+            {!onboardingState.hasInstance && (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/30">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground">
+                    <Smartphone className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Conectar WhatsApp</p>
+                    <p className="text-xs text-muted-foreground">Escaneie o QR Code para vincular</p>
+                  </div>
+                </div>
+                <Button size="sm" className="h-8" asChild>
+                  <Link href="/instances">
+                    Conectar
+                    <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                  </Link>
+                </Button>
+              </div>
+            )}
+
+            {/* Passo 2: Sincronizar Grupos */}
+            {onboardingState.hasInstance && !onboardingState.hasGroups && (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/30">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground">
+                    <Users className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Sincronizar Grupos</p>
+                    <p className="text-xs text-muted-foreground">Importe seus grupos do WhatsApp</p>
+                  </div>
+                </div>
+                <Button size="sm" className="h-8" onClick={() => setSyncDialogOpen(true)}>
+                  Sincronizar
+                  <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Metric Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* Card Instância - sempre habilitado, destacado quando é o próximo passo */}
+        <Link href="/instances">
+          <Card className={cn(
+            "transition-all cursor-pointer",
+            !onboardingState.hasInstance
+              ? "border-2 border-primary ring-2 ring-primary/20 hover:border-primary"
+              : "hover:border-primary/50"
+          )}>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "w-7 h-7 flex items-center justify-center rounded",
+                  !onboardingState.hasInstance ? "bg-primary" : "bg-green-100"
+                )}>
+                  <Smartphone className={cn(
+                    "h-3.5 w-3.5",
+                    !onboardingState.hasInstance ? "text-primary-foreground" : "text-green-600"
+                  )} />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">Instancia</span>
+              </div>
+              <p className="text-lg font-bold mt-2 flex items-center">
+                <span className={`w-2 h-2 rounded-full mr-1.5 ${stats.instanciasConectadas > 0 ? "bg-primary" : "bg-muted-foreground"}`}></span>
+                {stats.instanciasConectadas > 0 ? "Online" : "Offline"}
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Card Grupos - habilitado após instância, destacado quando é o próximo passo */}
+        <Link href="/groups" className={cn(!onboardingState.hasInstance && "pointer-events-none")}>
+          <Card className={cn(
+            "transition-all",
+            !onboardingState.hasInstance
+              ? "opacity-40 cursor-not-allowed"
+              : onboardingState.hasInstance && !onboardingState.hasGroups
+                ? "border-2 border-primary ring-2 ring-primary/20 hover:border-primary cursor-pointer"
+                : "hover:border-primary/50 cursor-pointer"
+          )}>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "w-7 h-7 flex items-center justify-center rounded",
+                  onboardingState.hasInstance && !onboardingState.hasGroups ? "bg-primary" : "bg-blue-100"
+                )}>
+                  <Users className={cn(
+                    "h-3.5 w-3.5",
+                    onboardingState.hasInstance && !onboardingState.hasGroups ? "text-primary-foreground" : "text-blue-600"
+                  )} />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">Grupos</span>
+              </div>
+              <p className="text-lg font-bold mt-2">{stats.grupos}</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Cards restantes - só habilitados após grupos */}
+        <Link href="/triggers" className={cn(!onboardingState.isComplete && "pointer-events-none")}>
+          <Card className={cn(
+            "transition-all",
+            !onboardingState.isComplete ? "opacity-40 cursor-not-allowed" : "hover:border-primary/50 cursor-pointer"
+          )}>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 flex items-center justify-center bg-yellow-100 rounded">
+                  <Zap className="h-3.5 w-3.5 text-yellow-600" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">Gatilhos</span>
+              </div>
+              <p className="text-lg font-bold mt-2">{stats.gatilhosAtivos} <span className="text-xs font-normal text-muted-foreground">ativos</span></p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/messages" className={cn(!onboardingState.isComplete && "pointer-events-none")}>
+          <Card className={cn(
+            "transition-all",
+            !onboardingState.isComplete ? "opacity-40 cursor-not-allowed" : "hover:border-primary/50 cursor-pointer"
+          )}>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 flex items-center justify-center bg-indigo-100 rounded">
+                  <Send className="h-3.5 w-3.5 text-indigo-600" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">Mensagens</span>
+              </div>
+              <p className="text-lg font-bold mt-2">0 <span className="text-xs font-normal text-muted-foreground">agendadas</span></p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/ai" className={cn(!onboardingState.isComplete && "pointer-events-none")}>
+          <Card className={cn(
+            "transition-all",
+            !onboardingState.isComplete ? "opacity-40 cursor-not-allowed" : "hover:border-primary/50 cursor-pointer"
+          )}>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 flex items-center justify-center bg-purple-100 rounded">
+                  <Bot className="h-3.5 w-3.5 text-purple-600" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">Agentes IA</span>
+              </div>
+              <p className="text-lg font-bold mt-2">{stats.agentesAtivos} <span className="text-xs font-normal text-muted-foreground">ativos</span></p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/transcription" className={cn(!onboardingState.isComplete && "pointer-events-none")}>
+          <Card className={cn(
+            "transition-all",
+            !onboardingState.isComplete ? "opacity-40 cursor-not-allowed" : "hover:border-primary/50 cursor-pointer"
+          )}>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 flex items-center justify-center bg-pink-100 rounded">
+                  <FileAudio className="h-3.5 w-3.5 text-pink-600" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">Transcricao</span>
+              </div>
+              <p className="text-lg font-bold mt-2">0 <span className="text-xs font-normal text-muted-foreground">grupos</span></p>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Quick Actions - só mostra quando onboarding está completo */}
+      {onboardingState.isComplete && (
+        <Card>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold">Acoes Rapidas</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" className="h-7 text-xs" onClick={() => setMessageModalOpen(true)}>
+                  <Plus className="h-3 w-3 mr-1" />
+                  Mensagem
+                </Button>
+                <Button size="sm" variant="secondary" className="h-7 text-xs" asChild>
+                  <Link href="/triggers/new">
+                    <Plus className="h-3 w-3 mr-1" />
+                    Gatilho
+                  </Link>
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setSyncDialogOpen(true)}>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Sincronizar
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Activity - só mostra quando onboarding está completo */}
+      {onboardingState.isComplete && (
+        <Card>
+          <CardContent className="p-3">
+            <h3 className="text-sm font-semibold mb-3">Atividade Recente</h3>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="h-5 w-5 rounded-full bg-accent flex items-center justify-center">
+                  <Zap className="h-2.5 w-2.5 text-accent-foreground" />
+                </span>
+                <span className="flex-1">Gatilho <span className="font-medium text-primary">&quot;Boas-vindas&quot;</span> ativado</span>
+                <span className="text-muted-foreground">2 min</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="h-5 w-5 rounded-full bg-muted-foreground flex items-center justify-center">
+                  <Users className="h-2.5 w-2.5 text-white" />
+                </span>
+                <span className="flex-1">Sincronizacao: <span className="font-medium">2 grupos</span> adicionados</span>
+                <span className="text-muted-foreground">1h</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                  <UserPlus className="h-2.5 w-2.5 text-primary-foreground" />
+                </span>
+                <span className="flex-1"><span className="font-medium">Carlos</span> adicionado a equipe</span>
+                <span className="text-muted-foreground">3h</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Footer */}
+      <footer className="py-2 text-center text-xs text-muted-foreground">
+        <p>&copy; 2025 Sincron Grupos</p>
+      </footer>
 
       {/* Drawers */}
       {selectedCategory && (

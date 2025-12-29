@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -22,7 +23,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -36,6 +36,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Plus,
   Brain,
   Trash2,
@@ -47,6 +53,22 @@ import {
   Cpu,
   Thermometer,
   Loader2,
+  Search,
+  Bell,
+  MoreVertical,
+  BarChart3,
+  Settings,
+  Check,
+  AlertCircle,
+  Database,
+  MessagesSquare,
+  Clock,
+  GraduationCap,
+  ArrowUp,
+  Headset,
+  Shield,
+  Target,
+  ChevronRight,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
@@ -84,6 +106,13 @@ const MODELOS = [
   { value: "claude-3-sonnet", label: "Claude 3 Sonnet", desc: "Equilibrado" },
 ]
 
+const TIPOS_AGENTE = [
+  { value: "vendas", label: "Vendas", icon: Bot },
+  { value: "suporte", label: "Atendimento/Suporte", icon: Headset },
+  { value: "moderacao", label: "Moderacao", icon: Shield },
+  { value: "informativo", label: "Informativo", icon: Info },
+]
+
 const initialFormData: FormData = {
   nome: "",
   descricao: "",
@@ -94,6 +123,22 @@ const initialFormData: FormData = {
   responder_no_grupo: true,
 }
 
+// Simular estatisticas (em producao, viria do backend)
+const getAgentStats = (id: number) => ({
+  gruposAtivos: Math.floor(Math.random() * 15) + 1,
+  respostasHoje: Math.floor(Math.random() * 100),
+  taxaAcerto: Math.floor(Math.random() * 15) + 85,
+})
+
+// Atividades recentes simuladas
+const ATIVIDADES_RECENTES = [
+  { id: 1, agente: "Bot Vendas", grupo: "Vendas SP", tipo: "sucesso", descricao: "Pergunta sobre preco do produto Premium", confianca: 96, tempo: "ha 5 minutos" },
+  { id: 2, agente: "Bot Suporte", grupo: "Suporte Premium", tipo: "sucesso", descricao: "Duvida sobre instalacao do aplicativo", confianca: 89, tempo: "ha 12 minutos" },
+  { id: 3, agente: "Bot Vendas", grupo: "Leads Novembro", tipo: "sucesso", descricao: "Informacoes sobre formas de pagamento", confianca: 98, tempo: "ha 23 minutos" },
+  { id: 4, agente: "Bot Suporte", grupo: "Suporte Geral", tipo: "erro", descricao: "Pergunta fora do escopo de conhecimento", confianca: 34, tempo: "ha 1 hora" },
+  { id: 5, agente: "Bot Vendas", grupo: "Comunidade Geral", tipo: "sucesso", descricao: "Informacoes sobre recursos do produto", confianca: 92, tempo: "ha 2 horas" },
+]
+
 export default function AIPage() {
   const [agentes, setAgentes] = useState<AgenteIA[]>([])
   const [loading, setLoading] = useState(true)
@@ -102,8 +147,34 @@ export default function AIPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [formData, setFormData] = useState<FormData>(initialFormData)
+  const [searchFilter, setSearchFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
 
   const supabase = createClient()
+
+  // Estatisticas gerais
+  const stats = useMemo(() => {
+    const totalRespostas = agentes.reduce((acc, a) => acc + (a.ativo ? getAgentStats(a.id).respostasHoje : 0), 0)
+    const ativos = agentes.filter(a => a.ativo).length
+    const taxaMedia = agentes.length > 0
+      ? Math.round(agentes.reduce((acc, a) => acc + getAgentStats(a.id).taxaAcerto, 0) / agentes.length)
+      : 0
+    return { totalRespostas, ativos, inativos: agentes.length - ativos, taxaMedia }
+  }, [agentes])
+
+  // Filtrar agentes
+  const filteredAgentes = useMemo(() => {
+    return agentes.filter(a => {
+      const matchesSearch = a.nome.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        (a.descricao?.toLowerCase().includes(searchFilter.toLowerCase()) ?? false)
+
+      const matchesStatus = statusFilter === "all" ||
+        (statusFilter === "active" && a.ativo) ||
+        (statusFilter === "inactive" && !a.ativo)
+
+      return matchesSearch && matchesStatus
+    })
+  }, [agentes, searchFilter, statusFilter])
 
   const loadAgentes = useCallback(async () => {
     try {
@@ -260,304 +331,424 @@ export default function AIPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Card className="p-6">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </Card>
+      <div className="flex-1 space-y-4 p-4 md:p-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        </div>
+        <Skeleton className="h-9 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-52" />)}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      {/* Header - Compacto */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
-            Agentes IA
-          </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Assistentes para grupos
-          </p>
+    <div className="flex-1 space-y-4 p-4 md:p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">Agentes IA</h2>
+          <p className="text-sm text-muted-foreground">Bots de inteligencia artificial</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="shrink-0 h-8 sm:h-9">
-              <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Novo</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto p-4 sm:p-6">
-            <DialogHeader className="pb-2">
-              <DialogTitle className="text-base sm:text-lg">{editingId ? "Editar Agente" : "Novo Agente"}</DialogTitle>
-              <DialogDescription className="text-xs sm:text-sm">
-                Configure assistente IA para grupos
-              </DialogDescription>
-            </DialogHeader>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Bell className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      </div>
 
-            <div className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="nome" className="text-sm">Nome *</Label>
-                  <Input
-                    id="nome"
-                    placeholder="Ex: Assistente Vendas"
-                    className="h-8 sm:h-9 text-sm"
-                    value={formData.nome}
-                    onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                  />
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="relative max-w-xs w-full">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Buscar..."
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              className="pl-8 h-9 text-sm"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-32 h-9 text-sm">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="active">Ativos</SelectItem>
+              <SelectItem value="inactive">Inativos</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" />
+          Novo
+        </Button>
+      </div>
+
+      {/* Agents Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredAgentes.map((agente) => {
+          const agentStats = getAgentStats(agente.id)
+
+          return (
+            <Card key={agente.id} className="hover:border-primary transition-colors">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "p-2 rounded-lg",
+                      agente.ativo ? "bg-primary/10" : "bg-muted"
+                    )}>
+                      <Bot className={cn(
+                        "h-4 w-4",
+                        agente.ativo ? "text-primary" : "text-muted-foreground"
+                      )} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">{agente.nome}</h3>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={cn(
+                          "w-1.5 h-1.5 rounded-full",
+                          agente.ativo ? "bg-accent" : "bg-muted-foreground"
+                        )} />
+                        <span className="text-[10px] text-muted-foreground">
+                          {agente.ativo ? "Ativo" : "Inativo"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(agente)}>
+                        <Pencil className="h-3.5 w-3.5 mr-2" />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleToggle(agente.id, !agente.ativo)}>
+                        {agente.ativo ? "Desativar" : "Ativar"}
+                      </DropdownMenuItem>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                            <Trash2 className="h-3.5 w-3.5 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir agente?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              O agente sera removido permanentemente.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(agente.id)}
+                              className="bg-destructive text-destructive-foreground"
+                            >
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="modelo" className="text-sm">Modelo</Label>
-                  <Select
-                    value={formData.modelo}
-                    onValueChange={(val) => setFormData(prev => ({ ...prev, modelo: val }))}
-                  >
-                    <SelectTrigger className="h-8 sm:h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MODELOS.map(m => (
-                        <SelectItem key={m.value} value={m.value} className="text-sm">
-                          {m.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="descricao" className="text-sm">Descricao</Label>
-                <Input
-                  id="descricao"
-                  placeholder="Breve descricao..."
-                  className="h-8 sm:h-9 text-sm"
-                  value={formData.descricao}
-                  onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="prompt" className="text-sm">Prompt *</Label>
-                <Textarea
-                  id="prompt"
-                  placeholder="Voce e um assistente de atendimento..."
-                  className="min-h-[80px] text-sm"
-                  value={formData.prompt_sistema}
-                  onChange={(e) => setFormData(prev => ({ ...prev, prompt_sistema: e.target.value }))}
-                />
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Info className="h-3 w-3" />
-                  Define personalidade do agente
+                <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                  {agente.descricao || "Sem descricao"}
                 </p>
-              </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="temperatura" className="text-sm">Temp: {formData.temperatura}</Label>
-                  <Input
-                    id="temperatura"
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.1}
-                    value={formData.temperatura}
-                    onChange={(e) => setFormData(prev => ({ ...prev, temperatura: Number(e.target.value) }))}
-                    className="cursor-pointer h-8"
-                  />
+                <div className="space-y-1.5 mb-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Grupos</span>
+                    <span className="font-medium">{agente.ativo ? agentStats.gruposAtivos : 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Respostas</span>
+                    <span className="font-medium">{agente.ativo ? agentStats.respostasHoje : 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Acerto</span>
+                    <span className={cn("font-medium", agente.ativo ? "text-accent" : "text-muted-foreground")}>
+                      {agente.ativo ? `${agentStats.taxaAcerto}%` : "-"}
+                    </span>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="max_tokens" className="text-sm">Max tokens</Label>
-                  <Input
-                    id="max_tokens"
-                    type="number"
-                    min={100}
-                    max={4000}
-                    className="h-8 sm:h-9 text-sm"
-                    value={formData.max_tokens}
-                    onChange={(e) => setFormData(prev => ({ ...prev, max_tokens: Number(e.target.value) }))}
-                  />
+
+                <div className="flex gap-2">
+                  <Button variant="secondary" size="sm" className="flex-1 h-8 text-xs">
+                    <BarChart3 className="h-3 w-3 mr-1" />
+                    Metricas
+                  </Button>
+                  <Button size="sm" className="flex-1 h-8 text-xs" onClick={() => handleEdit(agente)}>
+                    <Settings className="h-3 w-3 mr-1" />
+                    Config
+                  </Button>
                 </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+
+        {/* Empty Card - Create New */}
+        <Card
+          className="border-2 border-dashed hover:border-primary transition-colors cursor-pointer"
+          onClick={() => setDialogOpen(true)}
+        >
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center h-full min-h-[220px]">
+            <div className="bg-muted p-3 rounded-full mb-3">
+              <Plus className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <h3 className="font-semibold text-sm mb-1">Novo agente</h3>
+            <p className="text-xs text-muted-foreground">Configure um bot de IA</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Performance Section */}
+      <Card>
+        <CardHeader className="py-3 px-4">
+          <CardTitle className="text-sm">Performance</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 px-4 pb-4">
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="bg-muted rounded-lg p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-muted-foreground">Respostas</span>
+                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <p className="text-xl font-bold">{stats.totalRespostas > 1000 ? `${(stats.totalRespostas / 1000).toFixed(1)}k` : stats.totalRespostas}</p>
+            </div>
+            <div className="bg-muted rounded-lg p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-muted-foreground">Acerto</span>
+                <Target className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <p className="text-xl font-bold">{stats.taxaMedia}%</p>
+            </div>
+            <div className="bg-muted rounded-lg p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-muted-foreground">Ativos</span>
+                <Bot className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <p className="text-xl font-bold">{stats.ativos}/{agentes.length}</p>
+            </div>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-4 text-center">
+            <BarChart3 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-xs text-muted-foreground">Grafico em breve</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Activity Section */}
+      <Card>
+        <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm">Atividade Recente</CardTitle>
+          <Button variant="link" size="sm" className="text-xs text-primary h-auto p-0">Ver todas</Button>
+        </CardHeader>
+        <CardContent className="pt-0 px-4 pb-4">
+          <div className="space-y-3">
+            {ATIVIDADES_RECENTES.slice(0, 3).map((atividade, idx) => (
+              <div key={atividade.id} className={cn("flex items-start gap-3 pb-3", idx < 2 && "border-b")}>
+                <div className={cn(
+                  "p-1.5 rounded-lg shrink-0",
+                  atividade.tipo === "sucesso" ? "bg-accent/10" : "bg-destructive/10"
+                )}>
+                  {atividade.tipo === "sucesso" ? (
+                    <Check className="h-3 w-3 text-accent" />
+                  ) : (
+                    <AlertCircle className="h-3 w-3 text-destructive" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-medium">
+                    {atividade.agente} - {atividade.grupo}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">{atividade.tempo}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Training Section */}
+      <Card>
+        <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm">Treinamento</CardTitle>
+          <Button size="sm" className="h-8 text-xs">
+            <GraduationCap className="h-3 w-3 mr-1" />
+            Treinar
+          </Button>
+        </CardHeader>
+        <CardContent className="pt-0 px-4 pb-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-muted rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Database className="h-3 w-3 text-primary" />
+                <span className="font-medium text-xs">Base</span>
+              </div>
+              <p className="text-lg font-bold">347</p>
+              <p className="text-[10px] text-muted-foreground">docs</p>
+            </div>
+            <div className="bg-muted rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <MessagesSquare className="h-3 w-3 text-primary" />
+                <span className="font-medium text-xs">Conversas</span>
+              </div>
+              <p className="text-lg font-bold">2.1k</p>
+              <p className="text-[10px] text-muted-foreground">30 dias</p>
+            </div>
+            <div className="bg-muted rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Clock className="h-3 w-3 text-primary" />
+                <span className="font-medium text-xs">Ultimo</span>
+              </div>
+              <p className="text-lg font-bold">3d</p>
+              <p className="text-[10px] text-muted-foreground">atras</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Footer */}
+      <footer className="py-3 text-center text-xs text-muted-foreground border-t">
+        <p>Copyright &copy; 2025 Sincron Grupos</p>
+      </footer>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Editar Agente" : "Criar Novo Agente"}</DialogTitle>
+            <DialogDescription>
+              Configure as informacoes e comportamento do agente IA.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome do Agente *</Label>
+              <Input
+                id="nome"
+                placeholder="Ex: Bot Vendas"
+                value={formData.nome}
+                onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="descricao">Descricao</Label>
+              <Textarea
+                id="descricao"
+                placeholder="Descreva o proposito e funcao deste agente..."
+                rows={3}
+                value={formData.descricao}
+                onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="modelo">Modelo</Label>
+              <Select
+                value={formData.modelo}
+                onValueChange={(val) => setFormData(prev => ({ ...prev, modelo: val }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MODELOS.map(m => (
+                    <SelectItem key={m.value} value={m.value}>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{m.label}</span>
+                        <span className="text-xs text-muted-foreground ml-2">{m.desc}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="prompt">Prompt do Sistema *</Label>
+              <Textarea
+                id="prompt"
+                placeholder="Voce e um assistente de atendimento especializado em..."
+                rows={4}
+                value={formData.prompt_sistema}
+                onChange={(e) => setFormData(prev => ({ ...prev, prompt_sistema: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Info className="h-3 w-3" />
+                Define a personalidade e comportamento do agente
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="temperatura">Temperatura: {formData.temperatura}</Label>
+                <Input
+                  id="temperatura"
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  value={formData.temperatura}
+                  onChange={(e) => setFormData(prev => ({ ...prev, temperatura: Number(e.target.value) }))}
+                  className="cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground">Menor = mais preciso, Maior = mais criativo</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="max_tokens">Max Tokens</Label>
+                <Input
+                  id="max_tokens"
+                  type="number"
+                  min={100}
+                  max={4000}
+                  value={formData.max_tokens}
+                  onChange={(e) => setFormData(prev => ({ ...prev, max_tokens: Number(e.target.value) }))}
+                />
               </div>
             </div>
 
-            <DialogFooter className="pt-3 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8"
-                onClick={() => handleDialogChange(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                size="sm"
-                className="h-8"
-                onClick={handleSubmit}
-                disabled={saving}
-              >
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-1.5" />
-                    {editingId ? "Salvar" : "Criar"}
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Dica - Compacta */}
-      <Card className="p-3 sm:p-4">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-muted-foreground shrink-0" />
-          <p className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Dica:</span> Use em <strong>Gatilhos</strong> com acao &quot;Acionar bot IA&quot;
-          </p>
-        </div>
-      </Card>
-
-      {/* Lista de Agentes */}
-      {agentes.length > 0 ? (
-        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
-          {agentes.map((agente) => {
-            const modeloInfo = MODELOS.find(m => m.value === agente.modelo)
-            return (
-              <Card
-                key={agente.id}
-                className={cn(
-                  "group card-hover transition-all",
-                  !agente.ativo && "opacity-60"
-                )}
-              >
-                <CardContent className="p-3 sm:p-4">
-                  {/* Header - Compacto */}
-                  <div className="flex items-start justify-between gap-2 mb-2.5">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={cn(
-                        "relative p-2 sm:p-2.5 rounded-lg transition-all shrink-0",
-                        agente.ativo ? "bg-foreground/10" : "bg-muted"
-                      )}>
-                        <Bot className={cn(
-                          "h-4 w-4 sm:h-5 sm:w-5 transition-colors",
-                          agente.ativo ? "text-foreground" : "text-muted-foreground"
-                        )} />
-                        {/* Status dot */}
-                        <div className="absolute -top-0.5 -right-0.5">
-                          <div className={cn(
-                            "h-2 w-2 rounded-full border border-background",
-                            agente.ativo ? "bg-foreground" : "bg-muted-foreground"
-                          )} />
-                        </div>
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-medium text-sm sm:text-base truncate">
-                          {agente.nome}
-                        </h3>
-                        {agente.descricao && (
-                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                            {agente.descricao}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <Switch
-                      checked={agente.ativo}
-                      onCheckedChange={(checked) => handleToggle(agente.id, checked)}
-                      disabled={toggling === agente.id}
-                      className="shrink-0 scale-90 sm:scale-100"
-                    />
-                  </div>
-
-                  {/* Stats - Compacto */}
-                  <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-2.5">
-                    <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 h-5 flex items-center gap-1">
-                      <Cpu className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                      <span className="hidden sm:inline">{modeloInfo?.label || agente.modelo}</span>
-                      <span className="sm:hidden">{modeloInfo?.label.split(' ')[0] || agente.modelo.split('-')[0]}</span>
-                    </Badge>
-                    <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 h-5 flex items-center gap-1">
-                      <Thermometer className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                      {agente.temperatura || 0.7}
-                    </Badge>
-                    {agente.responder_no_grupo !== false && (
-                      <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 h-5 flex items-center gap-1">
-                        <MessageSquare className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                        <span className="hidden sm:inline">Auto</span>
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Prompt preview - Compacto */}
-                  <div className="rounded-md bg-muted/50 p-2 sm:p-2.5 mb-2.5">
-                    <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2">
-                      {agente.prompt_sistema}
-                    </p>
-                  </div>
-
-                  {/* Actions - Compacto */}
-                  <div className="flex items-center gap-1.5 pt-2.5 border-t">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs px-2"
-                      onClick={() => handleEdit(agente)}
-                    >
-                      <Pencil className="h-3 w-3 sm:mr-1" />
-                      <span className="hidden sm:inline">Editar</span>
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-7 text-xs px-2 text-destructive hover:text-destructive">
-                          <Trash2 className="h-3 w-3 sm:mr-1" />
-                          <span className="hidden sm:inline">Excluir</span>
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="max-w-sm p-4 sm:p-6">
-                        <AlertDialogHeader className="pb-2">
-                          <AlertDialogTitle className="text-base">Excluir agente?</AlertDialogTitle>
-                          <AlertDialogDescription className="text-xs sm:text-sm">
-                            O agente sera removido. Gatilhos que o usam deixarao de funcionar.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter className="gap-2 sm:gap-0">
-                          <AlertDialogCancel className="h-8 text-xs sm:text-sm">Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDelete(agente.id)}
-                            className="h-8 text-xs sm:text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      ) : (
-        <Card className="p-6 text-center">
-          <div className="mx-auto w-fit p-3 rounded-xl bg-muted mb-3">
-            <Brain className="h-8 w-8 text-muted-foreground" />
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <div>
+                <p className="font-medium">Responder no grupo</p>
+                <p className="text-xs text-muted-foreground">Envia resposta diretamente no grupo</p>
+              </div>
+              <Switch
+                checked={formData.responder_no_grupo}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, responder_no_grupo: checked }))}
+              />
+            </div>
           </div>
-          <h3 className="text-base font-semibold mb-1">
-            Nenhum agente
-          </h3>
-          <p className="text-muted-foreground text-sm mb-4 max-w-xs mx-auto">
-            Crie agentes IA para automatizar respostas
-          </p>
-          <Button size="sm" onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Criar Agente
-          </Button>
-        </Card>
-      )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => handleDialogChange(false)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}>
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>{editingId ? "Salvar" : "Criar Agente"}</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

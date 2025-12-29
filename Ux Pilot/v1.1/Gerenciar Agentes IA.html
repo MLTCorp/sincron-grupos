@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentes IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "border": "var(--border)",
+                        "input": "var(--input)",
+                        "ring": "var(--ring)",
+                        "background": "var(--background)",
+                        "foreground": "var(--foreground)",
+                        "primary": {
+                            "DEFAULT": "var(--primary)",
+                            "foreground": "var(--primary-foreground)",
+                        },
+                        "secondary": {
+                            "DEFAULT": "var(--secondary)",
+                            "foreground": "var(--secondary-foreground)",
+                        },
+                        "destructive": {
+                            "DEFAULT": "var(--destructive)",
+                            "foreground": "var(--destructive-foreground)",
+                        },
+                        "muted": {
+                            "DEFAULT": "var(--muted)",
+                            "foreground": "var(--muted-foreground)",
+                        },
+                        "accent": {
+                            "DEFAULT": "var(--accent)",
+                            "foreground": "var(--accent-foreground)",
+                        },
+                        "popover": {
+                            "DEFAULT": "var(--popover)",
+                            "foreground": "var(--popover-foreground)",
+                        },
+                        "card": {
+                            "DEFAULT": "var(--card)",
+                            "foreground": "var(--card-foreground)",
+                        },
+                        "sidebar": {
+                            "DEFAULT": "var(--sidebar)",
+                            "foreground": "var(--sidebar-foreground)",
+                            "primary": "var(--sidebar-primary)",
+                            "primary-foreground": "var(--sidebar-primary-foreground)",
+                            "accent": "var(--sidebar-accent)",
+                            "accent-foreground": "var(--sidebar-accent-foreground)",
+                            "border": "var(--sidebar-border)",
+                            "ring": "var(--sidebar-ring)",
+                        },
+                        "chart": {
+                            "1": "var(--chart-1)",
+                            "2": "var(--chart-2)",
+                            "3": "var(--chart-3)",
+                            "4": "var(--chart-4)",
+                            "5": "var(--chart-5)",
+                        },
+                    },
+                    "borderRadius": {
+                        "lg": "var(--radius)",
+                        "md": "calc(var(--radius) - 2px)",
+                        "sm": "calc(var(--radius) - 4px)",
+                    },
+                    "fontFamily": {
+                        "sans": ["var(--font-sans)"],
+                        "serif": ["var(--font-serif)"],
+                        "mono": ["var(--font-mono)"],
+                    },
+                    "boxShadow": {
+                        "2xs": "var(--shadow-2xs)",
+                        "xs": "var(--shadow-xs)",
+                        "sm": "var(--shadow-sm)",
+                        "DEFAULT": "var(--shadow)",
+                        "md": "var(--shadow-md)",
+                        "lg": "var(--shadow-lg)",
+                        "xl": "var(--shadow-xl)",
+                        "2xl": "var(--shadow-2xl)",
+                    },
+                },
+            }
+        }
+    </script>
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #FAFAFA;
+            --foreground: #0f172a;
+            --card: #ffffff;
+            --card-foreground: #0f172a;
+            --primary: #55B52C;
+            --primary-foreground: #ffffff;
+            --secondary: #64748b;
+            --secondary-foreground: #ffffff;
+            --muted: #FAFAFA;
+            --muted-foreground: #64748b;
+            --accent: #3DB36A;
+            --accent-foreground: #ffffff;
+            --destructive: #ef4444;
+            --destructive-foreground: #ffffff;
+            --border: #EEE;
+            --input: #FFFFFF;
+            --ring: #94a3b8;
+            --font-sans: 'Inter', sans-serif;
+            --radius: 10px;
+            --shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        body {
+            font-family: var(--font-sans);
+        }
+        ::-webkit-scrollbar { display: none; }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground">
+    <div id="app-layout" class="flex min-h-[1024px]">
+        <aside id="sidebar" class="w-64 bg-card border-r border-border flex flex-col fixed h-full">
+            <div id="sidebar-header" class="flex items-center gap-2 p-6 border-b border-border">
+                <div class="bg-primary p-2 rounded-lg">
+                    <i class="fa-solid fa-sync text-primary-foreground text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold text-foreground">Sincron Grupos</h1>
+            </div>
+            <nav id="sidebar-nav" class="flex-1 p-4 space-y-2">
+                <a href="Dashboard.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="Instâncias.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-brands fa-whatsapp w-5 text-center"></i>
+                    <span>Instâncias</span>
+                </a>
+                <a href="Grupos.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-users w-5 text-center"></i>
+                    <span>Grupos</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-tags w-5 text-center"></i>
+                    <span>Categorias</span>
+                </a>
+                <a href="Criar Gatilho.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-bolt w-5 text-center"></i>
+                    <span>Gatilhos</span>
+                </a>
+                <a href="Mensagens em Massa.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-paper-plane w-5 text-center"></i>
+                    <span>Mensagens</span>
+                </a>
+                <a href="Gerenciar Agentes IA.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] bg-muted text-primary font-semibold">
+                    <i class="fa-solid fa-robot w-5 text-center"></i>
+                    <span>Agentes IA</span>
+                </a>
+                <a href="Transcrições por Categoria.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-file-audio w-5 text-center"></i>
+                    <span>Transcrição</span>
+                </a>
+                <a href="Equipe.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-user-friends w-5 text-center"></i>
+                    <span>Equipe</span>
+                </a>
+                <a href="Configurações.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-cog w-5 text-center"></i>
+                    <span>Configurações</span>
+                </a>
+            </nav>
+            <div id="sidebar-footer" class="p-4 border-t border-border">
+                <a href="#" class="flex items-center gap-3">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-10 h-10 rounded-full">
+                    <div>
+                        <p class="font-semibold text-card-foreground">Michelle</p>
+                        <p class="text-xs text-muted-foreground">Admin</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-muted-foreground ml-auto"></i>
+                </a>
+            </div>
+        </aside>
+
+        <main id="main-content" class="flex-1 ml-64 bg-background">
+            <header id="header" class="flex items-center justify-between p-6 border-b border-border bg-card sticky top-0 z-10">
+                <div>
+                    <h2 class="text-2xl font-bold text-card-foreground">Agentes IA</h2>
+                    <p class="text-muted-foreground">Configure e gerencie seus bots de inteligência artificial.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="text-muted-foreground hover:text-foreground">
+                        <i class="fa-regular fa-bell text-xl"></i>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-9 h-9 rounded-full">
+                        <div class="text-sm">
+                           <p class="font-semibold text-foreground">Michelle</p>
+                           <p class="text-muted-foreground">michelle@sincron.com</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="ai-agents-body" class="p-8 space-y-8">
+                <section id="agents-header-section" class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <input type="text" placeholder="Buscar agentes..." class="bg-input border border-border rounded-[--radius] px-4 py-2 w-80 focus:outline-none focus:ring-2 focus:ring-primary">
+                        <select class="bg-input border border-border rounded-[--radius] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option>Status: Todos</option>
+                            <option>Ativos</option>
+                            <option>Inativos</option>
+                            <option>Em teste</option>
+                        </select>
+                    </div>
+                    <button onclick="openCreateModal()" class="bg-primary text-primary-foreground font-semibold px-5 py-2 rounded-[--radius] flex items-center gap-2 hover:opacity-90 transition-opacity">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Novo Agente</span>
+                    </button>
+                </section>
+
+                <section id="agents-grid-section" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div id="agent-card-1" class="bg-card border border-border rounded-[--radius] p-6 shadow-[--shadow] hover:border-primary transition-colors">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-primary/10 p-3 rounded-lg">
+                                    <i class="fa-solid fa-robot text-primary text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-card-foreground">Bot Vendas</h3>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="w-2 h-2 bg-accent rounded-full"></span>
+                                        <span class="text-xs text-muted-foreground">Ativo</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="openEditModal('1')" class="text-muted-foreground hover:text-foreground">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                        </div>
+                        <p class="text-sm text-muted-foreground mb-4">Responde automaticamente dúvidas sobre produtos e preços nos grupos de vendas.</p>
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">Grupos ativos</span>
+                                <span class="font-semibold text-card-foreground">12</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">Respostas hoje</span>
+                                <span class="font-semibold text-card-foreground">47</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">Taxa de acerto</span>
+                                <span class="font-semibold text-accent">94%</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="flex-1 bg-muted text-card-foreground font-semibold px-3 py-2 rounded-[--radius] text-sm hover:bg-border transition-colors">
+                                <i class="fa-solid fa-chart-line mr-1"></i>
+                                Métricas
+                            </button>
+                            <button class="flex-1 bg-primary text-primary-foreground font-semibold px-3 py-2 rounded-[--radius] text-sm hover:opacity-90 transition-opacity">
+                                <i class="fa-solid fa-cog mr-1"></i>
+                                Configurar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="agent-card-2" class="bg-card border border-border rounded-[--radius] p-6 shadow-[--shadow] hover:border-primary transition-colors">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-secondary/10 p-3 rounded-lg">
+                                    <i class="fa-solid fa-headset text-secondary text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-card-foreground">Bot Suporte</h3>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="w-2 h-2 bg-accent rounded-full"></span>
+                                        <span class="text-xs text-muted-foreground">Ativo</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="openEditModal('2')" class="text-muted-foreground hover:text-foreground">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                        </div>
+                        <p class="text-sm text-muted-foreground mb-4">Auxilia clientes com problemas técnicos e dúvidas sobre o produto em grupos de suporte.</p>
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">Grupos ativos</span>
+                                <span class="font-semibold text-card-foreground">8</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">Respostas hoje</span>
+                                <span class="font-semibold text-card-foreground">89</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">Taxa de acerto</span>
+                                <span class="font-semibold text-accent">91%</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="flex-1 bg-muted text-card-foreground font-semibold px-3 py-2 rounded-[--radius] text-sm hover:bg-border transition-colors">
+                                <i class="fa-solid fa-chart-line mr-1"></i>
+                                Métricas
+                            </button>
+                            <button class="flex-1 bg-primary text-primary-foreground font-semibold px-3 py-2 rounded-[--radius] text-sm hover:opacity-90 transition-opacity">
+                                <i class="fa-solid fa-cog mr-1"></i>
+                                Configurar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="agent-card-3" class="bg-card border border-border rounded-[--radius] p-6 shadow-[--shadow] hover:border-primary transition-colors">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-muted p-3 rounded-lg">
+                                    <i class="fa-solid fa-shield-halved text-muted-foreground text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-card-foreground">Bot Moderador</h3>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="w-2 h-2 bg-muted-foreground rounded-full"></span>
+                                        <span class="text-xs text-muted-foreground">Inativo</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="openEditModal('3')" class="text-muted-foreground hover:text-foreground">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                        </div>
+                        <p class="text-sm text-muted-foreground mb-4">Remove mensagens inadequadas e aplica regras de moderação automaticamente.</p>
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">Grupos ativos</span>
+                                <span class="font-semibold text-card-foreground">0</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">Respostas hoje</span>
+                                <span class="font-semibold text-card-foreground">0</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">Taxa de acerto</span>
+                                <span class="font-semibold text-muted-foreground">-</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="flex-1 bg-muted text-card-foreground font-semibold px-3 py-2 rounded-[--radius] text-sm hover:bg-border transition-colors">
+                                <i class="fa-solid fa-chart-line mr-1"></i>
+                                Métricas
+                            </button>
+                            <button class="flex-1 bg-primary text-primary-foreground font-semibold px-3 py-2 rounded-[--radius] text-sm hover:opacity-90 transition-opacity">
+                                <i class="fa-solid fa-cog mr-1"></i>
+                                Configurar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="empty-agent-card" class="bg-card border-2 border-dashed border-border rounded-[--radius] p-6 flex flex-col items-center justify-center text-center hover:border-primary transition-colors cursor-pointer" onclick="openCreateModal()">
+                        <div class="bg-muted p-4 rounded-full mb-4">
+                            <i class="fa-solid fa-plus text-muted-foreground text-3xl"></i>
+                        </div>
+                        <h3 class="font-bold text-card-foreground mb-2">Criar novo agente</h3>
+                        <p class="text-sm text-muted-foreground">Configure um novo bot de IA para seus grupos</p>
+                    </div>
+                </section>
+
+                <section id="performance-section" class="bg-card border border-border rounded-[--radius] p-6 shadow-[--shadow]">
+                    <h3 class="text-lg font-bold text-card-foreground mb-6">Performance dos Agentes</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div id="total-responses-metric" class="bg-muted rounded-[--radius] p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-semibold text-muted-foreground">TOTAL DE RESPOSTAS</span>
+                                <i class="fa-solid fa-message text-muted-foreground"></i>
+                            </div>
+                            <p class="text-3xl font-bold text-card-foreground">1,247</p>
+                            <p class="text-sm text-accent mt-1">
+                                <i class="fa-solid fa-arrow-up mr-1"></i>
+                                +12% vs. mês anterior
+                            </p>
+                        </div>
+                        <div id="avg-accuracy-metric" class="bg-muted rounded-[--radius] p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-semibold text-muted-foreground">TAXA MÉDIA DE ACERTO</span>
+                                <i class="fa-solid fa-bullseye text-muted-foreground"></i>
+                            </div>
+                            <p class="text-3xl font-bold text-card-foreground">92.5%</p>
+                            <p class="text-sm text-accent mt-1">
+                                <i class="fa-solid fa-arrow-up mr-1"></i>
+                                +2.3% vs. mês anterior
+                            </p>
+                        </div>
+                        <div id="active-agents-metric" class="bg-muted rounded-[--radius] p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-semibold text-muted-foreground">AGENTES ATIVOS</span>
+                                <i class="fa-solid fa-robot text-muted-foreground"></i>
+                            </div>
+                            <p class="text-3xl font-bold text-card-foreground">2/3</p>
+                            <p class="text-sm text-muted-foreground mt-1">
+                                1 agente inativo
+                            </p>
+                        </div>
+                    </div>
+                    <div id="chart-container" style="height: 320px;"></div>
+                </section>
+
+                <section id="recent-activity-section" class="bg-card border border-border rounded-[--radius] p-6 shadow-[--shadow]">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-bold text-card-foreground">Atividade Recente</h3>
+                        <button class="text-sm text-primary font-semibold hover:opacity-80">Ver todas</button>
+                    </div>
+                    <div class="space-y-4">
+                        <div id="activity-1" class="flex items-start gap-4 pb-4 border-b border-border">
+                            <div class="bg-accent/10 p-2 rounded-lg flex-shrink-0">
+                                <i class="fa-solid fa-check text-accent"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-semibold text-card-foreground">Bot Vendas respondeu em Vendas SP</p>
+                                <p class="text-xs text-muted-foreground mt-1">Pergunta sobre preço do produto Premium • Taxa de confiança: 96%</p>
+                                <p class="text-xs text-muted-foreground mt-1">há 5 minutos</p>
+                            </div>
+                        </div>
+                        <div id="activity-2" class="flex items-start gap-4 pb-4 border-b border-border">
+                            <div class="bg-accent/10 p-2 rounded-lg flex-shrink-0">
+                                <i class="fa-solid fa-check text-accent"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-semibold text-card-foreground">Bot Suporte respondeu em Suporte Premium</p>
+                                <p class="text-xs text-muted-foreground mt-1">Dúvida sobre instalação do aplicativo • Taxa de confiança: 89%</p>
+                                <p class="text-xs text-muted-foreground mt-1">há 12 minutos</p>
+                            </div>
+                        </div>
+                        <div id="activity-3" class="flex items-start gap-4 pb-4 border-b border-border">
+                            <div class="bg-accent/10 p-2 rounded-lg flex-shrink-0">
+                                <i class="fa-solid fa-check text-accent"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-semibold text-card-foreground">Bot Vendas respondeu em Leads Novembro</p>
+                                <p class="text-xs text-muted-foreground mt-1">Informações sobre formas de pagamento • Taxa de confiança: 98%</p>
+                                <p class="text-xs text-muted-foreground mt-1">há 23 minutos</p>
+                            </div>
+                        </div>
+                        <div id="activity-4" class="flex items-start gap-4 pb-4 border-b border-border">
+                            <div class="bg-destructive/10 p-2 rounded-lg flex-shrink-0">
+                                <i class="fa-solid fa-exclamation text-destructive"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-semibold text-card-foreground">Bot Suporte não conseguiu responder</p>
+                                <p class="text-xs text-muted-foreground mt-1">Pergunta fora do escopo de conhecimento • Taxa de confiança: 34%</p>
+                                <p class="text-xs text-muted-foreground mt-1">há 1 hora</p>
+                            </div>
+                        </div>
+                        <div id="activity-5" class="flex items-start gap-4">
+                            <div class="bg-accent/10 p-2 rounded-lg flex-shrink-0">
+                                <i class="fa-solid fa-check text-accent"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-semibold text-card-foreground">Bot Vendas respondeu em Comunidade Geral</p>
+                                <p class="text-xs text-muted-foreground mt-1">Informações sobre recursos do produto • Taxa de confiança: 92%</p>
+                                <p class="text-xs text-muted-foreground mt-1">há 2 horas</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="training-section" class="bg-card border border-border rounded-[--radius] p-6 shadow-[--shadow]">
+                    <div class="flex items-start justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-bold text-card-foreground">Treinamento dos Agentes</h3>
+                            <p class="text-sm text-muted-foreground mt-1">Melhore a performance dos seus bots com novos dados</p>
+                        </div>
+                        <button class="bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-[--radius] flex items-center gap-2 hover:opacity-90 transition-opacity">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                            <span>Treinar Agentes</span>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div id="training-card-1" class="bg-muted rounded-[--radius] p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <i class="fa-solid fa-database text-primary"></i>
+                                <span class="font-semibold text-card-foreground">Base de conhecimento</span>
+                            </div>
+                            <p class="text-2xl font-bold text-card-foreground mb-1">347</p>
+                            <p class="text-xs text-muted-foreground">documentos indexados</p>
+                        </div>
+                        <div id="training-card-2" class="bg-muted rounded-[--radius] p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <i class="fa-solid fa-comments text-primary"></i>
+                                <span class="font-semibold text-card-foreground">Conversas analisadas</span>
+                            </div>
+                            <p class="text-2xl font-bold text-card-foreground mb-1">2,145</p>
+                            <p class="text-xs text-muted-foreground">últimos 30 dias</p>
+                        </div>
+                        <div id="training-card-3" class="bg-muted rounded-[--radius] p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <i class="fa-solid fa-clock text-primary"></i>
+                                <span class="font-semibold text-card-foreground">Último treinamento</span>
+                            </div>
+                            <p class="text-2xl font-bold text-card-foreground mb-1">3 dias</p>
+                            <p class="text-xs text-muted-foreground">atrás</p>
+                        </div>
+                    </div>
+                </section>
+
+                <footer id="footer" class="text-center text-sm text-muted-foreground pt-8">
+                    <p>Copyright © 2025 Sincron Grupos</p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <div id="create-modal" class="modal-overlay">
+        <div class="bg-card rounded-[--radius] shadow-2xl w-full max-w-2xl mx-4">
+            <div class="flex items-center justify-between p-6 border-b border-border">
+                <h3 class="text-xl font-bold text-card-foreground">Criar Novo Agente</h3>
+                <button onclick="closeCreateModal()" class="text-muted-foreground hover:text-foreground">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Nome do Agente</label>
+                    <input type="text" placeholder="Ex: Bot Vendas" class="w-full bg-input border border-border rounded-[--radius] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Descrição</label>
+                    <textarea rows="3" placeholder="Descreva o propósito e função deste agente..." class="w-full bg-input border border-border rounded-[--radius] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Tipo de Agente</label>
+                    <select class="w-full bg-input border border-border rounded-[--radius] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option>Selecione o tipo</option>
+                        <option>Atendimento/Suporte</option>
+                        <option>Vendas</option>
+                        <option>Moderação</option>
+                        <option>Informativo</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Grupos</label>
+                    <div class="bg-muted rounded-[--radius] p-4 max-h-40 overflow-y-auto space-y-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-primary border-border rounded focus:ring-primary">
+                            <span class="text-sm text-card-foreground">Vendas SP</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-primary border-border rounded focus:ring-primary">
+                            <span class="text-sm text-card-foreground">Suporte Premium</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-primary border-border rounded focus:ring-primary">
+                            <span class="text-sm text-card-foreground">Comunidade Geral</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-primary border-border rounded focus:ring-primary">
+                            <span class="text-sm text-card-foreground">Leads Novembro</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Base de Conhecimento</label>
+                    <div class="border-2 border-dashed border-border rounded-[--radius] p-6 text-center cursor-pointer hover:border-primary transition-colors">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-muted-foreground mb-2"></i>
+                        <p class="text-sm text-muted-foreground">Arraste arquivos ou clique para fazer upload</p>
+                        <p class="text-xs text-muted-foreground mt-1">PDF, TXT, DOCX até 10MB</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-3 p-6 border-t border-border">
+                <button onclick="closeCreateModal()" class="px-5 py-2 rounded-[--radius] font-semibold text-card-foreground hover:bg-muted transition-colors">
+                    Cancelar
+                </button>
+                <button class="bg-primary text-primary-foreground font-semibold px-5 py-2 rounded-[--radius] hover:opacity-90 transition-opacity">
+                    Criar Agente
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.plot.ly/plotly-3.1.1.min.js"></script>
+    <script>
+        function openCreateModal() {
+            document.getElementById('create-modal').classList.add('active');
+        }
+
+        function closeCreateModal() {
+            document.getElementById('create-modal').classList.remove('active');
+        }
+
+        function openEditModal(id) {
+            alert('Abrir modal de edição para agente ' + id);
+        }
+
+        window.addEventListener('load', function() {
+            try {
+                const data = [
+                    {
+                        x: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+                        y: [45, 52, 48, 67, 73, 41, 38],
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'Bot Vendas',
+                        line: { color: '#55B52C', width: 3 }
+                    },
+                    {
+                        x: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+                        y: [78, 82, 89, 91, 85, 67, 72],
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'Bot Suporte',
+                        line: { color: '#64748b', width: 3 }
+                    }
+                ];
+
+                const layout = {
+                    title: { 
+                        text: 'Respostas por Dia (Última Semana)', 
+                        font: { size: 16, color: '#0f172a' } 
+                    },
+                    xaxis: { 
+                        title: 'Dia da Semana',
+                        gridcolor: '#EEE'
+                    },
+                    yaxis: { 
+                        title: 'Número de Respostas',
+                        gridcolor: '#EEE'
+                    },
+                    margin: { t: 60, r: 20, b: 60, l: 60 },
+                    plot_bgcolor: '#FAFAFA',
+                    paper_bgcolor: '#FAFAFA',
+                    showlegend: true,
+                    legend: {
+                        orientation: 'h',
+                        y: -0.2
+                    }
+                };
+
+                const config = {
+                    responsive: true,
+                    displayModeBar: false,
+                    displaylogo: false
+                };
+
+                Plotly.newPlot('chart-container', data, layout, config);
+            } catch(e) {
+                document.getElementById('chart-container').innerHTML = '<div class="flex items-center justify-center h-full text-muted-foreground">Erro ao carregar gráfico</div>';
+            }
+        });
+
+        document.getElementById('create-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCreateModal();
+            }
+        });
+    </script>
+</body>
+</html>

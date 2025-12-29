@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gatilhos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "border": "var(--border)",
+                        "input": "var(--input)",
+                        "ring": "var(--ring)",
+                        "background": "var(--background)",
+                        "foreground": "var(--foreground)",
+                        "primary": {
+                            "DEFAULT": "var(--primary)",
+                            "foreground": "var(--primary-foreground)",
+                        },
+                        "secondary": {
+                            "DEFAULT": "var(--secondary)",
+                            "foreground": "var(--secondary-foreground)",
+                        },
+                        "destructive": {
+                            "DEFAULT": "var(--destructive)",
+                            "foreground": "var(--destructive-foreground)",
+                        },
+                        "muted": {
+                            "DEFAULT": "var(--muted)",
+                            "foreground": "var(--muted-foreground)",
+                        },
+                        "accent": {
+                            "DEFAULT": "var(--accent)",
+                            "foreground": "var(--accent-foreground)",
+                        },
+                        "popover": {
+                            "DEFAULT": "var(--popover)",
+                            "foreground": "var(--popover-foreground)",
+                        },
+                        "card": {
+                            "DEFAULT": "var(--card)",
+                            "foreground": "var(--card-foreground)",
+                        },
+                        "sidebar": {
+                            "DEFAULT": "var(--sidebar)",
+                            "foreground": "var(--sidebar-foreground)",
+                            "primary": "var(--sidebar-primary)",
+                            "primary-foreground": "var(--sidebar-primary-foreground)",
+                            "accent": "var(--sidebar-accent)",
+                            "accent-foreground": "var(--sidebar-accent-foreground)",
+                            "border": "var(--sidebar-border)",
+                            "ring": "var(--sidebar-ring)",
+                        },
+                        "chart": {
+                            "1": "var(--chart-1)",
+                            "2": "var(--chart-2)",
+                            "3": "var(--chart-3)",
+                            "4": "var(--chart-4)",
+                            "5": "var(--chart-5)",
+                        },
+                    },
+                    "borderRadius": {
+                        "lg": "var(--radius)",
+                        "md": "calc(var(--radius) - 2px)",
+                        "sm": "calc(var(--radius) - 4px)",
+                    },
+                    "fontFamily": {
+                        "sans": ["var(--font-sans)"],
+                        "serif": ["var(--font-serif)"],
+                        "mono": ["var(--font-mono)"],
+                    },
+                    "boxShadow": {
+                        "2xs": "var(--shadow-2xs)",
+                        "xs": "var(--shadow-xs)",
+                        "sm": "var(--shadow-sm)",
+                        "DEFAULT": "var(--shadow)",
+                        "md": "var(--shadow-md)",
+                        "lg": "var(--shadow-lg)",
+                        "xl": "var(--shadow-xl)",
+                        "2xl": "var(--shadow-2xl)",
+                    },
+                },
+            }
+        }
+    </script>
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #FAFAFA;
+            --foreground: #0f172a;
+            --card: #ffffff;
+            --card-foreground: #0f172a;
+            --primary: #55B52C;
+            --primary-foreground: #ffffff;
+            --secondary: #64748b;
+            --secondary-foreground: #ffffff;
+            --muted: #FAFAFA;
+            --muted-foreground: #64748b;
+            --accent: #3DB36A;
+            --accent-foreground: #ffffff;
+            --destructive: #ef4444;
+            --destructive-foreground: #ffffff;
+            --border: #EEE;
+            --input: #FFFFFF;
+            --ring: #94a3b8;
+            --font-sans: 'Inter', sans-serif;
+            --radius: 10px;
+            --shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        body {
+            font-family: var(--font-sans);
+        }
+        ::-webkit-scrollbar { display: none; }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground">
+    <div id="app-layout" class="flex min-h-[1024px]">
+        <aside id="sidebar" class="w-64 bg-card border-r border-border flex flex-col fixed h-full">
+            <div id="sidebar-header" class="flex items-center gap-2 p-6 border-b border-border">
+                <div class="bg-primary p-2 rounded-lg">
+                    <i class="fa-solid fa-sync text-primary-foreground text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold text-foreground">Sincron Grupos</h1>
+            </div>
+            <nav id="sidebar-nav" class="flex-1 p-4 space-y-2">
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-brands fa-whatsapp w-5 text-center"></i>
+                    <span>Instâncias</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-users w-5 text-center"></i>
+                    <span>Grupos</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-tags w-5 text-center"></i>
+                    <span>Categorias</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] bg-muted text-primary font-semibold">
+                    <i class="fa-solid fa-bolt w-5 text-center"></i>
+                    <span>Gatilhos</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-paper-plane w-5 text-center"></i>
+                    <span>Mensagens</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-robot w-5 text-center"></i>
+                    <span>Agentes IA</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-file-audio w-5 text-center"></i>
+                    <span>Transcrição</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-user-friends w-5 text-center"></i>
+                    <span>Equipe</span>
+                </a>
+            </nav>
+            <div id="sidebar-footer" class="p-4 border-t border-border">
+                <a href="#" class="flex items-center gap-3">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-10 h-10 rounded-full">
+                    <div>
+                        <p class="font-semibold text-card-foreground">Michelle</p>
+                        <p class="text-xs text-muted-foreground">Admin</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-muted-foreground ml-auto"></i>
+                </a>
+            </div>
+        </aside>
+
+        <main id="main-content" class="flex-1 ml-64 bg-background">
+            <header id="header" class="flex items-center justify-between p-6 border-b border-border bg-card sticky top-0 z-10">
+                <div>
+                    <h2 class="text-2xl font-bold text-card-foreground">Gatilhos</h2>
+                    <p class="text-muted-foreground">Crie automações que respondem a eventos específicos no WhatsApp.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="text-muted-foreground hover:text-foreground">
+                        <i class="fa-regular fa-bell text-xl"></i>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-9 h-9 rounded-full">
+                        <div class="text-sm">
+                           <p class="font-semibold text-foreground">Michelle</p>
+                           <p class="text-muted-foreground">michelle@sincron.com</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="triggers-body" class="p-8 space-y-8">
+                <section id="triggers-header-section" class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="relative">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"></i>
+                            <input type="text" placeholder="Buscar gatilhos..." class="pl-10 pr-4 py-2 border border-border rounded-[--radius] bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring w-80">
+                        </div>
+                        <div class="relative">
+                            <select class="px-4 py-2 border border-border rounded-[--radius] bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring appearance-none pr-10">
+                                <option>Status: Todos</option>
+                                <option>Ativos</option>
+                                <option>Pausados</option>
+                                <option>Inativos</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none"></i>
+                        </div>
+                        <div class="relative">
+                            <select class="px-4 py-2 border border-border rounded-[--radius] bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring appearance-none pr-10">
+                                <option>Categoria: Todas</option>
+                                <option>Vendas</option>
+                                <option>Suporte</option>
+                                <option>Comunidade</option>
+                                <option>VIP</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none"></i>
+                        </div>
+                    </div>
+                    <button onclick="openModal()" class="bg-primary text-primary-foreground font-semibold px-5 py-2 rounded-[--radius] flex items-center gap-2 hover:opacity-90 transition-opacity">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Novo Gatilho</span>
+                    </button>
+                </section>
+
+                <section id="triggers-stats-section" class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div id="stat-card-active" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow]">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground text-sm">ATIVOS</h4>
+                            <div class="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
+                                <i class="fa-solid fa-check text-accent"></i>
+                            </div>
+                        </div>
+                        <p class="text-3xl font-bold text-card-foreground">12</p>
+                    </div>
+                    <div id="stat-card-paused" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow]">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground text-sm">PAUSADOS</h4>
+                            <div class="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center">
+                                <i class="fa-solid fa-pause text-secondary"></i>
+                            </div>
+                        </div>
+                        <p class="text-3xl font-bold text-card-foreground">3</p>
+                    </div>
+                    <div id="stat-card-executions" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow]">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground text-sm">EXECUÇÕES (30d)</h4>
+                            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                <i class="fa-solid fa-bolt text-primary"></i>
+                            </div>
+                        </div>
+                        <p class="text-3xl font-bold text-card-foreground">2.4k</p>
+                    </div>
+                    <div id="stat-card-groups" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow]">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground text-sm">GRUPOS COM GATILHOS</h4>
+                            <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                                <i class="fa-solid fa-users text-muted-foreground"></i>
+                            </div>
+                        </div>
+                        <p class="text-3xl font-bold text-card-foreground">28</p>
+                    </div>
+                </section>
+
+                <section id="triggers-list-section" class="bg-card border border-border rounded-[--radius] shadow-[--shadow] overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-muted border-b border-border">
+                                <tr>
+                                    <th class="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">NOME</th>
+                                    <th class="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">EVENTO</th>
+                                    <th class="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">AÇÃO</th>
+                                    <th class="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">GRUPOS</th>
+                                    <th class="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">STATUS</th>
+                                    <th class="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">EXECUÇÕES</th>
+                                    <th class="text-center px-6 py-4 text-sm font-semibold text-muted-foreground"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                <tr id="trigger-row-1" class="hover:bg-muted/50 transition-colors cursor-pointer">
+                                    <td class="px-6 py-4">
+                                        <div>
+                                            <p class="font-semibold text-card-foreground">Boas-vindas automáticas</p>
+                                            <p class="text-sm text-muted-foreground">Mensagem de boas-vindas para novos membros</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                                <i class="fa-solid fa-user-plus text-primary text-sm"></i>
+                                            </div>
+                                            <span class="text-sm text-card-foreground">Novo membro</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
+                                                <i class="fa-solid fa-paper-plane text-accent text-sm"></i>
+                                            </div>
+                                            <span class="text-sm text-card-foreground">Enviar mensagem</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-wrap gap-1">
+                                            <span class="px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">Vendas</span>
+                                            <span class="px-2 py-1 rounded-md bg-secondary/10 text-secondary text-xs font-medium">+3</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                                            Ativo
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-card-foreground font-semibold">847</p>
+                                        <p class="text-xs text-muted-foreground">últimos 30 dias</p>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <button class="text-muted-foreground hover:text-foreground p-2">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr id="trigger-row-2" class="hover:bg-muted/50 transition-colors cursor-pointer">
+                                    <td class="px-6 py-4">
+                                        <div>
+                                            <p class="font-semibold text-card-foreground">Moderação de links</p>
+                                            <p class="text-sm text-muted-foreground">Remove links não autorizados</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
+                                                <i class="fa-solid fa-link text-destructive text-sm"></i>
+                                            </div>
+                                            <span class="text-sm text-card-foreground">Link detectado</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
+                                                <i class="fa-solid fa-trash text-destructive text-sm"></i>
+                                            </div>
+                                            <span class="text-sm text-card-foreground">Deletar + Avisar</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-wrap gap-1">
+                                            <span class="px-2 py-1 rounded-md bg-secondary/10 text-secondary text-xs font-medium">Comunidade</span>
+                                            <span class="px-2 py-1 rounded-md bg-secondary/10 text-secondary text-xs font-medium">+5</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                                            Ativo
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-card-foreground font-semibold">234</p>
+                                        <p class="text-xs text-muted-foreground">últimos 30 dias</p>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <button class="text-muted-foreground hover:text-foreground p-2">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr id="trigger-row-3" class="hover:bg-muted/50 transition-colors cursor-pointer">
+                                    <td class="px-6 py-4">
+                                        <div>
+                                            <p class="font-semibold text-card-foreground">Auto-resposta FAQ</p>
+                                            <p class="text-sm text-muted-foreground">Responde perguntas frequentes automaticamente</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                                <i class="fa-solid fa-message text-primary text-sm"></i>
+                                            </div>
+                                            <span class="text-sm text-card-foreground">Palavra-chave</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
+                                                <i class="fa-solid fa-reply text-accent text-sm"></i>
+                                            </div>
+                                            <span class="text-sm text-card-foreground">Responder</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-wrap gap-1">
+                                            <span class="px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">Suporte</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                                            Ativo
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-card-foreground font-semibold">1.2k</p>
+                                        <p class="text-xs text-muted-foreground">últimos 30 dias</p>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <button class="text-muted-foreground hover:text-foreground p-2">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr id="trigger-row-4" class="hover:bg-muted/50 transition-colors cursor-pointer">
+                                    <td class="px-6 py-4">
+                                        <div>
+                                            <p class="font-semibold text-card-foreground">Notificação VIP</p>
+                                            <p class="text-sm text-muted-foreground">Notifica admin quando VIP entra</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                                <i class="fa-solid fa-user-plus text-primary text-sm"></i>
+                                            </div>
+                                            <span class="text-sm text-card-foreground">Novo membro</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                                <i class="fa-solid fa-bell text-primary text-sm"></i>
+                                            </div>
+                                            <span class="text-sm text-card-foreground">Notificar admin</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-wrap gap-1">
+                                            <span class="px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">VIP</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-semibold">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                            Pausado
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-card-foreground font-semibold">12</p>
+                                        <p class="text-xs text-muted-foreground">últimos 30 dias</p>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <button class="text-muted-foreground hover:text-foreground p-2">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr id="trigger-row-5" class="hover:bg-muted/50 transition-colors cursor-pointer">
+                                    <td class="px-6 py-4">
+                                        <div>
+                                            <p class="font-semibold text-card-foreground">Agendamento semanal</p>
+                                            <p class="text-sm text-muted-foreground">Envia resumo toda segunda-feira</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                                <i class="fa-solid fa-clock text-primary text-sm"></i>
+                                            </div>
+                                            <span class="text-sm text-card-foreground">Agendado</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
+                                                <i class="fa-solid fa-paper-plane text-accent text-sm"></i>
+                                            </div>
+                                            <span class="text-sm text-card-foreground">Enviar mensagem</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-wrap gap-1">
+                                            <span class="px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">Vendas</span>
+                                            <span class="px-2 py-1 rounded-md bg-secondary/10 text-secondary text-xs font-medium">+2</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                                            Ativo
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-card-foreground font-semibold">48</p>
+                                        <p class="text-xs text-muted-foreground">últimos 30 dias</p>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <button class="text-muted-foreground hover:text-foreground p-2">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex items-center justify-between px-6 py-4 border-t border-border">
+                        <p class="text-sm text-muted-foreground">Mostrando 1-5 de 15 gatilhos</p>
+                        <div class="flex items-center gap-2">
+                            <button class="px-3 py-1 border border-border rounded-[--radius] text-muted-foreground hover:bg-muted transition-colors">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <button class="px-3 py-1 bg-primary text-primary-foreground rounded-[--radius] font-semibold">1</button>
+                            <button class="px-3 py-1 border border-border rounded-[--radius] text-muted-foreground hover:bg-muted transition-colors">2</button>
+                            <button class="px-3 py-1 border border-border rounded-[--radius] text-muted-foreground hover:bg-muted transition-colors">3</button>
+                            <button class="px-3 py-1 border border-border rounded-[--radius] text-muted-foreground hover:bg-muted transition-colors">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <footer id="footer" class="text-center text-sm text-muted-foreground pt-8">
+                    <p>Copyright © 2025 Sincron Grupos</p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <div id="create-trigger-modal" class="modal-overlay">
+        <div class="bg-card rounded-[--radius] shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-card-foreground">Criar Novo Gatilho</h3>
+                    <p class="text-sm text-muted-foreground">Configure uma automação para responder a eventos no WhatsApp</p>
+                </div>
+                <button onclick="closeModal()" class="text-muted-foreground hover:text-foreground">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div id="modal-basic-info">
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Nome do gatilho</label>
+                    <input type="text" placeholder="Ex: Boas-vindas automáticas" class="w-full px-4 py-2 border border-border rounded-[--radius] bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                </div>
+
+                <div id="modal-description">
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Descrição (opcional)</label>
+                    <textarea placeholder="Descreva o que este gatilho faz..." rows="3" class="w-full px-4 py-2 border border-border rounded-[--radius] bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
+                </div>
+
+                <div id="modal-event-section" class="bg-muted rounded-[--radius] p-5">
+                    <h4 class="font-semibold text-card-foreground mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-primary"></i>
+                        Quando este evento ocorrer
+                    </h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-card-foreground mb-2">Tipo de evento</label>
+                            <select class="w-full px-4 py-2 border border-border rounded-[--radius] bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                                <option>Selecione um evento...</option>
+                                <option>Novo membro entra no grupo</option>
+                                <option>Membro sai do grupo</option>
+                                <option>Mensagem contém palavra-chave</option>
+                                <option>Link detectado</option>
+                                <option>Mídia enviada</option>
+                                <option>Menção ao bot</option>
+                                <option>Horário agendado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-card-foreground mb-2">Aplicar em grupos</label>
+                            <div class="flex flex-wrap gap-2">
+                                <button class="px-3 py-1 rounded-full border-2 border-primary bg-primary/10 text-primary text-sm font-medium">
+                                    Vendas
+                                    <i class="fa-solid fa-xmark ml-1"></i>
+                                </button>
+                                <button class="px-3 py-1 rounded-full border-2 border-secondary bg-secondary/10 text-secondary text-sm font-medium">
+                                    Suporte
+                                    <i class="fa-solid fa-xmark ml-1"></i>
+                                </button>
+                                <button class="px-3 py-1 rounded-full border-2 border-dashed border-border text-muted-foreground text-sm font-medium hover:border-primary hover:text-primary">
+                                    <i class="fa-solid fa-plus mr-1"></i>
+                                    Adicionar categoria
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="modal-action-section" class="bg-muted rounded-[--radius] p-5">
+                    <h4 class="font-semibold text-card-foreground mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-play text-accent"></i>
+                        Execute esta ação
+                    </h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-card-foreground mb-2">Tipo de ação</label>
+                            <select class="w-full px-4 py-2 border border-border rounded-[--radius] bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                                <option>Selecione uma ação...</option>
+                                <option>Enviar mensagem</option>
+                                <option>Deletar mensagem</option>
+                                <option>Remover membro</option>
+                                <option>Notificar admin</option>
+                                <option>Marcar como lido</option>
+                                <option>Adicionar a lista</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-card-foreground mb-2">Conteúdo da mensagem</label>
+                            <textarea placeholder="Digite a mensagem que será enviada..." rows="4" class="w-full px-4 py-2 border border-border rounded-[--radius] bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
+                            <p class="text-xs text-muted-foreground mt-2">
+                                <i class="fa-solid fa-lightbulb"></i>
+                                Use variáveis: {nome}, {grupo}, {data}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="modal-conditions-section">
+                    <h4 class="font-semibold text-card-foreground mb-3">Condições adicionais (opcional)</h4>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="condition-time" class="w-4 h-4 text-primary border-border rounded focus:ring-2 focus:ring-ring">
+                            <label for="condition-time" class="text-sm text-card-foreground">Executar apenas em horário comercial (9h-18h)</label>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="condition-weekday" class="w-4 h-4 text-primary border-border rounded focus:ring-2 focus:ring-ring">
+                            <label for="condition-weekday" class="text-sm text-card-foreground">Executar apenas em dias úteis</label>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="condition-delay" class="w-4 h-4 text-primary border-border rounded focus:ring-2 focus:ring-ring">
+                            <label for="condition-delay" class="text-sm text-card-foreground">Adicionar delay de 5 segundos antes de executar</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="modal-status-section">
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Status inicial</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="status" value="active" checked class="w-4 h-4 text-primary border-border focus:ring-2 focus:ring-ring">
+                            <span class="text-sm text-card-foreground">Ativo</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="status" value="paused" class="w-4 h-4 text-primary border-border focus:ring-2 focus:ring-ring">
+                            <span class="text-sm text-card-foreground">Pausado</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="sticky bottom-0 bg-card border-t border-border px-6 py-4 flex items-center justify-end gap-3">
+                <button onclick="closeModal()" class="px-5 py-2 border border-border rounded-[--radius] text-card-foreground font-semibold hover:bg-muted transition-colors">
+                    Cancelar
+                </button>
+                <button class="px-5 py-2 bg-primary text-primary-foreground rounded-[--radius] font-semibold hover:opacity-90 transition-opacity">
+                    Criar Gatilho
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById('create-trigger-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('create-trigger-modal').classList.remove('active');
+        }
+
+        document.getElementById('create-trigger-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

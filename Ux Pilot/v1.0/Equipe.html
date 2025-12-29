@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "border": "var(--border)",
+                        "input": "var(--input)",
+                        "ring": "var(--ring)",
+                        "background": "var(--background)",
+                        "foreground": "var(--foreground)",
+                        "primary": {
+                            "DEFAULT": "var(--primary)",
+                            "foreground": "var(--primary-foreground)",
+                        },
+                        "secondary": {
+                            "DEFAULT": "var(--secondary)",
+                            "foreground": "var(--secondary-foreground)",
+                        },
+                        "destructive": {
+                            "DEFAULT": "var(--destructive)",
+                            "foreground": "var(--destructive-foreground)",
+                        },
+                        "muted": {
+                            "DEFAULT": "var(--muted)",
+                            "foreground": "var(--muted-foreground)",
+                        },
+                        "accent": {
+                            "DEFAULT": "var(--accent)",
+                            "foreground": "var(--accent-foreground)",
+                        },
+                        "popover": {
+                            "DEFAULT": "var(--popover)",
+                            "foreground": "var(--popover-foreground)",
+                        },
+                        "card": {
+                            "DEFAULT": "var(--card)",
+                            "foreground": "var(--card-foreground)",
+                        },
+                        "sidebar": {
+                            "DEFAULT": "var(--sidebar)",
+                            "foreground": "var(--sidebar-foreground)",
+                            "primary": "var(--sidebar-primary)",
+                            "primary-foreground": "var(--sidebar-primary-foreground)",
+                            "accent": "var(--sidebar-accent)",
+                            "accent-foreground": "var(--sidebar-accent-foreground)",
+                            "border": "var(--sidebar-border)",
+                            "ring": "var(--sidebar-ring)",
+                        },
+                        "chart": {
+                            "1": "var(--chart-1)",
+                            "2": "var(--chart-2)",
+                            "3": "var(--chart-3)",
+                            "4": "var(--chart-4)",
+                            "5": "var(--chart-5)",
+                        },
+                    },
+                    "borderRadius": {
+                        "lg": "var(--radius)",
+                        "md": "calc(var(--radius) - 2px)",
+                        "sm": "calc(var(--radius) - 4px)",
+                    },
+                    "fontFamily": {
+                        "sans": ["var(--font-sans)"],
+                        "serif": ["var(--font-serif)"],
+                        "mono": ["var(--font-mono)"],
+                    },
+                    "boxShadow": {
+                        "2xs": "var(--shadow-2xs)",
+                        "xs": "var(--shadow-xs)",
+                        "sm": "var(--shadow-sm)",
+                        "DEFAULT": "var(--shadow)",
+                        "md": "var(--shadow-md)",
+                        "lg": "var(--shadow-lg)",
+                        "xl": "var(--shadow-xl)",
+                        "2xl": "var(--shadow-2xl)",
+                    },
+                },
+            }
+        }
+    </script>
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #FAFAFA;
+            --foreground: #0f172a;
+            --card: #ffffff;
+            --card-foreground: #0f172a;
+            --primary: #55B52C;
+            --primary-foreground: #ffffff;
+            --secondary: #64748b;
+            --secondary-foreground: #ffffff;
+            --muted: #FAFAFA;
+            --muted-foreground: #64748b;
+            --accent: #3DB36A;
+            --accent-foreground: #ffffff;
+            --destructive: #ef4444;
+            --destructive-foreground: #ffffff;
+            --border: #EEE;
+            --input: #FFFFFF;
+            --ring: #94a3b8;
+            --font-sans: 'Inter', sans-serif;
+            --radius: 10px;
+            --shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        body {
+            font-family: var(--font-sans);
+        }
+        ::-webkit-scrollbar { display: none; }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground">
+    <div id="app-layout" class="flex min-h-[1024px]">
+        <aside id="sidebar" class="w-64 bg-card border-r border-border flex flex-col fixed h-full">
+            <div id="sidebar-header" class="flex items-center gap-2 p-6 border-b border-border">
+                <div class="bg-primary p-2 rounded-lg">
+                    <i class="fa-solid fa-sync text-primary-foreground text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold text-foreground">Sincron Grupos</h1>
+            </div>
+            <nav id="sidebar-nav" class="flex-1 p-4 space-y-2">
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-brands fa-whatsapp w-5 text-center"></i>
+                    <span>Instâncias</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-users w-5 text-center"></i>
+                    <span>Grupos</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-tags w-5 text-center"></i>
+                    <span>Categorias</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-bolt w-5 text-center"></i>
+                    <span>Gatilhos</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-paper-plane w-5 text-center"></i>
+                    <span>Mensagens</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-robot w-5 text-center"></i>
+                    <span>Agentes IA</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-file-audio w-5 text-center"></i>
+                    <span>Transcrição</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] bg-muted text-primary font-semibold">
+                    <i class="fa-solid fa-user-friends w-5 text-center"></i>
+                    <span>Equipe</span>
+                </a>
+            </nav>
+            <div id="sidebar-footer" class="p-4 border-t border-border">
+                <a href="#" class="flex items-center gap-3">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-10 h-10 rounded-full">
+                    <div>
+                        <p class="font-semibold text-card-foreground">Michelle</p>
+                        <p class="text-xs text-muted-foreground">Admin</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-muted-foreground ml-auto"></i>
+                </a>
+            </div>
+        </aside>
+
+        <main id="main-content" class="flex-1 ml-64 bg-background">
+            <header id="header" class="flex items-center justify-between p-6 border-b border-border bg-card sticky top-0 z-10">
+                <div>
+                    <h2 class="text-2xl font-bold text-card-foreground">Equipe</h2>
+                    <p class="text-muted-foreground">Gerencie membros, funções e permissões.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="text-muted-foreground hover:text-foreground">
+                        <i class="fa-regular fa-bell text-xl"></i>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-9 h-9 rounded-full">
+                        <div class="text-sm">
+                           <p class="font-semibold text-foreground">Michelle</p>
+                           <p class="text-muted-foreground">michelle@sincron.com</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="team-body" class="p-8 space-y-8">
+                <section id="team-stats-section" class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div id="stat-total-members" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow]">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground">TOTAL MEMBROS</h4>
+                            <i class="fa-solid fa-users text-2xl text-muted-foreground"></i>
+                        </div>
+                        <p class="text-3xl font-bold text-card-foreground">8</p>
+                        <p class="text-sm text-muted-foreground mt-1">+2 este mês</p>
+                    </div>
+                    <div id="stat-owners" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow]">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground">PROPRIETÁRIOS</h4>
+                            <i class="fa-solid fa-crown text-2xl text-amber-500"></i>
+                        </div>
+                        <p class="text-3xl font-bold text-card-foreground">1</p>
+                        <p class="text-sm text-muted-foreground mt-1">Acesso total</p>
+                    </div>
+                    <div id="stat-admins" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow]">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground">ADMINISTRADORES</h4>
+                            <i class="fa-solid fa-user-shield text-2xl text-primary"></i>
+                        </div>
+                        <p class="text-3xl font-bold text-card-foreground">3</p>
+                        <p class="text-sm text-muted-foreground mt-1">Gerenciamento completo</p>
+                    </div>
+                    <div id="stat-members" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow]">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground">MEMBROS</h4>
+                            <i class="fa-solid fa-user text-2xl text-secondary"></i>
+                        </div>
+                        <p class="text-3xl font-bold text-card-foreground">4</p>
+                        <p class="text-sm text-muted-foreground mt-1">Acesso limitado</p>
+                    </div>
+                </section>
+
+                <section id="team-management-section" class="bg-card border border-border rounded-[--radius] shadow-[--shadow]">
+                    <div id="team-header" class="flex items-center justify-between p-6 border-b border-border">
+                        <div class="flex items-center gap-4 flex-1">
+                            <div class="relative flex-1 max-w-md">
+                                <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"></i>
+                                <input type="text" placeholder="Buscar por nome ou email..." class="w-full pl-10 pr-4 py-2 border border-border rounded-[--radius] bg-input focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div class="relative">
+                                <button class="px-4 py-2 border border-border rounded-[--radius] bg-input flex items-center gap-2 hover:bg-muted transition-colors">
+                                    <span class="text-foreground">Função: Todas</span>
+                                    <i class="fa-solid fa-chevron-down text-muted-foreground"></i>
+                                </button>
+                            </div>
+                            <div class="relative">
+                                <button class="px-4 py-2 border border-border rounded-[--radius] bg-input flex items-center gap-2 hover:bg-muted transition-colors">
+                                    <span class="text-foreground">Grupos: Todos</span>
+                                    <i class="fa-solid fa-chevron-down text-muted-foreground"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button onclick="openInviteModal()" class="bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-[--radius] flex items-center gap-2 hover:opacity-90 transition-opacity">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Convidar Membro</span>
+                        </button>
+                    </div>
+
+                    <div id="team-table" class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-muted">
+                                <tr>
+                                    <th class="text-left p-4 font-semibold text-muted-foreground text-sm">MEMBRO</th>
+                                    <th class="text-left p-4 font-semibold text-muted-foreground text-sm">FUNÇÃO</th>
+                                    <th class="text-left p-4 font-semibold text-muted-foreground text-sm">GRUPOS ATRIBUÍDOS</th>
+                                    <th class="text-left p-4 font-semibold text-muted-foreground text-sm">ÚLTIMO ACESSO</th>
+                                    <th class="text-left p-4 font-semibold text-muted-foreground text-sm">STATUS</th>
+                                    <th class="text-right p-4 font-semibold text-muted-foreground text-sm">AÇÕES</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                <tr id="member-1" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="Michelle" class="w-10 h-10 rounded-full">
+                                            <div>
+                                                <p class="font-semibold text-card-foreground">Michelle Santos</p>
+                                                <p class="text-sm text-muted-foreground">michelle@sincron.com</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">
+                                            <i class="fa-solid fa-crown text-xs"></i>
+                                            Proprietário
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">Todos os grupos</p>
+                                        <p class="text-sm text-muted-foreground">Acesso total</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">Agora</p>
+                                        <p class="text-sm text-muted-foreground">Online</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                            Ativo
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <button class="text-muted-foreground hover:text-foreground">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr id="member-2" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="Carlos" class="w-10 h-10 rounded-full">
+                                            <div>
+                                                <p class="font-semibold text-card-foreground">Carlos Mendes</p>
+                                                <p class="text-sm text-muted-foreground">carlos@sincron.com</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
+                                            <i class="fa-solid fa-user-shield text-xs"></i>
+                                            Admin
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">23 grupos</p>
+                                        <p class="text-sm text-muted-foreground">Vendas, Suporte</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">2 horas atrás</p>
+                                        <p class="text-sm text-muted-foreground">14/12/2025</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                            Ativo
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <button onclick="openEditModal()" class="text-muted-foreground hover:text-foreground">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr id="member-3" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg" alt="Roberto" class="w-10 h-10 rounded-full">
+                                            <div>
+                                                <p class="font-semibold text-card-foreground">Roberto Silva</p>
+                                                <p class="text-sm text-muted-foreground">roberto@sincron.com</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
+                                            <i class="fa-solid fa-user-shield text-xs"></i>
+                                            Admin
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">18 grupos</p>
+                                        <p class="text-sm text-muted-foreground">Comunidade, VIP</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">1 dia atrás</p>
+                                        <p class="text-sm text-muted-foreground">13/12/2025</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                            Ativo
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <button class="text-muted-foreground hover:text-foreground">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr id="member-4" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Ana" class="w-10 h-10 rounded-full">
+                                            <div>
+                                                <p class="font-semibold text-card-foreground">Ana Costa</p>
+                                                <p class="text-sm text-muted-foreground">ana@sincron.com</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
+                                            <i class="fa-solid fa-user-shield text-xs"></i>
+                                            Admin
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">15 grupos</p>
+                                        <p class="text-sm text-muted-foreground">Suporte, Premium</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">3 horas atrás</p>
+                                        <p class="text-sm text-muted-foreground">14/12/2025</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                            Ativo
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <button class="text-muted-foreground hover:text-foreground">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr id="member-5" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg" alt="Pedro" class="w-10 h-10 rounded-full">
+                                            <div>
+                                                <p class="font-semibold text-card-foreground">Pedro Oliveira</p>
+                                                <p class="text-sm text-muted-foreground">pedro@sincron.com</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-secondary/10 text-secondary rounded-full text-sm font-medium">
+                                            <i class="fa-solid fa-user text-xs"></i>
+                                            Membro
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">8 grupos</p>
+                                        <p class="text-sm text-muted-foreground">Vendas</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">5 horas atrás</p>
+                                        <p class="text-sm text-muted-foreground">14/12/2025</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                            Ativo
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <button class="text-muted-foreground hover:text-foreground">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr id="member-6" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-6.jpg" alt="Julia" class="w-10 h-10 rounded-full">
+                                            <div>
+                                                <p class="font-semibold text-card-foreground">Julia Fernandes</p>
+                                                <p class="text-sm text-muted-foreground">julia@sincron.com</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-secondary/10 text-secondary rounded-full text-sm font-medium">
+                                            <i class="fa-solid fa-user text-xs"></i>
+                                            Membro
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">12 grupos</p>
+                                        <p class="text-sm text-muted-foreground">Suporte, Comunidade</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">1 dia atrás</p>
+                                        <p class="text-sm text-muted-foreground">13/12/2025</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                            Ativo
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <button class="text-muted-foreground hover:text-foreground">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr id="member-7" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-8.jpg" alt="Lucas" class="w-10 h-10 rounded-full">
+                                            <div>
+                                                <p class="font-semibold text-card-foreground">Lucas Almeida</p>
+                                                <p class="text-sm text-muted-foreground">lucas@sincron.com</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-secondary/10 text-secondary rounded-full text-sm font-medium">
+                                            <i class="fa-solid fa-user text-xs"></i>
+                                            Membro
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">6 grupos</p>
+                                        <p class="text-sm text-muted-foreground">Vendas</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">2 dias atrás</p>
+                                        <p class="text-sm text-muted-foreground">12/12/2025</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                            Ativo
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <button class="text-muted-foreground hover:text-foreground">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr id="member-8" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-9.jpg" alt="Rafael" class="w-10 h-10 rounded-full">
+                                            <div>
+                                                <p class="font-semibold text-card-foreground">Rafael Souza</p>
+                                                <p class="text-sm text-muted-foreground">rafael@sincron.com</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-secondary/10 text-secondary rounded-full text-sm font-medium">
+                                            <i class="fa-solid fa-user text-xs"></i>
+                                            Membro
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">5 grupos</p>
+                                        <p class="text-sm text-muted-foreground">Comunidade</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-card-foreground">4 dias atrás</p>
+                                        <p class="text-sm text-muted-foreground">10/12/2025</p>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+                                            <span class="w-2 h-2 bg-gray-500 rounded-full"></span>
+                                            Inativo
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <button class="text-muted-foreground hover:text-foreground">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="team-pagination" class="flex items-center justify-between p-6 border-t border-border">
+                        <p class="text-muted-foreground">Mostrando 1-8 de 8 membros</p>
+                        <div class="flex items-center gap-2">
+                            <button class="px-3 py-1 border border-border rounded-[--radius] text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50" disabled>
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <button class="px-3 py-1 border border-primary bg-primary text-primary-foreground rounded-[--radius] font-medium">1</button>
+                            <button class="px-3 py-1 border border-border rounded-[--radius] text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50" disabled>
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="permissions-section" class="bg-card border border-border rounded-[--radius] shadow-[--shadow] p-6">
+                    <h3 class="text-lg font-bold text-card-foreground mb-4">Permissões por Função</h3>
+                    <p class="text-muted-foreground mb-6">Defina o que cada função pode fazer na plataforma.</p>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-muted">
+                                <tr>
+                                    <th class="text-left p-4 font-semibold text-muted-foreground text-sm">RECURSO</th>
+                                    <th class="text-center p-4 font-semibold text-muted-foreground text-sm">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-crown text-amber-500"></i>
+                                            PROPRIETÁRIO
+                                        </div>
+                                    </th>
+                                    <th class="text-center p-4 font-semibold text-muted-foreground text-sm">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-user-shield text-primary"></i>
+                                            ADMIN
+                                        </div>
+                                    </th>
+                                    <th class="text-center p-4 font-semibold text-muted-foreground text-sm">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-user text-secondary"></i>
+                                            MEMBRO
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                <tr id="perm-row-1" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <p class="font-semibold text-card-foreground">Gerenciar Instâncias</p>
+                                        <p class="text-sm text-muted-foreground">Conectar e desconectar WhatsApp</p>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-xmark text-destructive text-xl"></i>
+                                    </td>
+                                </tr>
+                                <tr id="perm-row-2" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <p class="font-semibold text-card-foreground">Gerenciar Grupos</p>
+                                        <p class="text-sm text-muted-foreground">Criar, editar e excluir grupos</p>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <span class="text-sm text-muted-foreground">Visualizar</span>
+                                    </td>
+                                </tr>
+                                <tr id="perm-row-3" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <p class="font-semibold text-card-foreground">Criar Gatilhos</p>
+                                        <p class="text-sm text-muted-foreground">Configurar automações</p>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-xmark text-destructive text-xl"></i>
+                                    </td>
+                                </tr>
+                                <tr id="perm-row-4" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <p class="font-semibold text-card-foreground">Enviar Mensagens</p>
+                                        <p class="text-sm text-muted-foreground">Mensagens em massa e agendadas</p>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <span class="text-sm text-muted-foreground">Atribuídos</span>
+                                    </td>
+                                </tr>
+                                <tr id="perm-row-5" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <p class="font-semibold text-card-foreground">Gerenciar Agentes IA</p>
+                                        <p class="text-sm text-muted-foreground">Configurar bots e respostas automáticas</p>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-xmark text-destructive text-xl"></i>
+                                    </td>
+                                </tr>
+                                <tr id="perm-row-6" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <p class="font-semibold text-card-foreground">Acessar Transcrições</p>
+                                        <p class="text-sm text-muted-foreground">Ver áudios transcritos</p>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <span class="text-sm text-muted-foreground">Atribuídos</span>
+                                    </td>
+                                </tr>
+                                <tr id="perm-row-7" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <p class="font-semibold text-card-foreground">Gerenciar Equipe</p>
+                                        <p class="text-sm text-muted-foreground">Convidar e remover membros</p>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-xmark text-destructive text-xl"></i>
+                                    </td>
+                                </tr>
+                                <tr id="perm-row-8" class="hover:bg-muted transition-colors">
+                                    <td class="p-4">
+                                        <p class="font-semibold text-card-foreground">Configurações da Conta</p>
+                                        <p class="text-sm text-muted-foreground">Alterar plano e faturamento</p>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-check text-accent text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-xmark text-destructive text-xl"></i>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <i class="fa-solid fa-xmark text-destructive text-xl"></i>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="group-organization-section" class="bg-card border border-border rounded-[--radius] shadow-[--shadow] p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-bold text-card-foreground">Organização por Grupos</h3>
+                            <p class="text-muted-foreground">Atribua membros a grupos específicos para controle granular.</p>
+                        </div>
+                        <button class="bg-secondary text-secondary-foreground font-semibold px-4 py-2 rounded-[--radius] flex items-center gap-2 hover:opacity-90 transition-opacity">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Atribuir em Massa</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div id="group-assign-1" class="border border-border rounded-[--radius] p-5 hover:border-primary transition-colors">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 bg-blue-500 rounded-full"></span>
+                                    <h4 class="font-semibold text-card-foreground">Vendas SP</h4>
+                                </div>
+                                <span class="text-sm text-muted-foreground">234 membros</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">Vendas</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="flex -space-x-2">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-8.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                </div>
+                                <span class="text-sm text-muted-foreground">3 membros atribuídos</span>
+                            </div>
+                            <button class="w-full text-sm text-primary hover:text-primary/80 font-medium">
+                                Gerenciar atribuições
+                            </button>
+                        </div>
+
+                        <div id="group-assign-2" class="border border-border rounded-[--radius] p-5 hover:border-primary transition-colors">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                                    <h4 class="font-semibold text-card-foreground">Suporte Premium</h4>
+                                </div>
+                                <span class="text-sm text-muted-foreground">89 membros</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="px-2 py-1 bg-accent/10 text-accent text-xs rounded-full">Suporte</span>
+                                <span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">VIP</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="flex -space-x-2">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-6.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                </div>
+                                <span class="text-sm text-muted-foreground">3 membros atribuídos</span>
+                            </div>
+                            <button class="w-full text-sm text-primary hover:text-primary/80 font-medium">
+                                Gerenciar atribuições
+                            </button>
+                        </div>
+
+                        <div id="group-assign-3" class="border border-border rounded-[--radius] p-5 hover:border-primary transition-colors">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 bg-purple-500 rounded-full"></span>
+                                    <h4 class="font-semibold text-card-foreground">Comunidade Geral</h4>
+                                </div>
+                                <span class="text-sm text-muted-foreground">1.2k membros</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Comunidade</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="flex -space-x-2">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-6.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-9.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                </div>
+                                <span class="text-sm text-muted-foreground">3 membros atribuídos</span>
+                            </div>
+                            <button class="w-full text-sm text-primary hover:text-primary/80 font-medium">
+                                Gerenciar atribuições
+                            </button>
+                        </div>
+
+                        <div id="group-assign-4" class="border border-border rounded-[--radius] p-5 hover:border-primary transition-colors">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 bg-blue-500 rounded-full"></span>
+                                    <h4 class="font-semibold text-card-foreground">Leads Novembro</h4>
+                                </div>
+                                <span class="text-sm text-muted-foreground">156 membros</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">Vendas</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">Temp</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="flex -space-x-2">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                </div>
+                                <span class="text-sm text-muted-foreground">2 membros atribuídos</span>
+                            </div>
+                            <button class="w-full text-sm text-primary hover:text-primary/80 font-medium">
+                                Gerenciar atribuições
+                            </button>
+                        </div>
+
+                        <div id="group-assign-5" class="border border-border rounded-[--radius] p-5 hover:border-primary transition-colors">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                                    <h4 class="font-semibold text-card-foreground">Suporte Técnico</h4>
+                                </div>
+                                <span class="text-sm text-muted-foreground">67 membros</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="px-2 py-1 bg-accent/10 text-accent text-xs rounded-full">Suporte</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="flex -space-x-2">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-6.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                </div>
+                                <span class="text-sm text-muted-foreground">2 membros atribuídos</span>
+                            </div>
+                            <button class="w-full text-sm text-primary hover:text-primary/80 font-medium">
+                                Gerenciar atribuições
+                            </button>
+                        </div>
+
+                        <div id="group-assign-6" class="border border-border rounded-[--radius] p-5 hover:border-primary transition-colors">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 bg-amber-500 rounded-full"></span>
+                                    <h4 class="font-semibold text-card-foreground">Clientes VIP</h4>
+                                </div>
+                                <span class="text-sm text-muted-foreground">45 membros</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">VIP</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="flex -space-x-2">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg" class="w-8 h-8 rounded-full border-2 border-card" alt="Member">
+                                </div>
+                                <span class="text-sm text-muted-foreground">2 membros atribuídos</span>
+                            </div>
+                            <button class="w-full text-sm text-primary hover:text-primary/80 font-medium">
+                                Gerenciar atribuições
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <footer id="footer" class="text-center text-sm text-muted-foreground pt-8">
+                    <p>Copyright © 2025 Sincron Grupos</p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <div id="invite-modal" class="modal-overlay">
+        <div class="bg-card rounded-[--radius] shadow-xl max-w-lg w-full mx-4">
+            <div class="flex items-center justify-between p-6 border-b border-border">
+                <h3 class="text-xl font-bold text-card-foreground">Convidar Membro</h3>
+                <button onclick="closeInviteModal()" class="text-muted-foreground hover:text-foreground">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Email</label>
+                    <input type="email" placeholder="exemplo@email.com" class="w-full px-4 py-2 border border-border rounded-[--radius] bg-input focus:outline-none focus:ring-2 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Nome</label>
+                    <input type="text" placeholder="Nome do membro" class="w-full px-4 py-2 border border-border rounded-[--radius] bg-input focus:outline-none focus:ring-2 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Função</label>
+                    <select class="w-full px-4 py-2 border border-border rounded-[--radius] bg-input focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option>Admin</option>
+                        <option>Membro</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Atribuir a Grupos</label>
+                    <div class="border border-border rounded-[--radius] p-3 max-h-48 overflow-y-auto space-y-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-primary">
+                            <span class="text-sm">Vendas SP</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-primary">
+                            <span class="text-sm">Suporte Premium</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-primary">
+                            <span class="text-sm">Comunidade Geral</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-primary">
+                            <span class="text-sm">Leads Novembro</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-3 p-6 border-t border-border">
+                <button onclick="closeInviteModal()" class="px-4 py-2 border border-border rounded-[--radius] text-card-foreground hover:bg-muted transition-colors">
+                    Cancelar
+                </button>
+                <button class="px-4 py-2 bg-primary text-primary-foreground rounded-[--radius] font-semibold hover:opacity-90 transition-opacity">
+                    Enviar Convite
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="modal-overlay">
+        <div class="bg-card rounded-[--radius] shadow-xl max-w-lg w-full mx-4">
+            <div class="flex items-center justify-between p-6 border-b border-border">
+                <h3 class="text-xl font-bold text-card-foreground">Editar Membro</h3>
+                <button onclick="closeEditModal()" class="text-muted-foreground hover:text-foreground">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="flex items-center gap-4 mb-4">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="Carlos" class="w-16 h-16 rounded-full">
+                    <div>
+                        <p class="font-semibold text-card-foreground">Carlos Mendes</p>
+                        <p class="text-sm text-muted-foreground">carlos@sincron.com</p>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Função</label>
+                    <select class="w-full px-4 py-2 border border-border rounded-[--radius] bg-input focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option selected>Admin</option>
+                        <option>Membro</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-card-foreground mb-2">Grupos Atribuídos</label>
+                    <div class="border border-border rounded-[--radius] p-3 max-h-48 overflow-y-auto space-y-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked class="w-4 h-4 text-primary">
+                            <span class="text-sm">Vendas SP</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked class="w-4 h-4 text-primary">
+                            <span class="text-sm">Suporte Premium</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-primary">
+                            <span class="text-sm">Comunidade Geral</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-primary">
+                            <span class="text-sm">Leads Novembro</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="pt-4 border-t border-border">
+                    <button class="text-destructive hover:text-destructive/80 font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-trash"></i>
+                        <span>Remover membro</span>
+                    </button>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-3 p-6 border-t border-border">
+                <button onclick="closeEditModal()" class="px-4 py-2 border border-border rounded-[--radius] text-card-foreground hover:bg-muted transition-colors">
+                    Cancelar
+                </button>
+                <button class="px-4 py-2 bg-primary text-primary-foreground rounded-[--radius] font-semibold hover:opacity-90 transition-opacity">
+                    Salvar Alterações
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openInviteModal() {
+            document.getElementById('invite-modal').classList.add('active');
+        }
+
+        function closeInviteModal() {
+            document.getElementById('invite-modal').classList.remove('active');
+        }
+
+        function openEditModal() {
+            document.getElementById('edit-modal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('active');
+        }
+
+        document.getElementById('invite-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeInviteModal();
+            }
+        });
+
+        document.getElementById('edit-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditModal();
+            }
+        });
+    </script>
+</body>
+</html>
