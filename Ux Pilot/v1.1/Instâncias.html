@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instâncias WhatsApp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "border": "var(--border)",
+                        "input": "var(--input)",
+                        "ring": "var(--ring)",
+                        "background": "var(--background)",
+                        "foreground": "var(--foreground)",
+                        "primary": {
+                            "DEFAULT": "var(--primary)",
+                            "foreground": "var(--primary-foreground)",
+                        },
+                        "secondary": {
+                            "DEFAULT": "var(--secondary)",
+                            "foreground": "var(--secondary-foreground)",
+                        },
+                        "destructive": {
+                            "DEFAULT": "var(--destructive)",
+                            "foreground": "var(--destructive-foreground)",
+                        },
+                        "muted": {
+                            "DEFAULT": "var(--muted)",
+                            "foreground": "var(--muted-foreground)",
+                        },
+                        "accent": {
+                            "DEFAULT": "var(--accent)",
+                            "foreground": "var(--accent-foreground)",
+                        },
+                        "popover": {
+                            "DEFAULT": "var(--popover)",
+                            "foreground": "var(--popover-foreground)",
+                        },
+                        "card": {
+                            "DEFAULT": "var(--card)",
+                            "foreground": "var(--card-foreground)",
+                        },
+                    },
+                    "borderRadius": {
+                        "lg": "var(--radius)",
+                        "md": "calc(var(--radius) - 2px)",
+                        "sm": "calc(var(--radius) - 4px)",
+                    },
+                    "fontFamily": {
+                        "sans": ["var(--font-sans)"],
+                    },
+                    "boxShadow": {
+                        "DEFAULT": "var(--shadow)",
+                    },
+                },
+            }
+        }
+    </script>
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #FAFAFA;
+            --foreground: #0f172a;
+            --card: #ffffff;
+            --card-foreground: #0f172a;
+            --primary: #55B52C;
+            --primary-foreground: #ffffff;
+            --secondary: #64748b;
+            --secondary-foreground: #ffffff;
+            --muted: #FAFAFA;
+            --muted-foreground: #64748b;
+            --accent: #3DB36A;
+            --accent-foreground: #ffffff;
+            --destructive: #ef4444;
+            --destructive-foreground: #ffffff;
+            --border: #EEE;
+            --input: #FFFFFF;
+            --ring: #94a3b8;
+            --font-sans: 'Inter', sans-serif;
+            --radius: 10px;
+            --shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        body {
+            font-family: var(--font-sans);
+        }
+        ::-webkit-scrollbar { display: none; }
+        .qr-placeholder {
+            background: linear-gradient(135deg, #f5f5f5 25%, #e8e8e8 25%, #e8e8e8 50%, #f5f5f5 50%, #f5f5f5 75%, #e8e8e8 75%);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground">
+    <div id="app-layout" class="flex min-h-[1024px]">
+        <aside id="sidebar" class="w-64 bg-card border-r border-border flex flex-col fixed h-full">
+            <div id="sidebar-header" class="flex items-center gap-2 p-6 border-b border-border">
+                <div class="bg-primary p-2 rounded-lg">
+                    <i class="fa-solid fa-sync text-primary-foreground text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold text-foreground">Sincron Grupos</h1>
+            </div>
+            <nav id="sidebar-nav" class="flex-1 p-4 space-y-2">
+                <a href="Dashboard.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="Instâncias.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] bg-muted text-primary font-semibold">
+                    <i class="fa-brands fa-whatsapp w-5 text-center"></i>
+                    <span>Instâncias</span>
+                </a>
+                <a href="Grupos.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-users w-5 text-center"></i>
+                    <span>Grupos</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-tags w-5 text-center"></i>
+                    <span>Categorias</span>
+                </a>
+                <a href="Criar Gatilho.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-bolt w-5 text-center"></i>
+                    <span>Gatilhos</span>
+                </a>
+                <a href="Mensagens em Massa.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-paper-plane w-5 text-center"></i>
+                    <span>Mensagens</span>
+                </a>
+                <a href="Gerenciar Agentes IA.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-robot w-5 text-center"></i>
+                    <span>Agentes IA</span>
+                </a>
+                <a href="Transcrições por Categoria.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-file-audio w-5 text-center"></i>
+                    <span>Transcrição</span>
+                </a>
+                <a href="Equipe.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-user-friends w-5 text-center"></i>
+                    <span>Equipe</span>
+                </a>
+                <a href="Configurações.html" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-cog w-5 text-center"></i>
+                    <span>Configurações</span>
+                </a>
+            </nav>
+            <div id="sidebar-footer" class="p-4 border-t border-border">
+                <a href="#" class="flex items-center gap-3">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-10 h-10 rounded-full">
+                    <div>
+                        <p class="font-semibold text-card-foreground">Michelle</p>
+                        <p class="text-xs text-muted-foreground">Admin</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-muted-foreground ml-auto"></i>
+                </a>
+            </div>
+        </aside>
+
+        <main id="main-content" class="flex-1 ml-64 bg-background">
+            <header id="header" class="flex items-center justify-between p-6 border-b border-border bg-card sticky top-0 z-10">
+                <div>
+                    <h2 class="text-2xl font-bold text-card-foreground">Instâncias WhatsApp</h2>
+                    <p class="text-muted-foreground">Gerencie suas conexões com o WhatsApp.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="text-muted-foreground hover:text-foreground">
+                        <i class="fa-regular fa-bell text-xl"></i>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-9 h-9 rounded-full">
+                        <div class="text-sm">
+                           <p class="font-semibold text-foreground">Michelle</p>
+                           <p class="text-muted-foreground">michelle@sincron.com</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="instances-body" class="p-8 space-y-8">
+                <!-- Instance Connected Card -->
+                <section id="instance-card" class="bg-card border border-border rounded-[--radius] shadow-[--shadow]">
+                    <div class="p-6 border-b border-border">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center">
+                                    <i class="fa-brands fa-whatsapp text-3xl text-green-600"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-card-foreground">Instância Principal</h3>
+                                    <p class="text-sm text-muted-foreground">+55 11 99999-9999</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
+                                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                    Conectada
+                                </span>
+                                <button class="text-muted-foreground hover:text-foreground p-2 hover:bg-muted rounded-lg transition-colors">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div class="text-center p-4 bg-muted rounded-lg">
+                                <p class="text-2xl font-bold text-card-foreground">47</p>
+                                <p class="text-sm text-muted-foreground">Grupos</p>
+                            </div>
+                            <div class="text-center p-4 bg-muted rounded-lg">
+                                <p class="text-2xl font-bold text-card-foreground">12</p>
+                                <p class="text-sm text-muted-foreground">Gatilhos ativos</p>
+                            </div>
+                            <div class="text-center p-4 bg-muted rounded-lg">
+                                <p class="text-2xl font-bold text-card-foreground">156</p>
+                                <p class="text-sm text-muted-foreground">Mensagens hoje</p>
+                            </div>
+                            <div class="text-center p-4 bg-muted rounded-lg">
+                                <p class="text-2xl font-bold text-card-foreground">99.9%</p>
+                                <p class="text-sm text-muted-foreground">Uptime</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between mt-6 pt-6 border-t border-border">
+                            <div class="text-sm text-muted-foreground">
+                                <span>Última atividade: </span>
+                                <span class="font-medium text-card-foreground">Agora mesmo</span>
+                            </div>
+                            <div class="flex gap-3">
+                                <button class="px-4 py-2 border border-border rounded-[--radius] text-card-foreground font-medium hover:bg-muted transition-colors">
+                                    <i class="fa-solid fa-sync-alt mr-2"></i>
+                                    Reconectar
+                                </button>
+                                <button class="px-4 py-2 border border-destructive text-destructive rounded-[--radius] font-medium hover:bg-destructive/10 transition-colors">
+                                    <i class="fa-solid fa-power-off mr-2"></i>
+                                    Desconectar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- QR Code Section (Hidden when connected, shown when disconnected) -->
+                <section id="qr-code-section" class="bg-card border border-border rounded-[--radius] shadow-[--shadow] hidden">
+                    <div class="p-6 border-b border-border">
+                        <h3 class="text-lg font-bold text-card-foreground flex items-center gap-2">
+                            <i class="fa-solid fa-qrcode text-primary"></i>
+                            Conectar WhatsApp
+                        </h3>
+                        <p class="text-sm text-muted-foreground mt-1">Escaneie o QR Code com seu WhatsApp para conectar.</p>
+                    </div>
+                    <div class="p-8">
+                        <div class="flex flex-col md:flex-row items-center gap-8">
+                            <div class="qr-placeholder w-64 h-64 rounded-lg flex items-center justify-center border-2 border-dashed border-border">
+                                <div class="text-center">
+                                    <i class="fa-solid fa-qrcode text-6xl text-muted-foreground mb-2"></i>
+                                    <p class="text-sm text-muted-foreground">QR Code</p>
+                                </div>
+                            </div>
+                            <div class="flex-1 space-y-4">
+                                <h4 class="font-semibold text-card-foreground">Como conectar:</h4>
+                                <ol class="space-y-3 text-sm text-muted-foreground">
+                                    <li class="flex items-start gap-3">
+                                        <span class="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+                                        <span>Abra o WhatsApp no seu celular</span>
+                                    </li>
+                                    <li class="flex items-start gap-3">
+                                        <span class="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+                                        <span>Toque em <strong>Menu</strong> ou <strong>Configurações</strong> e selecione <strong>Aparelhos conectados</strong></span>
+                                    </li>
+                                    <li class="flex items-start gap-3">
+                                        <span class="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
+                                        <span>Toque em <strong>Conectar um aparelho</strong></span>
+                                    </li>
+                                    <li class="flex items-start gap-3">
+                                        <span class="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
+                                        <span>Aponte seu celular para esta tela para escanear o QR Code</span>
+                                    </li>
+                                </ol>
+                                <button class="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-[--radius] font-semibold hover:opacity-90 transition-opacity">
+                                    <i class="fa-solid fa-rotate mr-2"></i>
+                                    Gerar novo QR Code
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Instance Info -->
+                <section id="instance-info" class="bg-card border border-border rounded-[--radius] shadow-[--shadow]">
+                    <div class="p-6 border-b border-border">
+                        <h3 class="text-lg font-bold text-card-foreground flex items-center gap-2">
+                            <i class="fa-solid fa-info-circle text-primary"></i>
+                            Informações da Instância
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="text-sm font-medium text-muted-foreground">Nome da Instância</label>
+                                    <p class="text-card-foreground font-medium">Instância Principal</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-muted-foreground">Número WhatsApp</label>
+                                    <p class="text-card-foreground font-medium">+55 11 99999-9999</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-muted-foreground">Status</label>
+                                    <p class="text-green-600 font-medium flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                        Conectada
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="text-sm font-medium text-muted-foreground">Criada em</label>
+                                    <p class="text-card-foreground font-medium">10 de Dezembro, 2024</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-muted-foreground">Última conexão</label>
+                                    <p class="text-card-foreground font-medium">Agora (ativa)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <footer id="footer" class="text-center text-sm text-muted-foreground pt-8 pb-4">
+                    <p>Copyright © 2025 Sincron Grupos</p>
+                </footer>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

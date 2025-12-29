@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importar Grupos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "border": "var(--border)",
+                        "input": "var(--input)",
+                        "ring": "var(--ring)",
+                        "background": "var(--background)",
+                        "foreground": "var(--foreground)",
+                        "primary": {
+                            "DEFAULT": "var(--primary)",
+                            "foreground": "var(--primary-foreground)",
+                        },
+                        "secondary": {
+                            "DEFAULT": "var(--secondary)",
+                            "foreground": "var(--secondary-foreground)",
+                        },
+                        "destructive": {
+                            "DEFAULT": "var(--destructive)",
+                            "foreground": "var(--destructive-foreground)",
+                        },
+                        "muted": {
+                            "DEFAULT": "var(--muted)",
+                            "foreground": "var(--muted-foreground)",
+                        },
+                        "accent": {
+                            "DEFAULT": "var(--accent)",
+                            "foreground": "var(--accent-foreground)",
+                        },
+                        "popover": {
+                            "DEFAULT": "var(--popover)",
+                            "foreground": "var(--popover-foreground)",
+                        },
+                        "card": {
+                            "DEFAULT": "var(--card)",
+                            "foreground": "var(--card-foreground)",
+                        },
+                        "sidebar": {
+                            "DEFAULT": "var(--sidebar)",
+                            "foreground": "var(--sidebar-foreground)",
+                            "primary": "var(--sidebar-primary)",
+                            "primary-foreground": "var(--sidebar-primary-foreground)",
+                            "accent": "var(--sidebar-accent)",
+                            "accent-foreground": "var(--sidebar-accent-foreground)",
+                            "border": "var(--sidebar-border)",
+                            "ring": "var(--sidebar-ring)",
+                        },
+                        "chart": {
+                            "1": "var(--chart-1)",
+                            "2": "var(--chart-2)",
+                            "3": "var(--chart-3)",
+                            "4": "var(--chart-4)",
+                            "5": "var(--chart-5)",
+                        },
+                    },
+                    "borderRadius": {
+                        "lg": "var(--radius)",
+                        "md": "calc(var(--radius) - 2px)",
+                        "sm": "calc(var(--radius) - 4px)",
+                    },
+                    "fontFamily": {
+                        "sans": ["var(--font-sans)"],
+                        "serif": ["var(--font-serif)"],
+                        "mono": ["var(--font-mono)"],
+                    },
+                    "boxShadow": {
+                        "2xs": "var(--shadow-2xs)",
+                        "xs": "var(--shadow-xs)",
+                        "sm": "var(--shadow-sm)",
+                        "DEFAULT": "var(--shadow)",
+                        "md": "var(--shadow-md)",
+                        "lg": "var(--shadow-lg)",
+                        "xl": "var(--shadow-xl)",
+                        "2xl": "var(--shadow-2xl)",
+                    },
+                },
+            }
+        }
+    </script>
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #FAFAFA;
+            --foreground: #0f172a;
+            --card: #ffffff;
+            --card-foreground: #0f172a;
+            --primary: #55B52C;
+            --primary-foreground: #ffffff;
+            --secondary: #64748b;
+            --secondary-foreground: #ffffff;
+            --muted: #FAFAFA;
+            --muted-foreground: #64748b;
+            --accent: #3DB36A;
+            --accent-foreground: #ffffff;
+            --destructive: #ef4444;
+            --destructive-foreground: #ffffff;
+            --border: #EEE;
+            --input: #FFFFFF;
+            --ring: #94a3b8;
+            --font-sans: 'Inter', sans-serif;
+            --radius: 10px;
+            --shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        body {
+            font-family: var(--font-sans);
+        }
+        ::-webkit-scrollbar { display: none; }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground">
+    <div id="app-layout" class="flex min-h-[1024px]">
+        <aside id="sidebar" class="w-64 bg-card border-r border-border flex flex-col fixed h-full">
+            <div id="sidebar-header" class="flex items-center gap-2 p-6 border-b border-border">
+                <div class="bg-primary p-2 rounded-lg">
+                    <i class="fa-solid fa-sync text-primary-foreground text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold text-foreground">Sincron Grupos</h1>
+            </div>
+            <nav id="sidebar-nav" class="flex-1 p-4 space-y-2">
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-brands fa-whatsapp w-5 text-center"></i>
+                    <span>Instâncias</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] bg-muted text-primary font-semibold">
+                    <i class="fa-solid fa-users w-5 text-center"></i>
+                    <span>Grupos</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-tags w-5 text-center"></i>
+                    <span>Categorias</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-bolt w-5 text-center"></i>
+                    <span>Gatilhos</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-paper-plane w-5 text-center"></i>
+                    <span>Mensagens</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-robot w-5 text-center"></i>
+                    <span>Agentes IA</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-file-audio w-5 text-center"></i>
+                    <span>Transcrição</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-user-friends w-5 text-center"></i>
+                    <span>Equipe</span>
+                </a>
+            </nav>
+            <div id="sidebar-footer" class="p-4 border-t border-border">
+                <a href="#" class="flex items-center gap-3">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-10 h-10 rounded-full">
+                    <div>
+                        <p class="font-semibold text-card-foreground">Michelle</p>
+                        <p class="text-xs text-muted-foreground">Admin</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-muted-foreground ml-auto"></i>
+                </a>
+            </div>
+        </aside>
+
+        <main id="main-content" class="flex-1 ml-64 bg-background">
+            <header id="header" class="flex items-center justify-between p-6 border-b border-border bg-card sticky top-0 z-10">
+                <div>
+                    <div class="flex items-center gap-3 mb-1">
+                        <a href="#" class="text-muted-foreground hover:text-foreground transition-colors">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </a>
+                        <h2 class="text-2xl font-bold text-card-foreground">Importar Grupos</h2>
+                    </div>
+                    <p class="text-muted-foreground">Sincronize seus grupos do WhatsApp com a plataforma.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="text-muted-foreground hover:text-foreground">
+                        <i class="fa-regular fa-bell text-xl"></i>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-9 h-9 rounded-full">
+                        <div class="text-sm">
+                           <p class="font-semibold text-foreground">Michelle</p>
+                           <p class="text-muted-foreground">michelle@sincron.com</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="import-body" class="p-8 space-y-6 max-w-5xl mx-auto">
+                <section id="connection-status-section" class="bg-card border border-border rounded-[--radius] p-6 shadow-[--shadow]">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
+                                <i class="fa-brands fa-whatsapp text-2xl text-accent"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-card-foreground">WhatsApp Conectado</h3>
+                                <p class="text-sm text-muted-foreground">+55 11 99999-9999 • Conta Business</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 bg-accent rounded-full animate-pulse"></span>
+                            <span class="text-sm font-semibold text-accent">Online</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="import-instructions-section" class="bg-card border border-border rounded-[--radius] p-6 shadow-[--shadow]">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid fa-info text-primary text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-card-foreground mb-2">Como funciona a importação</h3>
+                            <ul class="space-y-2 text-muted-foreground">
+                                <li class="flex items-start gap-2">
+                                    <i class="fa-solid fa-check text-accent mt-1"></i>
+                                    <span>Todos os grupos onde você é administrador serão importados automaticamente</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <i class="fa-solid fa-check text-accent mt-1"></i>
+                                    <span>Informações como nome, descrição e número de membros serão sincronizadas</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <i class="fa-solid fa-check text-accent mt-1"></i>
+                                    <span>Você poderá categorizar os grupos após a importação</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <i class="fa-solid fa-check text-accent mt-1"></i>
+                                    <span>Grupos já existentes serão atualizados com novas informações</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="import-action-section" class="bg-card border border-border rounded-[--radius] p-8 shadow-[--shadow]">
+                    <div class="text-center max-w-md mx-auto">
+                        <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-sync text-3xl text-primary"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-card-foreground mb-2">Pronto para importar?</h3>
+                        <p class="text-muted-foreground mb-6">Clique no botão abaixo para iniciar a sincronização dos seus grupos do WhatsApp.</p>
+                        <button id="btn-start-import" onclick="startImport()" class="bg-primary text-primary-foreground font-semibold px-8 py-3 rounded-[--radius] flex items-center gap-3 hover:opacity-90 transition-opacity mx-auto">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Iniciar Importação</span>
+                        </button>
+                    </div>
+                </section>
+
+                <section id="import-progress-section" class="bg-card border border-border rounded-[--radius] p-6 shadow-[--shadow] hidden">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-card-foreground">Importando grupos...</h3>
+                            <span id="progress-percentage" class="text-sm font-semibold text-primary">0%</span>
+                        </div>
+                        <div class="w-full bg-muted rounded-full h-3 overflow-hidden">
+                            <div id="progress-bar" class="bg-primary h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div id="progress-details" class="space-y-2 mt-4">
+                            <div class="flex items-center gap-3 text-sm text-muted-foreground">
+                                <i class="fa-solid fa-spinner animate-spin text-primary"></i>
+                                <span>Conectando ao WhatsApp...</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="import-results-section" class="hidden space-y-4">
+                    <div id="success-message" class="bg-accent/10 border border-accent rounded-[--radius] p-6 shadow-[--shadow] animate-slide-up">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-accent rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fa-solid fa-check text-accent-foreground text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-bold text-card-foreground mb-1">Importação concluída com sucesso!</h3>
+                                <p class="text-muted-foreground mb-4">Seus grupos foram sincronizados com a plataforma.</p>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div class="bg-card rounded-lg p-4 border border-border">
+                                        <p class="text-2xl font-bold text-card-foreground" id="total-imported">0</p>
+                                        <p class="text-sm text-muted-foreground">Grupos importados</p>
+                                    </div>
+                                    <div class="bg-card rounded-lg p-4 border border-border">
+                                        <p class="text-2xl font-bold text-card-foreground" id="total-updated">0</p>
+                                        <p class="text-sm text-muted-foreground">Grupos atualizados</p>
+                                    </div>
+                                    <div class="bg-card rounded-lg p-4 border border-border">
+                                        <p class="text-2xl font-bold text-card-foreground" id="total-members">0</p>
+                                        <p class="text-sm text-muted-foreground">Total de membros</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="imported-groups-list" class="bg-card border border-border rounded-[--radius] shadow-[--shadow] overflow-hidden">
+                        <div class="p-6 border-b border-border">
+                            <h3 class="text-lg font-bold text-card-foreground">Grupos importados</h3>
+                            <p class="text-sm text-muted-foreground">Confira os grupos que foram sincronizados</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-muted">
+                                    <tr>
+                                        <th class="text-left p-4 text-sm font-semibold text-muted-foreground">Nome do Grupo</th>
+                                        <th class="text-left p-4 text-sm font-semibold text-muted-foreground">Membros</th>
+                                        <th class="text-left p-4 text-sm font-semibold text-muted-foreground">Status</th>
+                                        <th class="text-left p-4 text-sm font-semibold text-muted-foreground">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="groups-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4">
+                        <button onclick="location.reload()" class="text-muted-foreground hover:text-foreground font-semibold px-4 py-2 rounded-[--radius] flex items-center gap-2 transition-colors">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Importar Novamente</span>
+                        </button>
+                        <button onclick="window.location.href='#'" class="bg-primary text-primary-foreground font-semibold px-6 py-2 rounded-[--radius] flex items-center gap-2 hover:opacity-90 transition-opacity">
+                            <span>Ver Todos os Grupos</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </section>
+
+                <section id="error-message-section" class="bg-destructive/10 border border-destructive rounded-[--radius] p-6 shadow-[--shadow] hidden animate-slide-up">
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 bg-destructive rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid fa-exclamation text-destructive-foreground text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-card-foreground mb-1">Erro na importação</h3>
+                            <p class="text-muted-foreground mb-4" id="error-message-text">Não foi possível importar os grupos. Por favor, verifique sua conexão e tente novamente.</p>
+                            <button onclick="location.reload()" class="bg-destructive text-destructive-foreground font-semibold px-4 py-2 rounded-[--radius] flex items-center gap-2 hover:opacity-90 transition-opacity">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>Tentar Novamente</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="recent-imports-section" class="bg-card border border-border rounded-[--radius] p-6 shadow-[--shadow]">
+                    <h3 class="text-lg font-bold text-card-foreground mb-4">Histórico de Importações</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-4 bg-muted rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
+                                    <i class="fa-solid fa-check text-accent"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-card-foreground">Importação bem-sucedida</p>
+                                    <p class="text-sm text-muted-foreground">47 grupos • Há 2 dias</p>
+                                </div>
+                            </div>
+                            <button class="text-muted-foreground hover:text-foreground">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-between p-4 bg-muted rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
+                                    <i class="fa-solid fa-check text-accent"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-card-foreground">Sincronização automática</p>
+                                    <p class="text-sm text-muted-foreground">43 grupos • Há 1 semana</p>
+                                </div>
+                            </div>
+                            <button class="text-muted-foreground hover:text-foreground">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-between p-4 bg-muted rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
+                                    <i class="fa-solid fa-check text-accent"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-card-foreground">Primeira importação</p>
+                                    <p class="text-sm text-muted-foreground">38 grupos • Há 2 semanas</p>
+                                </div>
+                            </div>
+                            <button class="text-muted-foreground hover:text-foreground">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <footer id="footer" class="text-center text-sm text-muted-foreground pt-8">
+                    <p>Copyright © 2025 Sincron Grupos</p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+            const mockGroups = [
+                { name: 'Vendas SP', members: 234, status: 'novo' },
+                { name: 'Suporte Premium', members: 89, status: 'atualizado' },
+                { name: 'Comunidade Geral', members: 1234, status: 'novo' },
+                { name: 'Leads Novembro', members: 156, status: 'novo' },
+                { name: 'Treinamento Equipe', members: 45, status: 'atualizado' },
+                { name: 'VIP Clientes', members: 67, status: 'novo' },
+                { name: 'Marketing Digital', members: 189, status: 'atualizado' },
+                { name: 'Parceiros Comerciais', members: 78, status: 'novo' },
+                { name: 'Suporte Técnico', members: 123, status: 'atualizado' },
+                { name: 'Beta Testers', members: 34, status: 'novo' }
+            ];
+
+            window.startImport = function() {
+                const actionSection = document.getElementById('import-action-section');
+                const progressSection = document.getElementById('import-progress-section');
+                const resultsSection = document.getElementById('import-results-section');
+                const errorSection = document.getElementById('error-message-section');
+                
+                actionSection.classList.add('hidden');
+                progressSection.classList.remove('hidden');
+                errorSection.classList.add('hidden');
+                
+                const progressBar = document.getElementById('progress-bar');
+                const progressPercentage = document.getElementById('progress-percentage');
+                const progressDetails = document.getElementById('progress-details');
+                
+                const steps = [
+                    { text: 'Conectando ao WhatsApp...', duration: 1000 },
+                    { text: 'Buscando grupos disponíveis...', duration: 1500 },
+                    { text: 'Sincronizando informações dos grupos...', duration: 2000 },
+                    { text: 'Atualizando banco de dados...', duration: 1500 },
+                    { text: 'Finalizando importação...', duration: 1000 }
+                ];
+                
+                let currentStep = 0;
+                let progress = 0;
+                
+                function updateProgress() {
+                    if (currentStep < steps.length) {
+                        const step = steps[currentStep];
+                        progressDetails.innerHTML = `
+                            <div class="flex items-center gap-3 text-sm text-muted-foreground">
+                                <i class="fa-solid fa-spinner animate-spin text-primary"></i>
+                                <span>${step.text}</span>
+                            </div>
+                        `;
+                        
+                        const stepProgress = (currentStep + 1) / steps.length * 100;
+                        progress = stepProgress;
+                        progressBar.style.width = progress + '%';
+                        progressPercentage.textContent = Math.round(progress) + '%';
+                        
+                        currentStep++;
+                        setTimeout(updateProgress, step.duration);
+                    } else {
+                        progressSection.classList.add('hidden');
+                        resultsSection.classList.remove('hidden');
+                        
+                        let totalImported = 0;
+                        let totalUpdated = 0;
+                        let totalMembers = 0;
+                        
+                        mockGroups.forEach(group => {
+                            if (group.status === 'novo') totalImported++;
+                            else totalUpdated++;
+                            totalMembers += group.members;
+                        });
+                        
+                        document.getElementById('total-imported').textContent = totalImported;
+                        document.getElementById('total-updated').textContent = totalUpdated;
+                        document.getElementById('total-members').textContent = totalMembers.toLocaleString();
+                        
+                        const tableBody = document.getElementById('groups-table-body');
+                        tableBody.innerHTML = '';
+                        
+                        mockGroups.forEach((group, index) => {
+                            setTimeout(() => {
+                                const row = document.createElement('tr');
+                                row.className = 'border-b border-border hover:bg-muted/50 transition-colors animate-slide-up';
+                                row.innerHTML = `
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                                                <i class="fa-solid fa-users text-primary"></i>
+                                            </div>
+                                            <span class="font-semibold text-card-foreground">${group.name}</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="text-muted-foreground">${group.members.toLocaleString()}</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${group.status === 'novo' ? 'bg-accent/10 text-accent' : 'bg-secondary/10 text-secondary'}">
+                                            <i class="fa-solid ${group.status === 'novo' ? 'fa-plus' : 'fa-rotate'}"></i>
+                                            ${group.status === 'novo' ? 'Novo' : 'Atualizado'}
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <button class="text-primary hover:text-primary/80 font-semibold">
+                                            Editar
+                                        </button>
+                                    </td>
+                                `;
+                                tableBody.appendChild(row);
+                            }, index * 100);
+                        });
+                    }
+                }
+                
+                updateProgress();
+            };
+        });
+    </script>
+</body>
+</html>

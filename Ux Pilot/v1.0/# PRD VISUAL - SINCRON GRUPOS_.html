@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+            <script>
+            // tailwind.config (IMPORTANT FOR STYLES)
+            tailwind.config = {
+                        theme: {
+                            extend: {
+                                colors: {
+                                    "border": "var(--border)",
+                                    "input": "var(--input)",
+                                    "ring": "var(--ring)",
+                                    "background": "var(--background)",
+                                    "foreground": "var(--foreground)",
+                                    "primary": {
+                                        "DEFAULT": "var(--primary)",
+                                        "foreground": "var(--primary-foreground)",
+                                    },
+                                    "secondary": {
+                                        "DEFAULT": "var(--secondary)",
+                                        "foreground": "var(--secondary-foreground)",
+                                    },
+                                    "destructive": {
+                                        "DEFAULT": "var(--destructive)",
+                                        "foreground": "var(--destructive-foreground)",
+                                    },
+                                    "muted": {
+                                        "DEFAULT": "var(--muted)",
+                                        "foreground": "var(--muted-foreground)",
+                                    },
+                                    "accent": {
+                                        "DEFAULT": "var(--accent)",
+                                        "foreground": "var(--accent-foreground)",
+                                    },
+                                    "popover": {
+                                        "DEFAULT": "var(--popover)",
+                                        "foreground": "var(--popover-foreground)",
+                                    },
+                                    "card": {
+                                        "DEFAULT": "var(--card)",
+                                        "foreground": "var(--card-foreground)",
+                                    },
+                                    "sidebar": {
+                                        "DEFAULT": "var(--sidebar)",
+                                        "foreground": "var(--sidebar-foreground)",
+                                        "primary": "var(--sidebar-primary)",
+                                        "primary-foreground": "var(--sidebar-primary-foreground)",
+                                        "accent": "var(--sidebar-accent)",
+                                        "accent-foreground": "var(--sidebar-accent-foreground)",
+                                        "border": "var(--sidebar-border)",
+                                        "ring": "var(--sidebar-ring)",
+                                    },
+                                    "chart": {
+                                        "1": "var(--chart-1)",
+                                        "2": "var(--chart-2)",
+                                        "3": "var(--chart-3)",
+                                        "4": "var(--chart-4)",
+                                        "5": "var(--chart-5)",
+                                    },
+                                },
+                                "borderRadius": {
+                                    "lg": "var(--radius)",
+                                    "md": "calc(var(--radius) - 2px)",
+                                    "sm": "calc(var(--radius) - 4px)",
+                                },
+                                "fontFamily": {
+                                    "sans": ["var(--font-sans)"],
+                                    "serif": ["var(--font-serif)"],
+                                    "mono": ["var(--font-mono)"],
+                                },
+                                "boxShadow": {
+                                    "2xs": "var(--shadow-2xs)",
+                                    "xs": "var(--shadow-xs)",
+                                    "sm": "var(--shadow-sm)",
+                                    "DEFAULT": "var(--shadow)",
+                                    "md": "var(--shadow-md)",
+                                    "lg": "var(--shadow-lg)",
+                                    "xl": "var(--shadow-xl)",
+                                    "2xl": "var(--shadow-2xl)",
+                                },
+                            },
+                        }
+                    }
+            </script>
+            
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #FAFAFA;
+            --foreground: #0f172a;
+            --card: #ffffff;
+            --card-foreground: #0f172a;
+            --primary: #55B52C;
+            --primary-foreground: #ffffff;
+            --secondary: #64748b;
+            --secondary-foreground: #ffffff;
+            --muted: #FAFAFA;
+            --muted-foreground: #64748b;
+            --accent: #3DB36A;
+            --accent-foreground: #ffffff;
+            --destructive: #ef4444;
+            --destructive-foreground: #ffffff;
+            --border: #EEE;
+            --input: #FFFFFF;
+            --ring: #94a3b8;
+            --font-sans: 'Inter', sans-serif;
+            --radius: 10px;
+            --shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        body {
+            font-family: var(--font-sans);
+        }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-background text-foreground">
+    <div id="app-layout" class="flex min-h-[1024px]">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-card border-r border-border flex flex-col fixed h-full">
+            <div id="sidebar-header" class="flex items-center gap-2 p-6 border-b border-border">
+                <div class="bg-primary p-2 rounded-lg">
+                    <i class="fa-solid fa-sync text-primary-foreground text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold text-foreground">Sincron Grupos</h1>
+            </div>
+            <nav id="sidebar-nav" class="flex-1 p-4 space-y-2">
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] bg-muted text-primary font-semibold">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-brands fa-whatsapp w-5 text-center"></i>
+                    <span>Instâncias</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-users w-5 text-center"></i>
+                    <span>Grupos</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-tags w-5 text-center"></i>
+                    <span>Categorias</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-bolt w-5 text-center"></i>
+                    <span>Gatilhos</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-paper-plane w-5 text-center"></i>
+                    <span>Mensagens</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-robot w-5 text-center"></i>
+                    <span>Agentes IA</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-file-audio w-5 text-center"></i>
+                    <span>Transcrição</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-user-friends w-5 text-center"></i>
+                    <span>Equipe</span>
+                </a>
+            </nav>
+            <div id="sidebar-footer" class="p-4 border-t border-border">
+                <a href="#" class="flex items-center gap-3">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-10 h-10 rounded-full">
+                    <div>
+                        <p class="font-semibold text-card-foreground">Michelle</p>
+                        <p class="text-xs text-muted-foreground">Admin</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-muted-foreground ml-auto"></i>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 ml-64 bg-background">
+            <header id="header" class="flex items-center justify-between p-6 border-b border-border bg-card sticky top-0 z-10">
+                <div>
+                    <h2 class="text-2xl font-bold text-card-foreground">Dashboard</h2>
+                    <p class="text-muted-foreground">Visão geral da sua operação.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="text-muted-foreground hover:text-foreground">
+                        <i class="fa-regular fa-bell text-xl"></i>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-9 h-9 rounded-full">
+                        <div class="text-sm">
+                           <p class="font-semibold text-foreground">Michelle</p>
+                           <p class="text-muted-foreground">michelle@sincron.com</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="dashboard-body" class="p-8 space-y-8">
+                <!-- Onboarding Section -->
+                <section id="onboarding-section" class="bg-card border border-border rounded-[--radius] p-6 shadow-[--shadow]">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-bold text-card-foreground">Bem-vindo ao Sincron Grupos</h3>
+                            <p class="text-muted-foreground">Complete os passos para começar a usar a plataforma.</p>
+                        </div>
+                        <div class="text-right">
+                           <p class="font-semibold text-primary">Progresso: 1/4</p>
+                           <a href="#" class="text-sm text-muted-foreground hover:text-primary">Pular setup</a>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="w-full bg-muted rounded-full h-2.5">
+                            <div class="bg-primary h-2.5 rounded-full" style="width: 25%"></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+                        <div id="step-1" class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                                <i class="fa-solid fa-check text-primary-foreground"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-card-foreground">1. Conectar WhatsApp</h4>
+                                <p class="text-sm text-muted-foreground">Escaneie o QR Code para vincular seu número.</p>
+                            </div>
+                        </div>
+                         <div id="step-2" class="flex items-start gap-4 opacity-50">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-border border-2 border-dashed flex items-center justify-center">
+                                <span class="font-bold text-muted-foreground">2</span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-card-foreground">2. Sincronizar grupos</h4>
+                                <p class="text-sm text-muted-foreground">Importe seus grupos do WhatsApp.</p>
+                            </div>
+                        </div>
+                         <div id="step-3" class="flex items-start gap-4 opacity-50">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-border border-2 border-dashed flex items-center justify-center">
+                                <span class="font-bold text-muted-foreground">3</span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-card-foreground">3. Criar categorias</h4>
+                                <p class="text-sm text-muted-foreground">Organize grupos por tags.</p>
+                            </div>
+                        </div>
+                         <div id="step-4" class="flex items-start gap-4 opacity-50">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-border border-2 border-dashed flex items-center justify-center">
+                                <span class="font-bold text-muted-foreground">4</span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-card-foreground">4. Configurar gatilho</h4>
+                                <p class="text-sm text-muted-foreground">Crie uma automação para moderar.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Metrics Section -->
+                <section id="metrics-section" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div id="metric-card-instance" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground">INSTÂNCIA</h4>
+                            <i class="fa-brands fa-whatsapp text-2xl text-muted-foreground"></i>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 bg-accent rounded-full"></span>
+                            <p class="text-lg font-bold text-card-foreground">Conectada</p>
+                        </div>
+                        <p class="text-sm text-muted-foreground mt-1">+55 11 99999-9999</p>
+                    </div>
+                    <div id="metric-card-groups" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground">GRUPOS</h4>
+                            <i class="fa-solid fa-users text-2xl text-muted-foreground"></i>
+                        </div>
+                        <p class="text-2xl font-bold text-card-foreground">47 <span class="text-lg font-normal">grupos</span></p>
+                        <p class="text-sm text-muted-foreground mt-1">5 categorias</p>
+                    </div>
+                    <div id="metric-card-triggers" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground">GATILHOS</h4>
+                            <i class="fa-solid fa-bolt text-2xl text-muted-foreground"></i>
+                        </div>
+                        <p class="text-2xl font-bold text-card-foreground">12 <span class="text-lg font-normal">ativos</span></p>
+                        <p class="text-sm text-muted-foreground mt-1">3 pausados</p>
+                    </div>
+                    <div id="metric-card-messages" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground">MENSAGENS</h4>
+                            <i class="fa-solid fa-paper-plane text-2xl text-muted-foreground"></i>
+                        </div>
+                        <p class="text-2xl font-bold text-card-foreground">3 <span class="text-lg font-normal">agendadas</span></p>
+                        <p class="text-sm text-muted-foreground mt-1">156 enviadas</p>
+                    </div>
+                    <div id="metric-card-ai" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground">AGENTES IA</h4>
+                            <i class="fa-solid fa-robot text-2xl text-muted-foreground"></i>
+                        </div>
+                        <p class="text-2xl font-bold text-card-foreground">2 <span class="text-lg font-normal">ativos</span></p>
+                        <p class="text-sm text-muted-foreground mt-1">Bot Vendas</p>
+                    </div>
+                    <div id="metric-card-transcription" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-muted-foreground">TRANSCRIÇÃO</h4>
+                            <i class="fa-solid fa-file-audio text-2xl text-muted-foreground"></i>
+                        </div>
+                        <p class="text-2xl font-bold text-card-foreground">23 <span class="text-lg font-normal">grupos</span></p>
+                        <p class="text-sm text-muted-foreground mt-1">configurados</p>
+                    </div>
+                </section>
+                
+                <!-- Quick Actions Section -->
+                <section id="quick-actions-section">
+                    <h3 class="text-lg font-bold text-foreground mb-4">Ações Rápidas</h3>
+                    <div class="flex items-center gap-4">
+                        <button class="bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-[--radius] flex items-center gap-2 hover:opacity-90 transition-opacity">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Nova Mensagem</span>
+                        </button>
+                        <button class="bg-secondary text-secondary-foreground font-semibold px-4 py-2 rounded-[--radius] flex items-center gap-2 hover:opacity-90 transition-opacity">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Novo Gatilho</span>
+                        </button>
+                        <button class="bg-card border border-border text-card-foreground font-semibold px-4 py-2 rounded-[--radius] flex items-center gap-2 hover:bg-muted transition-colors">
+                            <i class="fa-solid fa-sync"></i>
+                            <span>Sincronizar Grupos</span>
+                        </button>
+                    </div>
+                </section>
+
+                <footer id="footer" class="text-center text-sm text-muted-foreground pt-8">
+                    <p>Copyright © 2025 Sincron Grupos</p>
+                </footer>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

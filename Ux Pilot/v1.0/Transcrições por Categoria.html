@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcrição</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "border": "var(--border)",
+                        "input": "var(--input)",
+                        "ring": "var(--ring)",
+                        "background": "var(--background)",
+                        "foreground": "var(--foreground)",
+                        "primary": {
+                            "DEFAULT": "var(--primary)",
+                            "foreground": "var(--primary-foreground)",
+                        },
+                        "secondary": {
+                            "DEFAULT": "var(--secondary)",
+                            "foreground": "var(--secondary-foreground)",
+                        },
+                        "destructive": {
+                            "DEFAULT": "var(--destructive)",
+                            "foreground": "var(--destructive-foreground)",
+                        },
+                        "muted": {
+                            "DEFAULT": "var(--muted)",
+                            "foreground": "var(--muted-foreground)",
+                        },
+                        "accent": {
+                            "DEFAULT": "var(--accent)",
+                            "foreground": "var(--accent-foreground)",
+                        },
+                        "popover": {
+                            "DEFAULT": "var(--popover)",
+                            "foreground": "var(--popover-foreground)",
+                        },
+                        "card": {
+                            "DEFAULT": "var(--card)",
+                            "foreground": "var(--card-foreground)",
+                        },
+                        "sidebar": {
+                            "DEFAULT": "var(--sidebar)",
+                            "foreground": "var(--sidebar-foreground)",
+                            "primary": "var(--sidebar-primary)",
+                            "primary-foreground": "var(--sidebar-primary-foreground)",
+                            "accent": "var(--sidebar-accent)",
+                            "accent-foreground": "var(--sidebar-accent-foreground)",
+                            "border": "var(--sidebar-border)",
+                            "ring": "var(--sidebar-ring)",
+                        },
+                        "chart": {
+                            "1": "var(--chart-1)",
+                            "2": "var(--chart-2)",
+                            "3": "var(--chart-3)",
+                            "4": "var(--chart-4)",
+                            "5": "var(--chart-5)",
+                        },
+                    },
+                    "borderRadius": {
+                        "lg": "var(--radius)",
+                        "md": "calc(var(--radius) - 2px)",
+                        "sm": "calc(var(--radius) - 4px)",
+                    },
+                    "fontFamily": {
+                        "sans": ["var(--font-sans)"],
+                        "serif": ["var(--font-serif)"],
+                        "mono": ["var(--font-mono)"],
+                    },
+                    "boxShadow": {
+                        "2xs": "var(--shadow-2xs)",
+                        "xs": "var(--shadow-xs)",
+                        "sm": "var(--shadow-sm)",
+                        "DEFAULT": "var(--shadow)",
+                        "md": "var(--shadow-md)",
+                        "lg": "var(--shadow-lg)",
+                        "xl": "var(--shadow-xl)",
+                        "2xl": "var(--shadow-2xl)",
+                    },
+                },
+            }
+        }
+    </script>
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #FAFAFA;
+            --foreground: #0f172a;
+            --card: #ffffff;
+            --card-foreground: #0f172a;
+            --primary: #55B52C;
+            --primary-foreground: #ffffff;
+            --secondary: #64748b;
+            --secondary-foreground: #ffffff;
+            --muted: #FAFAFA;
+            --muted-foreground: #64748b;
+            --accent: #3DB36A;
+            --accent-foreground: #ffffff;
+            --destructive: #ef4444;
+            --destructive-foreground: #ffffff;
+            --border: #EEE;
+            --input: #FFFFFF;
+            --ring: #94a3b8;
+            --font-sans: 'Inter', sans-serif;
+            --radius: 10px;
+            --shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        body {
+            font-family: var(--font-sans);
+        }
+        ::-webkit-scrollbar { display: none; }
+        .tab-active {
+            border-bottom: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        .badge-vendas { background: #3b82f6; color: white; }
+        .badge-suporte { background: #8b5cf6; color: white; }
+        .badge-comunidade { background: #ec4899; color: white; }
+        .badge-vip { background: #f59e0b; color: white; }
+    </style>
+</head>
+<body class="bg-background text-foreground">
+    <div id="app-layout" class="flex min-h-[1024px]">
+        <aside id="sidebar" class="w-64 bg-card border-r border-border flex flex-col fixed h-full">
+            <div id="sidebar-header" class="flex items-center gap-2 p-6 border-b border-border">
+                <div class="bg-primary p-2 rounded-lg">
+                    <i class="fa-solid fa-sync text-primary-foreground text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold text-foreground">Sincron Grupos</h1>
+            </div>
+            <nav id="sidebar-nav" class="flex-1 p-4 space-y-2">
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-brands fa-whatsapp w-5 text-center"></i>
+                    <span>Instâncias</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-users w-5 text-center"></i>
+                    <span>Grupos</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-tags w-5 text-center"></i>
+                    <span>Categorias</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-bolt w-5 text-center"></i>
+                    <span>Gatilhos</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-paper-plane w-5 text-center"></i>
+                    <span>Mensagens</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-robot w-5 text-center"></i>
+                    <span>Agentes IA</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] bg-muted text-primary font-semibold">
+                    <i class="fa-solid fa-file-audio w-5 text-center"></i>
+                    <span>Transcrição</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2 rounded-[--radius] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i class="fa-solid fa-user-friends w-5 text-center"></i>
+                    <span>Equipe</span>
+                </a>
+            </nav>
+            <div id="sidebar-footer" class="p-4 border-t border-border">
+                <a href="#" class="flex items-center gap-3">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-10 h-10 rounded-full">
+                    <div>
+                        <p class="font-semibold text-card-foreground">Michelle</p>
+                        <p class="text-xs text-muted-foreground">Admin</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-muted-foreground ml-auto"></i>
+                </a>
+            </div>
+        </aside>
+
+        <main id="main-content" class="flex-1 ml-64 bg-background">
+            <header id="header" class="flex items-center justify-between p-6 border-b border-border bg-card sticky top-0 z-10">
+                <div>
+                    <h2 class="text-2xl font-bold text-card-foreground">Transcrição</h2>
+                    <p class="text-muted-foreground">Visualize e gerencie transcrições de áudios dos grupos.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="text-muted-foreground hover:text-foreground">
+                        <i class="fa-regular fa-bell text-xl"></i>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="User Avatar" class="w-9 h-9 rounded-full">
+                        <div class="text-sm">
+                           <p class="font-semibold text-foreground">Michelle</p>
+                           <p class="text-muted-foreground">michelle@sincron.com</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="transcription-body" class="p-8 space-y-6">
+                <section id="tabs-section" class="bg-card border border-border rounded-[--radius] shadow-[--shadow]">
+                    <div class="flex border-b border-border">
+                        <button id="tab-category" class="tab-active px-6 py-4 font-semibold transition-colors">
+                            Por Categoria
+                        </button>
+                        <button id="tab-group" class="px-6 py-4 font-semibold text-muted-foreground hover:text-foreground transition-colors">
+                            Por Grupo
+                        </button>
+                    </div>
+                </section>
+
+                <section id="filters-section" class="flex items-center gap-4">
+                    <div class="flex-1 relative">
+                        <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"></i>
+                        <input type="text" placeholder="Buscar por palavra-chave, grupo ou data..." class="w-full pl-12 pr-4 py-3 border border-border rounded-[--radius] bg-input focus:outline-none focus:ring-2 focus:ring-ring">
+                    </div>
+                    <select class="px-4 py-3 border border-border rounded-[--radius] bg-input focus:outline-none focus:ring-2 focus:ring-ring">
+                        <option>Todas as categorias</option>
+                        <option>Vendas</option>
+                        <option>Suporte</option>
+                        <option>Comunidade</option>
+                        <option>VIP</option>
+                    </select>
+                    <select class="px-4 py-3 border border-border rounded-[--radius] bg-input focus:outline-none focus:ring-2 focus:ring-ring">
+                        <option>Últimos 7 dias</option>
+                        <option>Últimos 30 dias</option>
+                        <option>Últimos 90 dias</option>
+                        <option>Personalizado</option>
+                    </select>
+                    <button class="px-4 py-3 bg-secondary text-secondary-foreground rounded-[--radius] font-semibold hover:opacity-90 transition-opacity flex items-center gap-2">
+                        <i class="fa-solid fa-filter"></i>
+                        Filtrar
+                    </button>
+                </section>
+
+                <section id="category-vendas-section" class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="badge-vendas px-3 py-1 rounded-full text-sm font-semibold">Vendas</span>
+                            <h3 class="text-lg font-bold text-foreground">12 grupos</h3>
+                            <span class="text-muted-foreground">•</span>
+                            <span class="text-muted-foreground">48 transcrições</span>
+                        </div>
+                        <button class="text-muted-foreground hover:text-foreground">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4">
+                        <div id="transcription-card-1" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                        <i class="fa-solid fa-microphone text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-card-foreground">Vendas SP</h4>
+                                        <p class="text-sm text-muted-foreground">João Silva • Hoje às 14:23</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-muted-foreground">1:45</span>
+                                    <button class="text-muted-foreground hover:text-foreground">
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-card-foreground leading-relaxed mb-3">
+                                Pessoal, consegui fechar mais um contrato hoje com o cliente da zona sul. Ele estava interessado no plano premium e aprovei um desconto de 15% conforme combinamos na reunião. O pagamento deve entrar até sexta-feira.
+                            </p>
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="text-muted-foreground flex items-center gap-1">
+                                    <i class="fa-solid fa-tag"></i>
+                                    Vendas
+                                </span>
+                                <span class="text-muted-foreground">•</span>
+                                <span class="text-muted-foreground">234 membros</span>
+                                <span class="text-muted-foreground">•</span>
+                                <button class="text-primary hover:text-accent font-semibold">
+                                    Ver detalhes
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="transcription-card-2" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                        <i class="fa-solid fa-microphone text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-card-foreground">Leads Novembro</h4>
+                                        <p class="text-sm text-muted-foreground">Maria Santos • Hoje às 13:15</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-muted-foreground">2:30</span>
+                                    <button class="text-muted-foreground hover:text-foreground">
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-card-foreground leading-relaxed mb-3">
+                                Oi gente, acabei de sair de uma reunião com um lead muito promissor. Empresa de médio porte, 50 funcionários, procurando solução completa de gestão. Marquei follow-up para segunda-feira. Alguém pode me passar aquele case de sucesso do setor de tecnologia?
+                            </p>
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="text-muted-foreground flex items-center gap-1">
+                                    <i class="fa-solid fa-tag"></i>
+                                    Vendas
+                                </span>
+                                <span class="text-muted-foreground">•</span>
+                                <span class="text-muted-foreground">156 membros</span>
+                                <span class="text-muted-foreground">•</span>
+                                <button class="text-primary hover:text-accent font-semibold">
+                                    Ver detalhes
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="transcription-card-3" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                        <i class="fa-solid fa-microphone text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-card-foreground">Vendas RJ</h4>
+                                        <p class="text-sm text-muted-foreground">Carlos Oliveira • Ontem às 16:42</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-muted-foreground">3:12</span>
+                                    <button class="text-muted-foreground hover:text-foreground">
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-card-foreground leading-relaxed mb-3">
+                                Galera, tive uma negociação difícil hoje mas conseguimos reverter. Cliente estava hesitante com o preço, mas mostrei os ROI dos últimos clientes similares e ele topou. Precisamos atualizar nossa planilha de cases porque está fazendo muita diferença nas apresentações.
+                            </p>
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="text-muted-foreground flex items-center gap-1">
+                                    <i class="fa-solid fa-tag"></i>
+                                    Vendas
+                                </span>
+                                <span class="text-muted-foreground">•</span>
+                                <span class="text-muted-foreground">189 membros</span>
+                                <span class="text-muted-foreground">•</span>
+                                <button class="text-primary hover:text-accent font-semibold">
+                                    Ver detalhes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="category-suporte-section" class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="badge-suporte px-3 py-1 rounded-full text-sm font-semibold">Suporte</span>
+                            <h3 class="text-lg font-bold text-foreground">8 grupos</h3>
+                            <span class="text-muted-foreground">•</span>
+                            <span class="text-muted-foreground">32 transcrições</span>
+                        </div>
+                        <button class="text-muted-foreground hover:text-foreground">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4">
+                        <div id="transcription-card-4" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
+                                        <i class="fa-solid fa-microphone text-accent"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-card-foreground">Suporte Premium</h4>
+                                        <p class="text-sm text-muted-foreground">Ana Costa • Hoje às 11:30</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-muted-foreground">2:05</span>
+                                    <button class="text-muted-foreground hover:text-foreground">
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-card-foreground leading-relaxed mb-3">
+                                Pessoal, estou com um cliente que está enfrentando problemas de integração com o sistema deles. Já tentei as soluções padrão do manual mas não funcionou. Alguém já teve caso similar? Preciso resolver isso até o fim do dia porque é conta prioritária.
+                            </p>
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="text-muted-foreground flex items-center gap-1">
+                                    <i class="fa-solid fa-tag"></i>
+                                    Suporte
+                                </span>
+                                <span class="text-muted-foreground">•</span>
+                                <span class="text-muted-foreground">89 membros</span>
+                                <span class="text-muted-foreground">•</span>
+                                <button class="text-primary hover:text-accent font-semibold">
+                                    Ver detalhes
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="transcription-card-5" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
+                                        <i class="fa-solid fa-microphone text-accent"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-card-foreground">Suporte Técnico</h4>
+                                        <p class="text-sm text-muted-foreground">Pedro Lima • Hoje às 10:15</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-muted-foreground">1:20</span>
+                                    <button class="text-muted-foreground hover:text-foreground">
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-card-foreground leading-relaxed mb-3">
+                                Bom dia equipe, identificamos um bug na versão mais recente do aplicativo. Afeta apenas usuários iOS 17. Já abri ticket com desenvolvimento e a previsão é correção até amanhã. Enquanto isso, orientem os clientes a usar a versão web.
+                            </p>
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="text-muted-foreground flex items-center gap-1">
+                                    <i class="fa-solid fa-tag"></i>
+                                    Suporte
+                                </span>
+                                <span class="text-muted-foreground">•</span>
+                                <span class="text-muted-foreground">145 membros</span>
+                                <span class="text-muted-foreground">•</span>
+                                <button class="text-primary hover:text-accent font-semibold">
+                                    Ver detalhes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="category-comunidade-section" class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="badge-comunidade px-3 py-1 rounded-full text-sm font-semibold">Comunidade</span>
+                            <h3 class="text-lg font-bold text-foreground">23 grupos</h3>
+                            <span class="text-muted-foreground">•</span>
+                            <span class="text-muted-foreground">67 transcrições</span>
+                        </div>
+                        <button class="text-muted-foreground hover:text-foreground">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4">
+                        <div id="transcription-card-6" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
+                                        <i class="fa-solid fa-microphone text-pink-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-card-foreground">Comunidade Geral</h4>
+                                        <p class="text-sm text-muted-foreground">Lucas Ferreira • Hoje às 09:45</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-muted-foreground">0:58</span>
+                                    <button class="text-muted-foreground hover:text-foreground">
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-card-foreground leading-relaxed mb-3">
+                                Pessoal, só lembrando que amanhã tem o webinar sobre as novas funcionalidades. Vai ser às 15h, não percam! Vamos mostrar features exclusivas que vocês pediram no último feedback.
+                            </p>
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="text-muted-foreground flex items-center gap-1">
+                                    <i class="fa-solid fa-tag"></i>
+                                    Comunidade
+                                </span>
+                                <span class="text-muted-foreground">•</span>
+                                <span class="text-muted-foreground">1.2k membros</span>
+                                <span class="text-muted-foreground">•</span>
+                                <button class="text-primary hover:text-accent font-semibold">
+                                    Ver detalhes
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="transcription-card-7" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
+                                        <i class="fa-solid fa-microphone text-pink-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-card-foreground">Usuários Beta</h4>
+                                        <p class="text-sm text-muted-foreground">Juliana Mendes • Ontem às 18:20</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-muted-foreground">1:35</span>
+                                    <button class="text-muted-foreground hover:text-foreground">
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-card-foreground leading-relaxed mb-3">
+                                Galera, testei a nova interface mobile e está incrível! Muito mais intuitiva que a anterior. Só encontrei um pequeno bug no menu lateral quando está em modo paisagem, mas de resto está perfeito. Parabéns ao time de desenvolvimento!
+                            </p>
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="text-muted-foreground flex items-center gap-1">
+                                    <i class="fa-solid fa-tag"></i>
+                                    Comunidade
+                                </span>
+                                <span class="text-muted-foreground">•</span>
+                                <span class="text-muted-foreground">342 membros</span>
+                                <span class="text-muted-foreground">•</span>
+                                <button class="text-primary hover:text-accent font-semibold">
+                                    Ver detalhes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="category-vip-section" class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="badge-vip px-3 py-1 rounded-full text-sm font-semibold">VIP</span>
+                            <h3 class="text-lg font-bold text-foreground">4 grupos</h3>
+                            <span class="text-muted-foreground">•</span>
+                            <span class="text-muted-foreground">15 transcrições</span>
+                        </div>
+                        <button class="text-muted-foreground hover:text-foreground">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4">
+                        <div id="transcription-card-8" class="bg-card border border-border rounded-[--radius] p-5 shadow-[--shadow] hover:border-primary transition-colors cursor-pointer">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                        <i class="fa-solid fa-microphone text-orange-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-card-foreground">Clientes Enterprise</h4>
+                                        <p class="text-sm text-muted-foreground">Roberto Alves • Hoje às 08:30</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-muted-foreground">3:45</span>
+                                    <button class="text-muted-foreground hover:text-foreground">
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-card-foreground leading-relaxed mb-3">
+                                Bom dia a todos. Gostaria de discutir a possibilidade de customização avançada para nossa operação. Temos necessidades específicas de relatórios e integrações que precisam ser implementadas. Podemos agendar uma reunião técnica esta semana?
+                            </p>
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="text-muted-foreground flex items-center gap-1">
+                                    <i class="fa-solid fa-tag"></i>
+                                    VIP
+                                </span>
+                                <span class="text-muted-foreground">•</span>
+                                <span class="text-muted-foreground">28 membros</span>
+                                <span class="text-muted-foreground">•</span>
+                                <button class="text-primary hover:text-accent font-semibold">
+                                    Ver detalhes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="pagination-section" class="flex items-center justify-between">
+                    <p class="text-muted-foreground">Mostrando 1-15 de 162 transcrições</p>
+                    <div class="flex items-center gap-2">
+                        <button class="px-3 py-2 border border-border rounded-[--radius] text-muted-foreground hover:bg-muted transition-colors">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <button class="px-4 py-2 bg-primary text-primary-foreground rounded-[--radius] font-semibold">1</button>
+                        <button class="px-4 py-2 border border-border rounded-[--radius] text-card-foreground hover:bg-muted transition-colors">2</button>
+                        <button class="px-4 py-2 border border-border rounded-[--radius] text-card-foreground hover:bg-muted transition-colors">3</button>
+                        <span class="px-2 text-muted-foreground">...</span>
+                        <button class="px-4 py-2 border border-border rounded-[--radius] text-card-foreground hover:bg-muted transition-colors">11</button>
+                        <button class="px-3 py-2 border border-border rounded-[--radius] text-muted-foreground hover:bg-muted transition-colors">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </section>
+
+                <footer id="footer" class="text-center text-sm text-muted-foreground pt-8">
+                    <p>Copyright © 2025 Sincron Grupos</p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+            const tabCategory = document.getElementById('tab-category');
+            const tabGroup = document.getElementById('tab-group');
+
+            tabCategory.addEventListener('click', function() {
+                tabCategory.classList.add('tab-active', 'text-primary');
+                tabCategory.classList.remove('text-muted-foreground');
+                tabGroup.classList.remove('tab-active', 'text-primary');
+                tabGroup.classList.add('text-muted-foreground');
+            });
+
+            tabGroup.addEventListener('click', function() {
+                tabGroup.classList.add('tab-active', 'text-primary');
+                tabGroup.classList.remove('text-muted-foreground');
+                tabCategory.classList.remove('tab-active', 'text-primary');
+                tabCategory.classList.add('text-muted-foreground');
+            });
+        });
+    </script>
+</body>
+</html>

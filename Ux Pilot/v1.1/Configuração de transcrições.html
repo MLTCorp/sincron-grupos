@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcription Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+            <script>
+            // tailwind.config (IMPORTANT FOR STYLES)
+            tailwind.config = {
+                        theme: {
+                            extend: {
+                                colors: {
+                                    "border": "var(--border)",
+                                    "input": "var(--input)",
+                                    "ring": "var(--ring)",
+                                    "background": "var(--background)",
+                                    "foreground": "var(--foreground)",
+                                    "primary": {
+                                        "DEFAULT": "var(--primary)",
+                                        "foreground": "var(--primary-foreground)",
+                                    },
+                                    "secondary": {
+                                        "DEFAULT": "var(--secondary)",
+                                        "foreground": "var(--secondary-foreground)",
+                                    },
+                                    "destructive": {
+                                        "DEFAULT": "var(--destructive)",
+                                        "foreground": "var(--destructive-foreground)",
+                                    },
+                                    "muted": {
+                                        "DEFAULT": "var(--muted)",
+                                        "foreground": "var(--muted-foreground)",
+                                    },
+                                    "accent": {
+                                        "DEFAULT": "var(--accent)",
+                                        "foreground": "var(--accent-foreground)",
+                                    },
+                                    "popover": {
+                                        "DEFAULT": "var(--popover)",
+                                        "foreground": "var(--popover-foreground)",
+                                    },
+                                    "card": {
+                                        "DEFAULT": "var(--card)",
+                                        "foreground": "var(--card-foreground)",
+                                    },
+                                    "sidebar": {
+                                        "DEFAULT": "var(--sidebar)",
+                                        "foreground": "var(--sidebar-foreground)",
+                                        "primary": "var(--sidebar-primary)",
+                                        "primary-foreground": "var(--sidebar-primary-foreground)",
+                                        "accent": "var(--sidebar-accent)",
+                                        "accent-foreground": "var(--sidebar-accent-foreground)",
+                                        "border": "var(--sidebar-border)",
+                                        "ring": "var(--sidebar-ring)",
+                                    },
+                                    "chart": {
+                                        "1": "var(--chart-1)",
+                                        "2": "var(--chart-2)",
+                                        "3": "var(--chart-3)",
+                                        "4": "var(--chart-4)",
+                                        "5": "var(--chart-5)",
+                                    },
+                                },
+                                "borderRadius": {
+                                    "lg": "var(--radius)",
+                                    "md": "calc(var(--radius) - 2px)",
+                                    "sm": "calc(var(--radius) - 4px)",
+                                },
+                                "fontFamily": {
+                                    "sans": ["var(--font-sans)"],
+                                    "serif": ["var(--font-serif)"],
+                                    "mono": ["var(--font-mono)"],
+                                },
+                                "boxShadow": {
+                                    "2xs": "var(--shadow-2xs)",
+                                    "xs": "var(--shadow-xs)",
+                                    "sm": "var(--shadow-sm)",
+                                    "DEFAULT": "var(--shadow)",
+                                    "md": "var(--shadow-md)",
+                                    "lg": "var(--shadow-lg)",
+                                    "xl": "var(--shadow-xl)",
+                                    "2xl": "var(--shadow-2xl)",
+                                },
+                            },
+                        }
+                    }
+            </script>
+            
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #FAFAFA;
+            --foreground: #0f172a;
+            --card: #ffffff;
+            --card-foreground: #0f172a;
+            --primary: #55B52C;
+            --primary-foreground: #ffffff;
+            --secondary: #64748b;
+            --secondary-foreground: #ffffff;
+            --muted: #FAFAFA;
+            --muted-foreground: #0f172a;
+            --accent: #3DB36A;
+            --accent-foreground: #ffffff;
+            --destructive: #ef4444;
+            --destructive-foreground: #ffffff;
+            --border: #EEE;
+            --input: #FFFFFF;
+            --ring: #94a3b8;
+            --font-sans: Inter, sans-serif;
+            --font-serif: Georgia, serif;
+            --font-mono: JetBrains Mono, monospace;
+            --radius: 10px;
+            --shadow: -2px 4px 12px 4px rgba(51,51,51,0.05);
+        }
+        ::-webkit-scrollbar { display: none; }
+        body {
+            font-family: var(--font-sans);
+        }
+        .toggle-checkbox:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            transform: translateX(1.25rem);
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground">
+
+<div id="main-layout" class="flex h-screen overflow-hidden">
+    
+    <aside id="sidebar" class="w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
+        <div id="sidebar-header" class="p-6 border-b border-sidebar-border">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-microphone text-primary-foreground text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-sidebar-foreground font-bold text-lg">TranscriptAI</h1>
+                    <p class="text-sidebar-foreground text-xs opacity-70">Audio Manager</p>
+                </div>
+            </div>
+        </div>
+        
+        <nav id="sidebar-nav" class="flex-1 p-4 space-y-1">
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+                <i class="fa-solid fa-chart-line w-5"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-sidebar-accent text-sidebar-accent-foreground transition-colors">
+                <i class="fa-solid fa-file-audio w-5"></i>
+                <span>Transcrições</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+                <i class="fa-solid fa-robot w-5"></i>
+                <span>Agentes IA</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+                <i class="fa-brands fa-whatsapp w-5"></i>
+                <span>WhatsApp</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+                <i class="fa-solid fa-layer-group w-5"></i>
+                <span>Grupos</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+                <i class="fa-solid fa-tags w-5"></i>
+                <span>Categorias</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+                <i class="fa-solid fa-chart-pie w-5"></i>
+                <span>Relatórios</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+                <i class="fa-solid fa-gear w-5"></i>
+                <span>Configurações</span>
+            </a>
+        </nav>
+        
+        <div id="sidebar-footer" class="p-4 border-t border-sidebar-border">
+            <div class="flex items-center gap-3 px-4 py-3">
+                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg" alt="User" class="w-10 h-10 rounded-full">
+                <div class="flex-1">
+                    <p class="text-sidebar-foreground font-semibold text-sm">Carlos Silva</p>
+                    <p class="text-sidebar-foreground text-xs opacity-70">Admin</p>
+                </div>
+                <i class="fa-solid fa-ellipsis-vertical text-sidebar-foreground opacity-70"></i>
+            </div>
+        </div>
+    </aside>
+
+    <div id="main-content" class="flex-1 flex flex-col overflow-hidden">
+        
+        <header id="header" class="bg-card border-b border-border px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-card-foreground">Configurações de Transcrição</h2>
+                    <p class="text-muted-foreground text-sm mt-1">Gerencie modos de transcrição, grupos e categorias</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <input type="text" placeholder="Buscar configurações..." class="bg-input border border-input rounded-lg px-4 py-2 pl-10 w-80 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                        <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"></i>
+                    </div>
+                    <button class="bg-primary text-primary-foreground px-6 py-2 rounded-lg font-semibold hover:opacity-90 transition-opacity">
+                        <i class="fa-solid fa-save mr-2"></i>
+                        Salvar Alterações
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div id="content-area" class="flex-1 overflow-auto p-8">
+
+            <div id="main-section" class="mb-8">
+                <div class="bg-card rounded-xl border border-border shadow-sm">
+                    <!-- Tabs -->
+                    <div class="flex border-b border-border">
+                        <button id="tab-grupos" onclick="showTab('grupos')" class="tab-btn tab-active flex items-center gap-2 px-6 py-4 font-semibold text-primary border-b-2 border-primary transition-colors">
+                            <i class="fa-brands fa-whatsapp"></i>
+                            <span>Por Grupo</span>
+                            <span class="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">47</span>
+                        </button>
+                        <button id="tab-categorias" onclick="showTab('categorias')" class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold text-muted-foreground hover:text-foreground transition-colors">
+                            <i class="fa-solid fa-tags"></i>
+                            <span>Por Categoria</span>
+                            <span class="bg-muted text-muted-foreground text-xs px-2 py-0.5 rounded-full">4</span>
+                        </button>
+                    </div>
+
+                    <!-- Tab Content: Grupos -->
+                    <div id="content-grupos" class="tab-content p-6">
+                        <div class="mb-4 flex items-center gap-3">
+                            <div class="relative flex-1">
+                                <input type="text" placeholder="Buscar grupos..." class="bg-input border border-input rounded-lg px-4 py-2 pl-10 w-full text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                                <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"></i>
+                            </div>
+                            <select class="bg-input border border-input rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                                <option>Todas Categorias</option>
+                                <option>Vendas</option>
+                                <option>Suporte</option>
+                                <option>Comunidade</option>
+                                <option>VIP</option>
+                            </select>
+                            <select class="bg-input border border-input rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                                <option>Todos os Status</option>
+                                <option>Habilitados</option>
+                                <option>Desabilitados</option>
+                            </select>
+                        </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-border">
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Grupo</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Categoria</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Modo</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Resposta</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Status</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-border hover:bg-muted/50 transition-colors" id="group-row-1">
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+                                                <i class="fa-brands fa-whatsapp text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-card-foreground">Equipe de Vendas</p>
+                                                <p class="text-xs text-muted-foreground">ID: 5521987654321</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">Vendas</span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-semibold">
+                                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Automático
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-accent/10 text-accent px-3 py-1 rounded-full text-xs font-semibold">
+                                            <i class="fa-solid fa-brain mr-1"></i>Com Resumo
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" checked class="sr-only peer toggle-checkbox">
+                                            <div class="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-5 after:w-5 after:transition-all border border-border toggle-label"></div>
+                                        </label>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-2">
+                                            <button class="text-secondary hover:text-primary transition-colors p-2">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button class="text-secondary hover:text-accent transition-colors p-2">
+                                                <i class="fa-solid fa-chart-simple"></i>
+                                            </button>
+                                            <button class="text-secondary hover:text-destructive transition-colors p-2">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-border hover:bg-muted/50 transition-colors" id="group-row-2">
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center">
+                                                <i class="fa-brands fa-whatsapp text-accent"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-card-foreground">Suporte Técnico</p>
+                                                <p class="text-xs text-muted-foreground">ID: 5521987654322</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold">Suporte</span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-secondary/10 text-secondary px-3 py-1 rounded-full text-xs font-semibold">
+                                            <i class="fa-solid fa-hand-pointer mr-1"></i>Manual
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-muted text-muted-foreground px-3 py-1 rounded-full text-xs font-semibold">
+                                            <i class="fa-solid fa-file-lines mr-1"></i>Simples
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" checked class="sr-only peer toggle-checkbox">
+                                            <div class="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-5 after:w-5 after:transition-all border border-border toggle-label"></div>
+                                        </label>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-2">
+                                            <button class="text-secondary hover:text-primary transition-colors p-2">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button class="text-secondary hover:text-accent transition-colors p-2">
+                                                <i class="fa-solid fa-chart-simple"></i>
+                                            </button>
+                                            <button class="text-secondary hover:text-destructive transition-colors p-2">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-border hover:bg-muted/50 transition-colors" id="group-row-3">
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center">
+                                                <i class="fa-brands fa-whatsapp text-secondary"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-card-foreground">Comunidade Geral</p>
+                                                <p class="text-xs text-muted-foreground">ID: 5521987654323</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-pink-100 text-pink-700 px-3 py-1 rounded-full text-xs font-semibold">Comunidade</span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-semibold">
+                                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Automático
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-accent/10 text-accent px-3 py-1 rounded-full text-xs font-semibold">
+                                            <i class="fa-solid fa-brain mr-1"></i>Com Resumo
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" class="sr-only peer toggle-checkbox">
+                                            <div class="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-5 after:w-5 after:transition-all border border-border toggle-label"></div>
+                                        </label>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-2">
+                                            <button class="text-secondary hover:text-primary transition-colors p-2">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button class="text-secondary hover:text-accent transition-colors p-2">
+                                                <i class="fa-solid fa-chart-simple"></i>
+                                            </button>
+                                            <button class="text-secondary hover:text-destructive transition-colors p-2">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-border hover:bg-muted/50 transition-colors" id="group-row-4">
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+                                                <i class="fa-brands fa-whatsapp text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-card-foreground">Clientes VIP</p>
+                                                <p class="text-xs text-muted-foreground">ID: 5521987654324</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-semibold">VIP</span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-secondary/10 text-secondary px-3 py-1 rounded-full text-xs font-semibold">
+                                            <i class="fa-solid fa-hand-pointer mr-1"></i>Manual
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-accent/10 text-accent px-3 py-1 rounded-full text-xs font-semibold">
+                                            <i class="fa-solid fa-brain mr-1"></i>Com Resumo
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" checked class="sr-only peer toggle-checkbox">
+                                            <div class="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-5 after:w-5 after:transition-all border border-border toggle-label"></div>
+                                        </label>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-2">
+                                            <button class="text-secondary hover:text-primary transition-colors p-2">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button class="text-secondary hover:text-accent transition-colors p-2">
+                                                <i class="fa-solid fa-chart-simple"></i>
+                                            </button>
+                                            <button class="text-secondary hover:text-destructive transition-colors p-2">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-muted/50 transition-colors" id="group-row-5">
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center">
+                                                <i class="fa-brands fa-whatsapp text-accent"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-card-foreground">Leads Dezembro</p>
+                                                <p class="text-xs text-muted-foreground">ID: 5521987654325</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">Vendas</span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-semibold">
+                                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Automático
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <span class="bg-muted text-muted-foreground px-3 py-1 rounded-full text-xs font-semibold">
+                                            <i class="fa-solid fa-file-lines mr-1"></i>Simples
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" checked class="sr-only peer toggle-checkbox">
+                                            <div class="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-5 after:w-5 after:transition-all border border-border toggle-label"></div>
+                                        </label>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-2">
+                                            <button class="text-secondary hover:text-primary transition-colors p-2">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button class="text-secondary hover:text-accent transition-colors p-2">
+                                                <i class="fa-solid fa-chart-simple"></i>
+                                            </button>
+                                            <button class="text-secondary hover:text-destructive transition-colors p-2">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                        <div class="flex items-center justify-between mt-6 pt-4 border-t border-border">
+                            <p class="text-sm text-muted-foreground">Mostrando 5 de 47 grupos</p>
+                            <div class="flex items-center gap-2">
+                                <button class="px-3 py-2 border border-border rounded-lg text-sm hover:bg-muted transition-colors">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                                <button class="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold">1</button>
+                                <button class="px-3 py-2 border border-border rounded-lg text-sm hover:bg-muted transition-colors">2</button>
+                                <button class="px-3 py-2 border border-border rounded-lg text-sm hover:bg-muted transition-colors">3</button>
+                                <button class="px-3 py-2 border border-border rounded-lg text-sm hover:bg-muted transition-colors">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Categorias -->
+                    <div id="content-categorias" class="tab-content p-6 hidden">
+                        <p class="text-muted-foreground text-sm mb-6">Configure transcrições para todos os grupos de cada categoria de uma vez</p>
+
+                        <div class="space-y-4">
+                        <!-- Vendas -->
+                        <div class="bg-muted/50 rounded-xl p-5 border border-border hover:border-blue-300 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                                        <i class="fa-solid fa-chart-line text-white text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-card-foreground text-lg">Vendas</h4>
+                                        <p class="text-muted-foreground text-sm">12 grupos nesta categoria</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-6">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm text-muted-foreground">Modo:</span>
+                                        <select class="bg-input border border-input rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                                            <option selected>Automático</option>
+                                            <option>Manual</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm text-muted-foreground">Resposta:</span>
+                                        <select class="bg-input border border-input rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                                            <option>Simples</option>
+                                            <option selected>Com Resumo</option>
+                                        </select>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" checked class="sr-only peer toggle-checkbox">
+                                        <div class="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-5 after:w-5 after:transition-all border border-border"></div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Suporte -->
+                        <div class="bg-muted/50 rounded-xl p-5 border border-border hover:border-purple-300 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
+                                        <i class="fa-solid fa-headset text-white text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-card-foreground text-lg">Suporte</h4>
+                                        <p class="text-muted-foreground text-sm">8 grupos nesta categoria</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-6">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm text-muted-foreground">Modo:</span>
+                                        <select class="bg-input border border-input rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                                            <option selected>Automático</option>
+                                            <option>Manual</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm text-muted-foreground">Resposta:</span>
+                                        <select class="bg-input border border-input rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                                            <option selected>Simples</option>
+                                            <option>Com Resumo</option>
+                                        </select>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" checked class="sr-only peer toggle-checkbox">
+                                        <div class="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-5 after:w-5 after:transition-all border border-border"></div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Comunidade -->
+                        <div class="bg-muted/50 rounded-xl p-5 border border-border hover:border-pink-300 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 bg-pink-500 rounded-xl flex items-center justify-center">
+                                        <i class="fa-solid fa-users text-white text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-card-foreground text-lg">Comunidade</h4>
+                                        <p class="text-muted-foreground text-sm">23 grupos nesta categoria</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-6">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm text-muted-foreground">Modo:</span>
+                                        <select class="bg-input border border-input rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                                            <option>Automático</option>
+                                            <option selected>Manual</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm text-muted-foreground">Resposta:</span>
+                                        <select class="bg-input border border-input rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                                            <option selected>Simples</option>
+                                            <option>Com Resumo</option>
+                                        </select>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer toggle-checkbox">
+                                        <div class="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-5 after:w-5 after:transition-all border border-border"></div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VIP -->
+                        <div class="bg-muted/50 rounded-xl p-5 border border-border hover:border-orange-300 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
+                                        <i class="fa-solid fa-crown text-white text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-card-foreground text-lg">VIP</h4>
+                                        <p class="text-muted-foreground text-sm">4 grupos nesta categoria</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-6">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm text-muted-foreground">Modo:</span>
+                                        <select class="bg-input border border-input rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                                            <option selected>Automático</option>
+                                            <option>Manual</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm text-muted-foreground">Resposta:</span>
+                                        <select class="bg-input border border-input rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                                            <option>Simples</option>
+                                            <option selected>Com Resumo</option>
+                                        </select>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" checked class="sr-only peer toggle-checkbox">
+                                        <div class="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-5 after:w-5 after:transition-all border border-border"></div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-border">
+                            <p class="text-sm text-muted-foreground">
+                                <i class="fa-solid fa-info-circle mr-2"></i>
+                                Ao ativar a transcrição para uma categoria, todos os grupos dessa categoria herdam essas configurações.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+function showTab(tab) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+
+    // Remove active state from all tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('tab-active', 'text-primary', 'border-b-2', 'border-primary');
+        btn.classList.add('text-muted-foreground');
+    });
+
+    // Show selected tab content
+    document.getElementById('content-' + tab).classList.remove('hidden');
+
+    // Add active state to selected tab
+    const activeTab = document.getElementById('tab-' + tab);
+    activeTab.classList.add('tab-active', 'text-primary', 'border-b-2', 'border-primary');
+    activeTab.classList.remove('text-muted-foreground');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const toggles = document.querySelectorAll('.toggle-checkbox');
+
+    toggles.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            console.log('Toggle changed:', this.checked);
+        });
+    });
+});
+</script>
+
+</body>
+</html>
