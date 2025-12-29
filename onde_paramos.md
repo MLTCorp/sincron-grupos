@@ -1,58 +1,38 @@
 # Onde Paramos - Sincron Grupos
 
-**Data:** 24/12/2024
-**Ultimo commit:** 5ec5c3e (chore: update shadcn/ui components and dependencies)
+**Data:** 29/12/2024
+**Ultimo commit:** 357e953 (Merge pull request #1 from MLTCorp/master)
 
 ---
 
-## SESSAO ATUAL - 24/12/2024
+## SESSAO ATUAL - 29/12/2024
 
 ### O que foi feito
 
-#### 1. Correcao do Sidebar (app-sidebar.tsx)
-**Problema:** Sidebar foi sobrescrito pelo tema shadcn dashboard-01, mostrando "Acme Inc." e dados genericos em vez do sidebar original do Sincron Grupos.
+#### 1. Registro de Correcoes Urgentes
+Adicionada secao "Correcoes Urgentes" no `CLAUDE.md` com 7 itens pendentes para proxima sessao:
 
-**Causa raiz:** Comando `npx shadcn@latest add dashboard-01` sobrescreveu o arquivo `components/app-sidebar.tsx`
+1. Ajustar favicon do projeto
+2. Ajustar imagem de compartilhamento (Open Graph)
+3. Permitir entrada mesmo sem confirmacao de email
+4. Corrigir inconsistencia Plano Free: 5 grupos (interno) vs 3 grupos (landing page)
+5. Adicionar variavel de ambiente WEBHOOK_N8N_URL
+6. Alterar permissao de grupo unico para grupo unico por organizacao
+7. Instalar agente de gestao de feedback de testers
 
-**Correcoes aplicadas:**
-- Restaurado `app-sidebar.tsx` original do historico git (HEAD~5)
-- Removidos componentes shadcn nao utilizados:
-  - nav-documents.tsx
-  - nav-main.tsx
-  - nav-secondary.tsx
-  - nav-user.tsx
-  - site-header.tsx
-  - chart-area-interactive.tsx
-  - section-cards.tsx
-  - data-table.tsx
-
-#### 2. Novos Componentes shadcn Mantidos
-Componentes uteis que foram adicionados e mantidos:
-- breadcrumb.tsx - navegacao breadcrumbs
-- chart.tsx - componentes de graficos (recharts)
-- drawer.tsx - componente drawer/sheet
-- toggle.tsx - botao toggle
-- toggle-group.tsx - grupo de toggles
-
-#### 3. Deploy na Vercel
-- Realizado deploy manual com `npx vercel --prod`
-- Verificado funcionamento em producao
-- Sidebar corrigido e funcionando
-
-**Commits:**
-- `8dc11e5` - feat: add new shadcn/ui components (breadcrumb, chart, drawer, toggle)
-- `5ec5c3e` - chore: update shadcn/ui components and dependencies
+**Commits desde ultima sessao:**
+- `06c26c8` - inicio
+- `357e953` - Merge pull request #1 from MLTCorp/master
 
 ---
 
 ### Proximos Passos
 
-1. Continuar implementacao conforme plano original
-2. Testar funcionalidades da pagina de mensagens
-3. Implementar sincronizacao de grupos do WhatsApp
-4. Integracao N8N (falta tipo_transcricao na query)
-5. Sistema de comandos (/commands)
-6. Paginas de configuracoes avancadas
+1. Executar as 7 correcoes urgentes listadas acima
+2. Sincronizacao de grupos do WhatsApp
+3. Integracao N8N completa
+4. Sistema de comandos (/commands)
+5. Paginas de configuracoes avancadas
 
 ---
 
@@ -86,9 +66,10 @@ npm run lint     # ESLint
 - **Design/UI:** 85%
 - **Backend:** 95%
 - **Integracao N8N:** 80%
+- **Geral:** ~85%
 
 ---
 
-**Ultima Atualizacao:** 24/12/2024
+**Ultima Atualizacao:** 29/12/2024
 **Sessao por:** Claude Opus 4.5
-**Status:** Sidebar corrigido, deploy realizado, sistema funcionando
+**Status:** Correcoes urgentes registradas no CLAUDE.md para proxima sessao
