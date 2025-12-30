@@ -1,34 +1,52 @@
 # Onde Paramos - Sincron Grupos
 
-**Data:** 29/12/2024
-**Ultimo commit:** 357e953 (Merge pull request #1 from MLTCorp/master)
+**Data:** 30/12/2024
+**Ultimo commit:** 6012813 (screenshot feedback)
 
 ---
 
-## SESSAO ATUAL - 29/12/2024
+## SESSAO ATUAL - 30/12/2024
 
 ### O que foi feito
 
-#### 1. Registro de Correcoes Urgentes
-Adicionada secao "Correcoes Urgentes" no `CLAUDE.md` com 7 itens pendentes para proxima sessao:
+#### 1. Sistema de Feedback para Testers
+- Componentes `FeedbackFab` e `FeedbackSheet`
+- Captura de screenshot com html2canvas
+- Gravacao de audio com transcricao (Whisper)
+- Coleta automatica de erros JS, console logs e breadcrumbs
+- API `/api/feedback` com upload para Supabase Storage
+- Tabela `feedbacks` e bucket de storage configurados
 
-1. Ajustar favicon do projeto
-2. Ajustar imagem de compartilhamento (Open Graph)
-3. Permitir entrada mesmo sem confirmacao de email
-4. Corrigir inconsistencia Plano Free: 5 grupos (interno) vs 3 grupos (landing page)
-5. Adicionar variavel de ambiente WEBHOOK_N8N_URL
-6. Alterar permissao de grupo unico para grupo unico por organizacao
-7. Instalar agente de gestao de feedback de testers
+#### 2. Branding (Favicon + Open Graph)
+- Criado `icon.svg`, `apple-icon.svg`, `opengraph-image.svg`
+- Logo "SG" em verde (#55B52C)
+- Metadata completa no `layout.tsx`
 
-**Commits desde ultima sessao:**
-- `06c26c8` - inicio
-- `357e953` - Merge pull request #1 from MLTCorp/master
+#### 3. Correcao de Planos
+- Documentacao alinhada com landing page (Starter/Pro/Enterprise)
+- Default `max_groups: 5` para plano free (era 10)
+- Validacao de limites no frontend (`grupos/page.tsx`)
+- Indicador visual no modal de sincronizacao
+
+#### 4. Variavel de Ambiente
+- Adicionado `WEBHOOK_N8N_URL` no `.env.local`
+- URL: `https://workflows.sincronia.digital/webhook/sincron-tracker/messages`
+
+#### 5. Constraint de Grupos
+- Alterado de `grupos_chat_id_unique` (global)
+- Para `grupos_chat_id_org_unique` (por organizacao)
+- Permite que diferentes organizacoes gerenciem o mesmo grupo WhatsApp
+
+**Commits desta sessao:**
+- `6012813` - screenshot feedback
+- `7ce4e50` - agente feedback
+- `51e6dfa` - inicio massari
 
 ---
 
 ### Proximos Passos
 
-1. Executar as 7 correcoes urgentes listadas acima
+1. Permitir entrada sem confirmacao de email (Supabase Dashboard -> Authentication -> Providers -> Email)
 2. Sincronizacao de grupos do WhatsApp
 3. Integracao N8N completa
 4. Sistema de comandos (/commands)
@@ -63,13 +81,36 @@ npm run lint     # ESLint
 
 ## Progresso Estimado
 
-- **Design/UI:** 85%
+- **Design/UI:** 90%
 - **Backend:** 95%
 - **Integracao N8N:** 80%
-- **Geral:** ~85%
+- **Geral:** ~88%
 
 ---
 
-**Ultima Atualizacao:** 29/12/2024
+## Arquivos Importantes Criados/Modificados
+
+### Feedback System
+- `lib/error-tracker.ts` - Captura de erros e logs
+- `components/error-tracker-provider.tsx` - Provider React
+- `hooks/use-screenshot.ts` - Captura de tela
+- `hooks/use-voice-input.ts` - Gravacao de voz
+- `hooks/use-feedback.ts` - Envio de feedback
+- `components/feedback/feedback-fab.tsx` - Botao flutuante
+- `components/feedback/feedback-sheet.tsx` - Modal de feedback
+- `app/api/feedback/route.ts` - API endpoint
+
+### Branding
+- `public/icon.svg` - Favicon
+- `public/apple-icon.svg` - Apple Touch Icon
+- `public/opengraph-image.svg` - Imagem de compartilhamento
+
+### Migrations Aplicadas
+- `fix_plan_limits_defaults` - Correcao dos limites de planos
+- `fix_grupos_unique_per_organization` - Constraint por organizacao
+
+---
+
+**Ultima Atualizacao:** 30/12/2024
 **Sessao por:** Claude Opus 4.5
-**Status:** Correcoes urgentes registradas no CLAUDE.md para proxima sessao
+**Status:** Correcoes urgentes concluidas (exceto confirmacao de email)

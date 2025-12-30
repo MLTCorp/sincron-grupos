@@ -95,6 +95,7 @@ export default function GroupsPage() {
   const [instanceId, setInstanceId] = useState<number | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [planLimits, setPlanLimits] = useState<{ max_groups: number } | null>(null)
 
   // Filters
   const [searchFilter, setSearchFilter] = useState("")
@@ -147,6 +148,17 @@ export default function GroupsPage() {
         setInstanceToken(instancia.api_key)
         setInstanceId(instancia.id)
         setIsConnected(true)
+      }
+
+      // Carregar limites do plano
+      const { data: org } = await supabase
+        .from("organizacoes")
+        .select("plan_limits")
+        .eq("id", usuarioSistema.id_organizacao)
+        .single()
+
+      if (org?.plan_limits) {
+        setPlanLimits(org.plan_limits as { max_groups: number })
       }
 
       const { data: cats } = await supabase
@@ -266,6 +278,14 @@ export default function GroupsPage() {
       delete newCategories[groupId]
       setSelectedCategories(newCategories)
     } else {
+      // Verificar limite antes de adicionar
+      if (planLimits && planLimits.max_groups < 999999) {
+        const totalAposAdicao = gruposCadastrados.length + newSelected.size + 1
+        if (totalAposAdicao > planLimits.max_groups) {
+          toast.error(`Limite de ${planLimits.max_groups} grupos atingido!`)
+          return
+        }
+      }
       newSelected.add(groupId)
     }
     setSelectedGroups(newSelected)
@@ -304,6 +324,30 @@ export default function GroupsPage() {
         .single()
 
       if (!usuarioSistema) return
+
+      // Verificar limites do plano
+      const { data: organizacao } = await supabase
+        .from("organizacoes")
+        .select("plan_limits, plano")
+        .eq("id", usuarioSistema.id_organizacao)
+        .single()
+
+      if (organizacao?.plan_limits) {
+        const maxGroups = (organizacao.plan_limits as { max_groups?: number }).max_groups || 5
+        const gruposAtuais = gruposCadastrados.length
+        const gruposNovos = selectedGroups.size
+        const totalAposAdicao = gruposAtuais + gruposNovos
+
+        if (totalAposAdicao > maxGroups && maxGroups < 999999) {
+          const disponiveis = Math.max(0, maxGroups - gruposAtuais)
+          toast.error(
+            `Limite de grupos atingido! Seu plano permite ${maxGroups} grupos. ` +
+            `Você tem ${gruposAtuais} e pode adicionar mais ${disponiveis}.`
+          )
+          setSaving(false)
+          return
+        }
+      }
 
       const gruposParaSalvar = Array.from(selectedGroups).map((groupId) => {
         const group = whatsappGroups.find((g) => g.id === groupId)!
@@ -708,6 +752,17 @@ export default function GroupsPage() {
             <DialogDescription>
               Selecione grupos e categorias
             </DialogDescription>
+            {planLimits && planLimits.max_groups < 999999 && (
+              <div className="flex items-center gap-2 mt-2 p-2 rounded-md bg-muted/50 text-sm">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <span>
+                  Limite do plano: <strong>{gruposCadastrados.length}/{planLimits.max_groups}</strong> grupos
+                  {planLimits.max_groups - gruposCadastrados.length > 0
+                    ? ` (pode adicionar mais ${planLimits.max_groups - gruposCadastrados.length})`
+                    : " (limite atingido)"}
+                </span>
+              </div>
+            )}
           </DialogHeader>
 
           {gruposNaoCadastrados.length > 0 && (

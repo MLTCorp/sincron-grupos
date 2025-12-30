@@ -163,7 +163,7 @@ Empresas, comunidades e influencers que gerenciam grupos de WhatsApp enfrentam d
 | WATI | ~R$150/mês | ~R$360/mês | ~20% |
 | Gallabox | ~R$60/mês | ~R$360/mês | 15-20% |
 | Heltar | ~R$60/mês | ~R$180/mês | 5% |
-| **Our Product** | R$49/mês | R$99/mês | 0% |
+| **Our Product** | Grátis | R$97/mês | 0% |
 
 ### 7.3 Competitive Advantage
 
@@ -187,13 +187,13 @@ Empresas, comunidades e influencers que gerenciam grupos de WhatsApp enfrentam d
 
 ## 9. Business Model
 
-### 9.1 Pricing Tiers (Proposed)
+### 9.1 Pricing Tiers
 
 | Plan | Price | Limits |
 |------|-------|--------|
-| **Starter** | R$49/mês | 1 instância, 3 grupos, 500 msgs IA/mês |
-| **Pro** | R$99/mês | 1 instância, 10 grupos, 2000 msgs IA/mês, transcrição |
-| **Business** | R$199/mês | 3 instâncias, grupos ilimitados, msgs ilimitadas |
+| **Starter** | Grátis | 1 instância, 5 grupos, comandos básicos |
+| **Pro** | R$97/mês | 3 instâncias, grupos ilimitados, IA integrada, mensagens em massa |
+| **Enterprise** | R$297/mês | 10 instâncias, grupos ilimitados, API access, gerente dedicado |
 
 ### 9.2 Cost Structure
 

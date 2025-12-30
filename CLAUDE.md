@@ -159,12 +159,16 @@ Pending:
 - Settings, RSS Feeds, AI pages
 - Transcription features
 
-## Correções Urgentes (Retomar na próxima sessão)
+## Correções Urgentes
 
-- [ ] Ajustar favicon do projeto
-- [ ] Ajustar imagem de compartilhamento (Open Graph)
-- [ ] Permitir entrada mesmo sem confirmação de email
-- [ ] Corrigir inconsistência Plano Free: 5 grupos (interno) vs 3 grupos (landing page)
-- [ ] Adicionar variável de ambiente WEBHOOK_N8N_URL
-- [ ] Alterar permissão de grupo único para grupo único por organização
-- [ ] Instalar agente de gestão de feedback de testers
+### Concluídas (30/12/2024)
+- [x] Ajustar favicon do projeto (icon.svg, apple-icon.svg)
+- [x] Ajustar imagem de compartilhamento (opengraph-image.svg)
+- [x] Instalar agente de gestão de feedback de testers (FeedbackFab + FeedbackSheet)
+- [x] Corrigir inconsistência de planos (documentação alinhada com landing page)
+- [x] Adicionar variável de ambiente WEBHOOK_N8N_URL
+- [x] Alterar constraint de grupo único global para único por organização (grupos_chat_id_org_unique)
+- [x] Implementar validação de limites de grupos por plano (max_groups: 5 para free)
+
+### Pendente
+- [ ] Permitir entrada mesmo sem confirmação de email (configurar no Supabase Dashboard → Authentication → Providers → Email)

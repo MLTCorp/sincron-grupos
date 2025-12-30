@@ -546,7 +546,7 @@ graph TD
 │                                                                        │
 │  14:32:15         │ Grupo Vendas    │ @mention   │ 423    │ 1.2s      │
 │  ├─ Pergunta: "Assistente, qual o preço do plano pro?"                 │
-│  └─ Resposta: "O plano Pro custa R$99/mês e inclui..."                 │
+│  └─ Resposta: "O plano Pro custa R$97/mês e inclui..."                 │
 │                                                           [Ver mais ▼] │
 │  ─────────────────────────────────────────────────────────────────     │
 │                                                                        │
