@@ -39,6 +39,7 @@ import {
   Forward,
   Send,
   MessagesSquare,
+  Phone,
 } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -116,6 +117,23 @@ const OPERADORES_CONDICAO = [
   { value: "comeca_com", label: "Comeca com" },
   { value: "termina_com", label: "Termina com" },
   { value: "regex", label: "Expressao regular" },
+]
+
+const DDI_OPTIONS = [
+  { value: "55", label: "Brasil (+55)", flag: "🇧🇷" },
+  { value: "1", label: "EUA/Canada (+1)", flag: "🇺🇸" },
+  { value: "351", label: "Portugal (+351)", flag: "🇵🇹" },
+  { value: "54", label: "Argentina (+54)", flag: "🇦🇷" },
+  { value: "56", label: "Chile (+56)", flag: "🇨🇱" },
+  { value: "57", label: "Colombia (+57)", flag: "🇨🇴" },
+  { value: "52", label: "Mexico (+52)", flag: "🇲🇽" },
+  { value: "598", label: "Uruguai (+598)", flag: "🇺🇾" },
+  { value: "595", label: "Paraguai (+595)", flag: "🇵🇾" },
+  { value: "34", label: "Espanha (+34)", flag: "🇪🇸" },
+  { value: "44", label: "Reino Unido (+44)", flag: "🇬🇧" },
+  { value: "49", label: "Alemanha (+49)", flag: "🇩🇪" },
+  { value: "33", label: "Franca (+33)", flag: "🇫🇷" },
+  { value: "39", label: "Italia (+39)", flag: "🇮🇹" },
 ]
 
 const STEPS = [
@@ -633,10 +651,11 @@ export default function NewTriggerPage() {
             {/* Destino */}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Enviar para</Label>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5">
                 {[
                   { value: "mesmo_grupo", label: "Mesmo grupo", icon: MessageSquare },
                   { value: "outros_grupos", label: "Outros grupos", icon: MessagesSquare },
+                  { value: "numero_whatsapp", label: "Numero", icon: Phone },
                 ].map((destino) => {
                   const Icon = destino.icon
                   const selected = (formData.configAcao.destino as string || "mesmo_grupo") === destino.value
@@ -647,24 +666,30 @@ export default function NewTriggerPage() {
                         updateConfigAcao("destino", destino.value)
                         if (destino.value === "mesmo_grupo") {
                           updateConfigAcao("grupos_destino", [])
+                          updateConfigAcao("numero_ddi", undefined)
+                          updateConfigAcao("numero_telefone", undefined)
+                        } else if (destino.value === "outros_grupos") {
+                          updateConfigAcao("numero_ddi", undefined)
+                          updateConfigAcao("numero_telefone", undefined)
+                        } else if (destino.value === "numero_whatsapp") {
+                          updateConfigAcao("grupos_destino", [])
+                          // Definir DDI padrao Brasil se nao existir
+                          if (!formData.configAcao.numero_ddi) {
+                            updateConfigAcao("numero_ddi", "55")
+                          }
                         }
                       }}
                       className={cn(
-                        "flex items-center gap-2 p-2 sm:p-2.5 rounded-lg border cursor-pointer transition-all",
+                        "flex flex-col items-center gap-1 p-2 sm:p-2.5 rounded-lg border cursor-pointer transition-all text-center",
                         selected
                           ? "border-foreground bg-foreground/5"
                           : "border-border hover:border-foreground/50 hover:bg-muted/50"
                       )}
                     >
-                      <Icon className={cn("h-4 w-4 shrink-0", selected ? "text-foreground" : "text-muted-foreground")} />
-                      <span className={cn("text-xs sm:text-sm font-medium", selected ? "text-foreground" : "text-muted-foreground")}>
+                      <Icon className={cn("h-4 w-4", selected ? "text-foreground" : "text-muted-foreground")} />
+                      <span className={cn("text-xs font-medium", selected ? "text-foreground" : "text-muted-foreground")}>
                         {destino.label}
                       </span>
-                      {selected && (
-                        <div className="h-4 w-4 rounded-full bg-foreground flex items-center justify-center ml-auto shrink-0">
-                          <Check className="h-2.5 w-2.5 text-background" />
-                        </div>
-                      )}
                     </div>
                   )
                 })}
@@ -710,6 +735,55 @@ export default function NewTriggerPage() {
                     <p className="text-[10px] text-muted-foreground">
                       {((formData.configAcao.grupos_destino as number[]) || []).length} grupo(s)
                     </p>
+                  )}
+                </div>
+              )}
+
+              {/* Campos para numero WhatsApp */}
+              {(formData.configAcao.destino as string) === "numero_whatsapp" && (
+                <div className="space-y-2 pt-1">
+                  <Label className="text-xs text-muted-foreground">Numero de WhatsApp</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={(formData.configAcao.numero_ddi as string) || "55"}
+                      onValueChange={(val) => updateConfigAcao("numero_ddi", val)}
+                    >
+                      <SelectTrigger className="h-8 sm:h-9 text-xs w-[140px] shrink-0">
+                        <SelectValue placeholder="DDI" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DDI_OPTIONS.map((ddi) => (
+                          <SelectItem key={ddi.value} value={ddi.value} className="text-xs">
+                            <span className="flex items-center gap-1.5">
+                              <span>{ddi.flag}</span>
+                              <span>{ddi.label}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      placeholder="DDD + Numero (ex: 11999999999)"
+                      value={(formData.configAcao.numero_telefone as string) || ""}
+                      onChange={(e) => {
+                        // Apenas numeros
+                        const value = e.target.value.replace(/\D/g, "")
+                        updateConfigAcao("numero_telefone", value)
+                      }}
+                      className="h-8 sm:h-9 text-xs flex-1"
+                      maxLength={11}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Digite apenas numeros: DDD (2 digitos) + Numero (8-9 digitos)
+                  </p>
+                  {(formData.configAcao.numero_ddi as string) && (formData.configAcao.numero_telefone as string) && (
+                    <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium">
+                        +{formData.configAcao.numero_ddi as string} {formData.configAcao.numero_telefone as string}
+                      </span>
+                    </div>
                   )}
                 </div>
               )}
@@ -1011,16 +1085,26 @@ export default function NewTriggerPage() {
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                {(formData.configAcao.destino as string || "mesmo_grupo") === "mesmo_grupo"
-                  ? <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
-                  : <MessagesSquare className="h-3.5 w-3.5 text-muted-foreground" />
-                }
-                <span className="text-xs">
-                  {(formData.configAcao.destino as string || "mesmo_grupo") === "mesmo_grupo"
-                    ? "Mesmo grupo"
-                    : `${((formData.configAcao.grupos_destino as number[]) || []).length} grupo(s)`
-                  }
-                </span>
+                {(formData.configAcao.destino as string || "mesmo_grupo") === "mesmo_grupo" && (
+                  <>
+                    <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs">Mesmo grupo</span>
+                  </>
+                )}
+                {(formData.configAcao.destino as string) === "outros_grupos" && (
+                  <>
+                    <MessagesSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs">{((formData.configAcao.grupos_destino as number[]) || []).length} grupo(s)</span>
+                  </>
+                )}
+                {(formData.configAcao.destino as string) === "numero_whatsapp" && (
+                  <>
+                    <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs">
+                      +{formData.configAcao.numero_ddi as string} {formData.configAcao.numero_telefone as string}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
             {(formData.configAcao.tipo_envio as string || "nova_mensagem") !== "encaminhar" && (formData.configAcao.mensagem as string) && (
