@@ -73,8 +73,11 @@ export function useFeedback(): UseFeedbackReturn {
       formData.append("metadata", JSON.stringify(metadata))
 
       if (data.screenshotDataUrl) {
+        console.log("Processing screenshot, dataUrl length:", data.screenshotDataUrl.length)
         const screenshotBlob = dataUrlToBlob(data.screenshotDataUrl)
-        formData.append("screenshot", screenshotBlob, "screenshot.png")
+        console.log("Screenshot blob size:", screenshotBlob.size, "type:", screenshotBlob.type)
+        const ext = screenshotBlob.type.includes("jpeg") ? "jpg" : "png"
+        formData.append("screenshot", screenshotBlob, `screenshot.${ext}`)
       }
 
       if (data.audioBlob) {

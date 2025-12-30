@@ -22,22 +22,47 @@ export function useScreenshot(): UseScreenshotReturn {
     setError(null)
 
     try {
-      const html2canvas = (await import("html2canvas")).default
+      const html2canvasModule = await import("html2canvas")
+      const html2canvas = html2canvasModule.default
 
-      const targetElement = document.getElementById("app-main") || document.body
+      // Tentar encontrar o elemento principal ou usar body
+      let targetElement: HTMLElement | null = document.getElementById("app-main")
+
+      if (!targetElement) {
+        targetElement = document.querySelector("main") as HTMLElement
+      }
+
+      if (!targetElement) {
+        targetElement = document.body
+      }
+
+      console.log("Screenshot target:", targetElement.tagName, targetElement.id)
 
       const canvas = await html2canvas(targetElement, {
         scale: Math.min(window.devicePixelRatio, 2),
         useCORS: true,
         allowTaint: true,
-        backgroundColor: null,
-        logging: false,
+        backgroundColor: "#ffffff",
+        logging: true, // Ativar logs para debug
         ignoreElements: (element) => {
+          if (!(element instanceof HTMLElement)) return false
           return element.classList.contains("feedback-ignore")
+        },
+        onclone: (clonedDoc) => {
+          // Garantir que elementos com posição fixa sejam capturados
+          const feedbackElements = clonedDoc.querySelectorAll(".feedback-ignore")
+          feedbackElements.forEach(el => {
+            if (el instanceof HTMLElement) {
+              el.style.display = "none"
+            }
+          })
         }
       })
 
-      const dataUrl = canvas.toDataURL("image/png", 0.85)
+      // Usar JPEG para melhor compressão
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85)
+      console.log("Screenshot captured, size:", dataUrl.length)
+
       setScreenshot(dataUrl)
       return dataUrl
     } catch (err) {

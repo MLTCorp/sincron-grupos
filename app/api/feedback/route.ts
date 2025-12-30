@@ -51,19 +51,29 @@ export async function POST(request: NextRequest) {
 
     let screenshot_url: string | null = null
     if (screenshot && screenshot.size > 0) {
-      const path = `${user.id}/screenshots/${Date.now()}.png`
+      console.log("Screenshot received:", screenshot.name, screenshot.size, screenshot.type)
+
+      // Detectar extensão e content-type corretos
+      const isJpeg = screenshot.type.includes("jpeg") || screenshot.name.includes(".jpg")
+      const ext = isJpeg ? "jpg" : "png"
+      const contentType = isJpeg ? "image/jpeg" : "image/png"
+
+      const path = `${user.id}/screenshots/${Date.now()}.${ext}`
       const buffer = await screenshot.arrayBuffer()
+
+      console.log("Uploading screenshot to:", path, "contentType:", contentType)
 
       const { error: uploadError } = await supabase.storage
         .from("feedbacks")
         .upload(path, buffer, {
-          contentType: "image/png",
+          contentType,
           upsert: false
         })
 
       if (!uploadError) {
         const { data: urlData } = supabase.storage.from("feedbacks").getPublicUrl(path)
         screenshot_url = urlData.publicUrl
+        console.log("Screenshot uploaded successfully:", screenshot_url)
       } else {
         console.error("Screenshot upload error:", uploadError)
       }
