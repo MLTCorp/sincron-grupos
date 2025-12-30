@@ -1,56 +1,70 @@
 # Onde Paramos - Sincron Grupos
 
 **Data:** 30/12/2024
-**Ultimo commit:** 6012813 (screenshot feedback)
+**Ultimo commit:** 709e57a (envio wpp pessoal)
 
 ---
 
-## SESSAO ATUAL - 30/12/2024
+## SESSAO ATUAL - 30/12/2024 (Parte 2)
 
 ### O que foi feito
 
-#### 1. Sistema de Feedback para Testers
-- Componentes `FeedbackFab` e `FeedbackSheet`
-- Captura de screenshot com html2canvas
-- Gravacao de audio com transcricao (Whisper)
-- Coleta automatica de erros JS, console logs e breadcrumbs
-- API `/api/feedback` com upload para Supabase Storage
-- Tabela `feedbacks` e bucket de storage configurados
+#### 1. Validacao de Limites de Planos
+- Corrigido default `max_groups: 5` para plano free (era 10)
+- Migration `fix_plan_limits_defaults` aplicada
+- Implementada validacao no frontend antes de adicionar grupos
+- Indicador visual no modal de sincronizacao mostrando limite
 
-#### 2. Branding (Favicon + Open Graph)
-- Criado `icon.svg`, `apple-icon.svg`, `opengraph-image.svg`
-- Logo "SG" em verde (#55B52C)
-- Metadata completa no `layout.tsx`
-
-#### 3. Correcao de Planos
-- Documentacao alinhada com landing page (Starter/Pro/Enterprise)
-- Default `max_groups: 5` para plano free (era 10)
-- Validacao de limites no frontend (`grupos/page.tsx`)
-- Indicador visual no modal de sincronizacao
-
-#### 4. Variavel de Ambiente
-- Adicionado `WEBHOOK_N8N_URL` no `.env.local`
-- URL: `https://workflows.sincronia.digital/webhook/sincron-tracker/messages`
-
-#### 5. Constraint de Grupos
+#### 2. Constraint de Grupos por Organizacao
 - Alterado de `grupos_chat_id_unique` (global)
 - Para `grupos_chat_id_org_unique` (por organizacao)
 - Permite que diferentes organizacoes gerenciem o mesmo grupo WhatsApp
 
+#### 3. Variavel de Ambiente
+- Adicionado `WEBHOOK_N8N_URL` no `.env.local`
+- URL: `https://workflows.sincronia.digital/webhook/sincron-tracker/messages`
+
+#### 4. Analise Completa do Projeto
+- Mapeamento de paginas com dados reais vs mockup
+- Analise detalhada da pagina `/ai` (CRUD funcional, stats mockup)
+- Identificadas paginas placeholder: `/commands`, `/feeds`
+- Identificada pagina com mockup: `/settings`
+
+#### 5. Documentacao de Tarefas
+- Criado `TODO.md` com backlog completo e contextualizado
+- Prioridades P0 a P3 com descricao detalhada de cada tarefa
+- Atualizado `CLAUDE.md` com referencia ao TODO.md
+- Secao "Task Tracking" adicionada para futuras sessoes
+
 **Commits desta sessao:**
-- `6012813` - screenshot feedback
-- `7ce4e50` - agente feedback
-- `51e6dfa` - inicio massari
+- `709e57a` - envio wpp pessoal
+- `1579e92` - varios
 
 ---
 
 ### Proximos Passos
 
-1. Permitir entrada sem confirmacao de email (Supabase Dashboard -> Authentication -> Providers -> Email)
-2. Sincronizacao de grupos do WhatsApp
-3. Integracao N8N completa
-4. Sistema de comandos (/commands)
-5. Paginas de configuracoes avancadas
+1. Testar envio de gatilho para numero especifico (P0)
+2. Permitir login sem confirmacao de email (Supabase Dashboard)
+3. Settings com dados reais (substituir mockup)
+4. Envio real de mensagens em massa
+5. Integracao IA com OpenAI/Claude
+
+---
+
+## Arquivos Importantes Criados/Modificados
+
+### Documentacao
+- `TODO.md` - Backlog completo com prioridades P0-P3
+- `CLAUDE.md` - Adicionada secao Task Tracking
+- `onde_paramos.md` - Atualizado
+
+### Codigo
+- `app/(dashboard)/groups/page.tsx` - Validacao de limites de grupos
+
+### Migrations
+- `fix_plan_limits_defaults` - Correcao dos limites de planos
+- `fix_grupos_unique_per_organization` - Constraint por organizacao
 
 ---
 
@@ -63,6 +77,7 @@
 - shadcn/ui
 - Supabase (PostgreSQL)
 - UAZAPI (WhatsApp API)
+- N8N (Workflows - ja funcionais)
 
 ### Projeto Supabase
 - ID: qhjlxnzxazcqrkgojnbx
@@ -83,34 +98,31 @@ npm run lint     # ESLint
 
 - **Design/UI:** 90%
 - **Backend:** 95%
-- **Integracao N8N:** 80%
+- **Integracao N8N:** 100% (fluxos funcionais)
 - **Geral:** ~88%
 
 ---
 
-## Arquivos Importantes Criados/Modificados
+## Status das Paginas
 
-### Feedback System
-- `lib/error-tracker.ts` - Captura de erros e logs
-- `components/error-tracker-provider.tsx` - Provider React
-- `hooks/use-screenshot.ts` - Captura de tela
-- `hooks/use-voice-input.ts` - Gravacao de voz
-- `hooks/use-feedback.ts` - Envio de feedback
-- `components/feedback/feedback-fab.tsx` - Botao flutuante
-- `components/feedback/feedback-sheet.tsx` - Modal de feedback
-- `app/api/feedback/route.ts` - API endpoint
+### Funcionais (Dados Reais)
+- `/instances` - CRUD completo
+- `/groups` - CRUD + Sync + Validacao de limites
+- `/categories` - CRUD completo
+- `/team` - CRUD + Convites
+- `/triggers` - CRUD completo
+- `/ai` - CRUD (stats mockup)
+- `/transcription` - CRUD
+- `/messages` - CRUD (envio pendente)
+- `/dashboard` - Command Center
 
-### Branding
-- `public/icon.svg` - Favicon
-- `public/apple-icon.svg` - Apple Touch Icon
-- `public/opengraph-image.svg` - Imagem de compartilhamento
-
-### Migrations Aplicadas
-- `fix_plan_limits_defaults` - Correcao dos limites de planos
-- `fix_grupos_unique_per_organization` - Constraint por organizacao
+### Mockup/Placeholder
+- `/settings` - Dados hardcoded
+- `/commands` - Placeholder
+- `/feeds` - Placeholder
 
 ---
 
 **Ultima Atualizacao:** 30/12/2024
 **Sessao por:** Claude Opus 4.5
-**Status:** Correcoes urgentes concluidas (exceto confirmacao de email)
+**Status:** Documentacao de tarefas concluida, TODO.md criado

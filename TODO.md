@@ -24,6 +24,14 @@
 
 ## P0 - Critico para Lancamento
 
+### Testes de Integracao
+
+- [ ] **Testar envio de gatilho para numero especifico**
+  - *O que:* Validar que gatilhos configurados disparam corretamente via N8N
+  - *Teste:* Enviar mensagem que ativa gatilho e verificar resposta
+  - *Fluxo:* Mensagem no grupo -> Webhook UAZAPI -> N8N -> Resposta no grupo
+  - *Verificar:* Condicoes do gatilho, acao executada, tempo de resposta
+
 ### Autenticacao e Onboarding
 
 - [ ] **Permitir login sem confirmacao de email**

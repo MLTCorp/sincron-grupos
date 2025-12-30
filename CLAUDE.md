@@ -6,6 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Sincron Grupos is a multi-tenant MicroSaaS for WhatsApp group management. Each organization connects their own WhatsApp instance via UAZAPI and manages groups independently. Language: Portuguese (codebase), English (documentation).
 
+## Task Tracking
+
+**IMPORTANTE:** Consulte e atualize o arquivo `TODO.md` na raiz do projeto:
+- Lista completa de tarefas pendentes organizadas por prioridade (P0-P3)
+- Contexto detalhado de cada tarefa (O que, Onde, Por que)
+- Marque tarefas concluidas com `[x]` ao finalizar
+- Adicione novas tarefas descobertas durante o desenvolvimento
+
 ## Commands
 
 ```bash
