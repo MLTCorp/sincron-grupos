@@ -52,7 +52,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Smartphone,
+  Settings2,
 } from "lucide-react"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
@@ -86,6 +88,7 @@ interface GrupoCadastrado {
 const ITEMS_PER_PAGE = 10
 
 export default function GroupsPage() {
+  const isMobile = useIsMobile()
   const [whatsappGroups, setWhatsappGroups] = useState<WhatsAppGroup[]>([])
   const [gruposCadastrados, setGruposCadastrados] = useState<GrupoCadastrado[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -571,135 +574,213 @@ export default function GroupsPage() {
         </Select>
       </div>
 
-      {/* Groups Table */}
+      {/* Groups List/Table */}
       {gruposCadastrados.length > 0 ? (
         <Card>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="font-medium text-xs py-2">Nome</TableHead>
-                  <TableHead className="font-medium text-xs py-2">Categorias</TableHead>
-                  <TableHead className="font-medium text-xs py-2">Membros</TableHead>
-                  <TableHead className="font-medium text-xs py-2">Status</TableHead>
-                  <TableHead className="font-medium text-xs py-2 text-right">Acoes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedGrupos.map((grupo) => (
-                  <TableRow
-                    key={grupo.id}
-                    className="hover:bg-muted/50 cursor-pointer"
-                    onClick={() => handleOpenEditDialog(grupo)}
-                  >
-                    <TableCell className="font-medium text-sm py-2">{grupo.nome}</TableCell>
-                    <TableCell className="py-2">
-                      <div className="flex flex-wrap gap-1">
+          {/* Mobile: Card List */}
+          {isMobile ? (
+            <div className="divide-y">
+              {paginatedGrupos.map((grupo) => (
+                <div
+                  key={grupo.id}
+                  className="p-3 hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <Users className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-medium text-sm truncate">{grupo.nome}</p>
+                        <Badge variant={grupo.ativo ? "default" : "secondary"} className={cn(
+                          "text-[10px] px-1.5 py-0.5 shrink-0",
+                          grupo.ativo
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        )}>
+                          {grupo.ativo ? "Ativo" : "Arquivado"}
+                        </Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1.5">
                         {grupo.categorias && grupo.categorias.length > 0 ? (
                           grupo.categorias.map(catId => (
                             <Badge
                               key={catId}
                               variant="secondary"
-                              className="text-[10px] px-1.5 py-0"
+                              className="text-[10px] px-1.5 py-0.5"
                               style={{
                                 backgroundColor: getCategoryColor(catId) + "20",
                                 color: getCategoryColor(catId),
                               }}
                             >
                               <span
-                                className="w-1 h-1 rounded-full mr-1"
+                                className="w-1.5 h-1.5 rounded-full mr-1"
                                 style={{ backgroundColor: getCategoryColor(catId) }}
                               />
                               {getCategoryName(catId)}
                             </Badge>
                           ))
                         ) : (
-                          <span className="text-muted-foreground text-xs">-</span>
+                          <span className="text-muted-foreground text-xs">Sem categoria</span>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell className="text-sm py-2">-</TableCell>
-                    <TableCell className="py-2">
-                      <Badge variant={grupo.ativo ? "default" : "secondary"} className={cn(
-                        "text-[10px] px-1.5 py-0",
-                        grupo.ativo
-                          ? "bg-green-100 text-green-800 hover:bg-green-100"
-                          : "bg-red-100 text-red-800 hover:bg-red-100"
-                      )}>
-                        {grupo.ativo ? "Ativo" : "Arquivado"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right py-2">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-7 w-7">
-                            <MoreVertical className="h-3.5 w-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => {
-                            e.stopPropagation()
-                            handleOpenEditDialog(grupo)
-                          }}>
-                            <Pencil className="h-3.5 w-3.5 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleOpenDeleteDialog(grupo)
-                            }}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 touch-manipulation"
+                        onClick={() => handleOpenEditDialog(grupo)}
+                      >
+                        <Settings2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-destructive hover:text-destructive touch-manipulation"
+                        onClick={() => handleOpenDeleteDialog(grupo)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Desktop: Table */
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-medium text-xs py-2">Nome</TableHead>
+                    <TableHead className="font-medium text-xs py-2">Categorias</TableHead>
+                    <TableHead className="font-medium text-xs py-2">Membros</TableHead>
+                    <TableHead className="font-medium text-xs py-2">Status</TableHead>
+                    <TableHead className="font-medium text-xs py-2 text-right">Acoes</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {paginatedGrupos.map((grupo) => (
+                    <TableRow
+                      key={grupo.id}
+                      className="hover:bg-muted/50 cursor-pointer"
+                      onClick={() => handleOpenEditDialog(grupo)}
+                    >
+                      <TableCell className="font-medium text-sm py-2">{grupo.nome}</TableCell>
+                      <TableCell className="py-2">
+                        <div className="flex flex-wrap gap-1">
+                          {grupo.categorias && grupo.categorias.length > 0 ? (
+                            grupo.categorias.map(catId => (
+                              <Badge
+                                key={catId}
+                                variant="secondary"
+                                className="text-[10px] px-1.5 py-0"
+                                style={{
+                                  backgroundColor: getCategoryColor(catId) + "20",
+                                  color: getCategoryColor(catId),
+                                }}
+                              >
+                                <span
+                                  className="w-1 h-1 rounded-full mr-1"
+                                  style={{ backgroundColor: getCategoryColor(catId) }}
+                                />
+                                {getCategoryName(catId)}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm py-2">-</TableCell>
+                      <TableCell className="py-2">
+                        <Badge variant={grupo.ativo ? "default" : "secondary"} className={cn(
+                          "text-[10px] px-1.5 py-0",
+                          grupo.ativo
+                            ? "bg-green-100 text-green-800 hover:bg-green-100"
+                            : "bg-red-100 text-red-800 hover:bg-red-100"
+                        )}>
+                          {grupo.ativo ? "Ativo" : "Arquivado"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right py-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation()
+                              handleOpenEditDialog(grupo)
+                            }}>
+                              <Pencil className="h-3.5 w-3.5 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleOpenDeleteDialog(grupo)
+                              }}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-3 py-2 border-t">
+          {/* Pagination - Touch-friendly */}
+          <div className="flex items-center justify-between px-3 py-3 border-t">
             <span className="text-xs text-muted-foreground">
               {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredGrupos.length)} de {filteredGrupos.length}
             </span>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-9 w-9 p-0 touch-manipulation"
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
-                <ChevronLeft className="h-3.5 w-3.5" />
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-              {Array.from({ length: Math.min(totalPages, 3) }, (_, i) => {
+              {!isMobile && Array.from({ length: Math.min(totalPages, 3) }, (_, i) => {
                 const page = i + 1
                 return (
                   <Button
                     key={page}
                     variant={currentPage === page ? "default" : "outline"}
                     size="sm"
-                    className="h-7 w-7 p-0 text-xs"
+                    className="h-9 w-9 p-0 text-sm"
                     onClick={() => setCurrentPage(page)}
                   >
                     {page}
                   </Button>
                 )
               })}
+              {isMobile && (
+                <span className="text-sm font-medium px-2">
+                  {currentPage}/{totalPages || 1}
+                </span>
+              )}
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-9 w-9 p-0 touch-manipulation"
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
+                disabled={currentPage === totalPages || totalPages === 0}
               >
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -743,7 +824,7 @@ export default function GroupsPage() {
         setDialogOpen(open)
         if (!open) setModalSearchFilter("")
       }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -809,6 +890,7 @@ export default function GroupsPage() {
                     <Checkbox
                       checked={selectedGroups.has(group.id)}
                       onCheckedChange={() => toggleGroupSelection(group.id)}
+                      className="h-5 w-5 touch-manipulation"
                     />
                     <Avatar className="h-10 w-10 shrink-0">
                       <AvatarImage src={group.picture || undefined} />
@@ -817,7 +899,7 @@ export default function GroupsPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{group.name}</p>
+                      <p className="font-medium truncate text-sm">{group.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {group.participants ? `${group.participants} participantes` : "WhatsApp"}
                       </p>
@@ -834,7 +916,7 @@ export default function GroupsPage() {
                             type="button"
                             onClick={() => toggleCategoryForGroup(group.id, cat.id)}
                             className={cn(
-                              "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all",
+                              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all touch-manipulation min-h-[36px]",
                               !isSelected && "opacity-60 hover:opacity-100"
                             )}
                             style={{
@@ -845,11 +927,11 @@ export default function GroupsPage() {
                             }}
                           >
                             <div
-                              className="h-2 w-2 rounded-full"
+                              className="h-2.5 w-2.5 rounded-full"
                               style={{ backgroundColor: cat.cor }}
                             />
                             {cat.nome}
-                            {isSelected && <Check className="h-3 w-3" />}
+                            {isSelected && <Check className="h-3.5 w-3.5" />}
                           </button>
                         )
                       })}
@@ -860,32 +942,34 @@ export default function GroupsPage() {
             )}
           </div>
 
-          <DialogFooter className="border-t pt-4">
-            <p className="text-sm text-muted-foreground flex-1">
+          <DialogFooter className="border-t pt-4 flex-col-reverse sm:flex-row gap-2">
+            <p className="text-sm text-muted-foreground sm:flex-1 text-center sm:text-left">
               {selectedGroups.size} selecionado(s)
             </p>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSaveGroups} disabled={saving || selectedGroups.size === 0}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar"}
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving} className="flex-1 sm:flex-none h-10 touch-manipulation">
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveGroups} disabled={saving || selectedGroups.size === 0} className="flex-1 sm:flex-none h-10 touch-manipulation">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar"}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Edit Group Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] max-w-md p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Editar Grupo</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg">Editar Grupo</DialogTitle>
           </DialogHeader>
 
           {editingGroup && (
             <div className="space-y-4">
               <div>
                 <Label className="text-muted-foreground text-sm">Nome do grupo</Label>
-                <Input value={editingGroup.nome} disabled className="bg-muted mt-1" />
+                <Input value={editingGroup.nome} disabled className="bg-muted mt-1 h-10" />
               </div>
 
               <div>
@@ -899,7 +983,7 @@ export default function GroupsPage() {
                         type="button"
                         onClick={() => toggleEditCategory(cat.id)}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all border",
+                          "flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all border touch-manipulation min-h-[40px]",
                           isSelected && "ring-2 ring-offset-1"
                         )}
                         style={{
@@ -909,9 +993,9 @@ export default function GroupsPage() {
                           boxShadow: isSelected ? `0 0 0 2px ${cat.cor}40` : "none",
                         }}
                       >
-                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: cat.cor }} />
+                        <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: cat.cor }} />
                         {cat.nome}
-                        {isSelected && <Check className="h-3 w-3" />}
+                        {isSelected && <Check className="h-3.5 w-3.5" />}
                       </button>
                     )
                   })}
@@ -920,16 +1004,16 @@ export default function GroupsPage() {
 
               <div>
                 <Label className="text-muted-foreground text-sm">ID WhatsApp</Label>
-                <Input value={editingGroup.chat_id_whatsapp} disabled className="bg-muted mt-1 text-xs" />
+                <Input value={editingGroup.chat_id_whatsapp} disabled className="bg-muted mt-1 text-xs h-10" />
               </div>
             </div>
           )}
 
-          <DialogFooter className="bg-muted -mx-6 -mb-6 mt-6 p-4 rounded-b-lg">
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)} disabled={savingEdit}>
+          <DialogFooter className="bg-muted -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 mt-6 p-4 rounded-b-lg flex-col-reverse sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} disabled={savingEdit} className="w-full sm:w-auto h-10 touch-manipulation">
               Cancelar
             </Button>
-            <Button onClick={handleSaveEdit} disabled={savingEdit}>
+            <Button onClick={handleSaveEdit} disabled={savingEdit} className="w-full sm:w-auto h-10 touch-manipulation">
               {savingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar Alteracoes"}
             </Button>
           </DialogFooter>
@@ -938,9 +1022,9 @@ export default function GroupsPage() {
 
       {/* Delete Group Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="w-[95vw] max-w-sm p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
+            <DialogTitle className="flex items-center gap-2 text-destructive text-base sm:text-lg">
               <AlertTriangle className="h-5 w-5" />
               Excluir Grupo
             </DialogTitle>
@@ -949,11 +1033,11 @@ export default function GroupsPage() {
           {groupToDelete && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
-                <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center">
+                <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center shrink-0">
                   <Users className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <div>
-                  <p className="font-medium">{groupToDelete.nome}</p>
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{groupToDelete.nome}</p>
                   <p className="text-xs text-muted-foreground">
                     {groupToDelete.categorias?.length || 0} categoria(s)
                   </p>
@@ -965,11 +1049,11 @@ export default function GroupsPage() {
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deletingGroup}>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deletingGroup} className="w-full sm:w-auto h-10 touch-manipulation">
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleDeleteGroup} disabled={deletingGroup}>
+            <Button variant="destructive" onClick={handleDeleteGroup} disabled={deletingGroup} className="w-full sm:w-auto h-10 touch-manipulation">
               {deletingGroup ? <Loader2 className="h-4 w-4 animate-spin" /> : "Excluir"}
             </Button>
           </DialogFooter>

@@ -71,6 +71,7 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 type TipoMensagem = "texto" | "imagem" | "video" | "audio"
 type TipoDestinatario = "grupos" | "categoria"
@@ -551,39 +552,37 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-8">
+    <div className="flex-1 space-y-4 sm:space-y-6 p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Mensagens em Massa</h2>
-          <p className="text-muted-foreground">Gerencie e programe mensagens para seus grupos.</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Mensagens em Massa</h2>
+          <p className="text-sm text-muted-foreground">Gerencie e programe mensagens para seus grupos.</p>
         </div>
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon">
-            <Bell className="h-5 w-5 text-muted-foreground" />
-          </Button>
-        </div>
+        <Button variant="ghost" size="icon" className="hidden sm:flex">
+          <Bell className="h-5 w-5 text-muted-foreground" />
+        </Button>
       </div>
 
       {/* Actions & Search */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
           {isConnected && (
-            <Button onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Mensagem
+            <Button asChild className="flex-1 sm:flex-none">
+              <Link href="/messages/new">
+                <Plus className="h-4 w-4 mr-2" />
+                <span className="sm:inline">Nova Mensagem</span>
+              </Link>
             </Button>
           )}
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon">
-              <Download className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button variant="outline" size="icon">
+            <Filter className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon">
+            <Download className="h-4 w-4" />
+          </Button>
         </div>
-        <div className="relative w-80">
+        <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar mensagens..."
@@ -594,13 +593,28 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b">
-        <div className="flex items-center gap-6">
+      {/* Tabs - Mobile: Select */}
+      <div className="sm:hidden">
+        <Select value={activeTab} onValueChange={setActiveTab}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Selecione uma aba" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas ({counts.all})</SelectItem>
+            <SelectItem value="scheduled">Agendadas ({counts.scheduled})</SelectItem>
+            <SelectItem value="sent">Enviadas ({counts.sent})</SelectItem>
+            <SelectItem value="drafts">Rascunhos ({counts.drafts})</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Tabs - Desktop: Inline */}
+      <div className="hidden sm:block border-b">
+        <div className="flex items-center gap-4 md:gap-6">
           <button
             onClick={() => setActiveTab("all")}
             className={cn(
-              "pb-3 border-b-2 transition-colors",
+              "pb-3 border-b-2 transition-colors text-sm",
               activeTab === "all"
                 ? "border-primary text-primary font-semibold"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -614,7 +628,7 @@ export default function MessagesPage() {
           <button
             onClick={() => setActiveTab("scheduled")}
             className={cn(
-              "pb-3 border-b-2 transition-colors",
+              "pb-3 border-b-2 transition-colors text-sm",
               activeTab === "scheduled"
                 ? "border-primary text-primary font-semibold"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -626,7 +640,7 @@ export default function MessagesPage() {
           <button
             onClick={() => setActiveTab("sent")}
             className={cn(
-              "pb-3 border-b-2 transition-colors",
+              "pb-3 border-b-2 transition-colors text-sm",
               activeTab === "sent"
                 ? "border-primary text-primary font-semibold"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -638,7 +652,7 @@ export default function MessagesPage() {
           <button
             onClick={() => setActiveTab("drafts")}
             className={cn(
-              "pb-3 border-b-2 transition-colors",
+              "pb-3 border-b-2 transition-colors text-sm",
               activeTab === "drafts"
                 ? "border-primary text-primary font-semibold"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -664,14 +678,16 @@ export default function MessagesPage() {
                 : "Conecte uma instancia primeiro"}
             </p>
             {isConnected ? (
-              <Button onClick={() => setDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Mensagem
+              <Button asChild>
+                <Link href="/messages/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Mensagem
+                </Link>
               </Button>
             ) : (
-              <a href="/instances">
-                <Button variant="outline">Ver Instancias</Button>
-              </a>
+              <Button variant="outline" asChild>
+                <Link href="/instances">Ver Instancias</Link>
+              </Button>
             )}
           </div>
         </Card>
@@ -686,31 +702,31 @@ export default function MessagesPage() {
               </div>
 
               {agendadas.map(msg => (
-                <Card key={msg.id} className="p-5 hover:border-primary transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                        <Clock className="h-5 w-5 text-primary" />
+                <Card key={msg.id} className="p-4 sm:p-5 hover:border-primary transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                        <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold">Mensagem agendada</h4>
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                          <h4 className="font-semibold text-sm sm:text-base">Mensagem agendada</h4>
                           <Badge variant="secondary" className="bg-accent/10 text-accent text-xs">Agendada</Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-2 line-clamp-2">
                           {msg.conteudo_texto || "-"}
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             {formatDate(msg.dt_agendamento)}
                           </span>
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex items-center gap-1">
                             <Users className="h-3 w-3" />
                             {getGruposCount(msg)} grupos
                           </span>
                           {msg.categoria_id && (
-                            <span className="flex items-center gap-1.5">
+                            <span className="hidden sm:flex items-center gap-1">
                               <Tag className="h-3 w-3" />
                               {categorias.find(c => c.id === msg.categoria_id)?.nome || "Categoria"}
                             </span>
@@ -718,7 +734,28 @@ export default function MessagesPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    {/* Mobile: DropdownMenu */}
+                    <div className="sm:hidden">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditar(msg)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExcluir(msg.id)} className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    {/* Desktop: Buttons */}
+                    <div className="hidden sm:flex items-center gap-2">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditar(msg)}>
                         <Pencil className="h-4 w-4 text-muted-foreground" />
                       </Button>
@@ -757,30 +794,30 @@ export default function MessagesPage() {
               </div>
 
               {enviadas.map(msg => (
-                <Card key={msg.id} className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
-                        <CheckCheck className="h-5 w-5 text-accent" />
+                <Card key={msg.id} className="p-4 sm:p-5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
+                        <CheckCheck className="h-4 w-4 sm:h-5 sm:w-5 text-accent" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold">Mensagem enviada</h4>
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                          <h4 className="font-semibold text-sm sm:text-base">Mensagem enviada</h4>
                           <Badge variant="secondary" className="bg-accent/10 text-accent text-xs">Enviada</Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-2 line-clamp-2">
                           {msg.conteudo_texto || "-"}
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             {getTimeAgo(msg.dt_enviado)}
                           </span>
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex items-center gap-1">
                             <Users className="h-3 w-3" />
                             {getGruposCount(msg)} grupos
                           </span>
-                          <span className="flex items-center gap-1.5 text-accent">
+                          <span className="hidden sm:flex items-center gap-1 text-accent">
                             <CheckCheck className="h-3 w-3" />
                             Entregue a todos
                           </span>
@@ -815,33 +852,54 @@ export default function MessagesPage() {
               </div>
 
               {rascunhos.map(msg => (
-                <Card key={msg.id} className="p-5 border-dashed hover:border-primary transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center shrink-0">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
+                <Card key={msg.id} className="p-4 sm:p-5 border-dashed hover:border-primary transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                        <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold">Rascunho</h4>
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                          <h4 className="font-semibold text-sm sm:text-base">Rascunho</h4>
                           <Badge variant="secondary" className="text-xs">Rascunho</Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-2 line-clamp-2">
                           {msg.conteudo_texto || "-"}
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             Editado {getTimeAgo(msg.dt_create).replace("Enviado", "")}
                           </span>
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex items-center gap-1">
                             <Users className="h-3 w-3" />
-                            {getGruposCount(msg) > 0 ? `${getGruposCount(msg)} grupos` : "Sem grupos selecionados"}
+                            {getGruposCount(msg) > 0 ? `${getGruposCount(msg)} grupos` : "Sem grupos"}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    {/* Mobile: DropdownMenu */}
+                    <div className="sm:hidden">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditar(msg)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExcluir(msg.id)} className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    {/* Desktop: Buttons */}
+                    <div className="hidden sm:flex items-center gap-2">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditar(msg)}>
                         <Pencil className="h-4 w-4 text-muted-foreground" />
                       </Button>
@@ -883,7 +941,7 @@ export default function MessagesPage() {
         setDialogOpen(open)
         if (!open) resetForm()
       }}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-xl md:max-w-2xl lg:max-w-3xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>{editingMensagem ? "Editar Mensagem" : "Nova Mensagem em Massa"}</DialogTitle>
             <DialogDescription>
@@ -994,7 +1052,7 @@ export default function MessagesPage() {
                 </label>
               </div>
               {!enviarAgora && (
-                <div className="grid grid-cols-2 gap-3 mt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                   <div>
                     <Label className="text-xs text-muted-foreground">Data</Label>
                     <Input
@@ -1033,16 +1091,17 @@ export default function MessagesPage() {
             </div>
           </div>
 
-          <DialogFooter className="flex items-center justify-between">
-            <Button variant="ghost" onClick={() => { setDialogOpen(false); resetForm() }} disabled={saving}>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+            <Button variant="ghost" onClick={() => { setDialogOpen(false); resetForm() }} disabled={saving} className="w-full sm:w-auto">
               Cancelar
             </Button>
-            <div className="flex items-center gap-3">
-              <Button variant="secondary" onClick={() => handleSaveMensagem(true)} disabled={saving}>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <Button variant="secondary" onClick={() => handleSaveMensagem(true)} disabled={saving} className="w-full sm:w-auto">
                 <Save className="h-4 w-4 mr-2" />
-                Salvar Rascunho
+                <span className="hidden sm:inline">Salvar Rascunho</span>
+                <span className="sm:hidden">Rascunho</span>
               </Button>
-              <Button onClick={() => handleSaveMensagem(false)} disabled={saving}>
+              <Button onClick={() => handleSaveMensagem(false)} disabled={saving} className="w-full sm:w-auto">
                 {saving ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (

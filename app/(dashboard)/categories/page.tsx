@@ -357,15 +357,15 @@ export default function CategoriasPage() {
 
             <div className="space-y-1.5">
               <Label className="text-sm">Cor</Label>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
                 {CORES_PREDEFINIDAS.map((cor) => (
                   <button
                     key={cor}
                     type="button"
                     className={cn(
-                      "h-7 w-7 sm:h-8 sm:w-8 rounded-full transition-all hover:scale-110 border border-border",
+                      "h-9 w-9 sm:h-8 sm:w-8 rounded-full transition-all hover:scale-110 border border-border touch-manipulation",
                       formData.cor === cor
-                        ? "ring-2 ring-offset-1 ring-offset-background ring-foreground scale-110"
+                        ? "ring-2 ring-offset-2 ring-offset-background ring-primary scale-110"
                         : ""
                     )}
                     style={{ backgroundColor: cor }}
@@ -486,49 +486,47 @@ export default function CategoriasPage() {
                     <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
                       {/* Badge: Transcrição */}
                       {categoria.hasTranscription && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 gap-1">
-                          <AudioLines className="h-3 w-3" />
-                          <span className="hidden sm:inline">
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 h-auto gap-1">
+                          <AudioLines className="h-3 w-3 shrink-0" />
+                          <span className="truncate max-w-[60px] sm:max-w-none">
                             {categoria.config_transcricao?.[0]?.modo === 'automatico' ? 'Auto' : 'Manual'}
-                            {categoria.config_transcricao?.[0]?.tipo_transcricao === 'com_resumo' && ' + Resumo'}
+                            <span className="hidden sm:inline">
+                              {categoria.config_transcricao?.[0]?.tipo_transcricao === 'com_resumo' && ' + Resumo'}
+                            </span>
                           </span>
                         </Badge>
                       )}
                       {/* Badge: Gatilhos */}
                       {categoria._count.gatilhosAtivos > 0 && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 gap-1">
-                          <Zap className="h-3 w-3" />
-                          <span className="hidden sm:inline">
-                            {categoria._count.gatilhosAtivos}
-                          </span>
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 h-auto gap-1">
+                          <Zap className="h-3 w-3 shrink-0" />
+                          <span>{categoria._count.gatilhosAtivos}</span>
                         </Badge>
                       )}
                       {/* Badge: Grupos */}
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 gap-1">
-                        <Users className="h-3 w-3" />
-                        <span className="hidden sm:inline">
-                          {categoria._count?.grupos || 0}
-                        </span>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 h-auto gap-1">
+                        <Users className="h-3 w-3 shrink-0" />
+                        <span>{categoria._count?.grupos || 0}</span>
                       </Badge>
                       <PermissionGate permission="gerenciar_categorias">
-                        <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover/item:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover/item:opacity-100 transition-opacity">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7"
+                            className="h-9 w-9 sm:h-7 sm:w-7 touch-manipulation"
                             onClick={() => handleOpenConfigDialog(categoria)}
                             title="Configurar categoria"
                           >
-                            <Settings2 className="h-3.5 w-3.5" />
+                            <Settings2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            className="h-9 w-9 sm:h-7 sm:w-7 text-destructive hover:text-destructive touch-manipulation"
                             onClick={() => handleOpenDeleteDialog(categoria)}
                             title="Excluir categoria"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                           </Button>
                         </div>
                       </PermissionGate>
