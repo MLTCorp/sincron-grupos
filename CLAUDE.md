@@ -28,6 +28,24 @@ npm run start    # Start production server
 mcp__supabase__generate_typescript_types with project_id: qhjlxnzxazcqrkgojnbx
 ```
 
+## Git & GitHub
+
+**Repositório:** https://github.com/MLTCorp/sincron-grupos
+
+**Branch principal:** `main`
+
+**Comandos para commit e push:**
+```bash
+git add .
+git commit -m "descrição da mudança"
+git push origin main
+```
+
+**Convenção de commits:** Use mensagens descritivas em português ou inglês. Exemplos:
+- `feat: adiciona filtro de categorias`
+- `fix: corrige erro no QR code`
+- `chore: atualiza dependências`
+
 ## Architecture
 
 ### Tech Stack
