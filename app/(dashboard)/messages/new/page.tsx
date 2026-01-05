@@ -457,7 +457,7 @@ export default function NewMessagePage() {
   const formattedPreview = parseWhatsAppFormatting(previewText)
 
   return (
-    <div className="flex-1 p-4 lg:p-8 max-w-7xl mx-auto">
+    <div className="flex-1 p-4 lg:p-8 max-w-7xl mx-auto overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-9 w-9 sm:h-10 sm:w-10">

@@ -552,7 +552,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 sm:space-y-6 p-4 sm:p-6 lg:p-8">
+    <div className="flex-1 space-y-4 sm:space-y-6 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>

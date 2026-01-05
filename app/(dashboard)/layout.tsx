@@ -14,7 +14,7 @@ export default function DashboardLayout({
       <SearchCommandProvider>
         <SidebarProvider>
           <AppSidebar />
-          <main id="app-main" className="flex-1 min-h-screen bg-background">
+          <main id="app-main" className="flex-1 min-h-screen bg-background overflow-x-hidden">
           {/* Subtle grid pattern */}
           <div
             className="fixed inset-0 pointer-events-none opacity-[0.015] dark:opacity-[0.02]"
@@ -27,7 +27,7 @@ export default function DashboardLayout({
             }}
           />
 
-          <div className="relative">
+          <div className="relative overflow-x-hidden">
             {/* Header mobile - apenas trigger da sidebar */}
             <header className="flex items-center p-3 md:p-4 border-b border-border/50 backdrop-blur-sm bg-background/80 sticky top-0 z-10 md:hidden">
               <SidebarTrigger className="p-2 rounded-lg hover:bg-muted transition-colors" />

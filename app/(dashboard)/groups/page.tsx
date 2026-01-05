@@ -515,7 +515,7 @@ export default function GroupsPage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-6">
+    <div className="flex-1 space-y-4 p-4 md:p-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -537,7 +537,7 @@ export default function GroupsPage() {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1 max-w-xs">
+        <div className="relative flex-1 sm:max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             placeholder="Buscar..."
@@ -547,7 +547,7 @@ export default function GroupsPage() {
           />
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-40 h-9 text-sm">
+          <SelectTrigger className="w-full sm:w-40 h-9 text-sm">
             <SelectValue placeholder="Categoria" />
           </SelectTrigger>
           <SelectContent>
@@ -563,7 +563,7 @@ export default function GroupsPage() {
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-32 h-9 text-sm">
+          <SelectTrigger className="w-full sm:w-32 h-9 text-sm">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
