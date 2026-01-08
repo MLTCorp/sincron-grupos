@@ -354,13 +354,11 @@ export default function GroupsPage() {
 
       const gruposParaSalvar = Array.from(selectedGroups).map((groupId) => {
         const group = whatsappGroups.find((g) => g.id === groupId)!
-        const cats = selectedCategories[groupId] || []
         return {
           id_organizacao: usuarioSistema.id_organizacao,
           id_instancia: instanceId,
           chat_id_whatsapp: groupId,
           nome: group.name,
-          id_categoria: cats.length > 0 ? cats[0] : null,
           ativo: true,
         }
       })
@@ -434,10 +432,7 @@ export default function GroupsPage() {
           })))
       }
 
-      await supabase
-        .from("grupos")
-        .update({ id_categoria: editGroupCategories[0] || null })
-        .eq("id", editingGroup.id)
+      // Nota: Não atualizamos mais grupos.id_categoria, usamos apenas grupos_categorias (N:N)
 
       toast.success("Grupo atualizado com sucesso!")
       setEditDialogOpen(false)

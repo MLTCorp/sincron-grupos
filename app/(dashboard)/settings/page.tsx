@@ -37,6 +37,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
+import { ApiKeyManager } from "@/components/settings/api-key-manager"
 
 export default function SettingsPage() {
   // Account state
@@ -556,17 +557,11 @@ export default function SettingsPage() {
               </div>
               <Button variant="outline" size="sm" className="h-7 text-xs">Gerenciar</Button>
             </div>
-            <div className="flex items-center justify-between rounded-lg border p-2.5">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-600">
-                  <Key className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-xs font-medium">API Keys</span>
-              </div>
-              <Button variant="outline" size="sm" className="h-7 text-xs">Ver</Button>
-            </div>
           </CardContent>
         </Card>
+
+        {/* API Keys Section */}
+        <ApiKeyManager />
 
         {/* Danger Zone */}
         <Card className="border-2 border-destructive/20">

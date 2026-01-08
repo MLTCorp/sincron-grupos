@@ -88,6 +88,7 @@ interface Grupo {
   nome: string
   chat_id_whatsapp: string
   id_categoria: number | null
+  categorias?: number[]
 }
 
 interface MensagemProgramada {
@@ -226,7 +227,26 @@ export default function MessagesPage() {
         .eq("ativo", true)
         .order("nome", { ascending: true })
 
-      setGrupos(grps || [])
+      // Buscar relações N:N de grupos_categorias
+      const { data: gruposCategorias } = await supabase
+        .from("grupos_categorias")
+        .select("id_grupo, id_categoria")
+
+      // Mapear categorias para cada grupo
+      const categoriasPorGrupo: Record<number, number[]> = {}
+      gruposCategorias?.forEach(gc => {
+        if (!categoriasPorGrupo[gc.id_grupo]) {
+          categoriasPorGrupo[gc.id_grupo] = []
+        }
+        categoriasPorGrupo[gc.id_grupo].push(gc.id_categoria)
+      })
+
+      const gruposComCategorias = (grps || []).map(g => ({
+        ...g,
+        categorias: categoriasPorGrupo[g.id] || (g.id_categoria ? [g.id_categoria] : [])
+      }))
+
+      setGrupos(gruposComCategorias)
 
       // Buscar mensagens programadas
       const { data: msgs } = await supabase
@@ -246,6 +266,22 @@ export default function MessagesPage() {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  // Auto-refresh quando houver mensagens pendentes ou enviando
+  useEffect(() => {
+    const hasPendingOrSending = mensagens.some(
+      m => m.status === 'pendente' || m.status === 'enviando'
+    )
+
+    if (!hasPendingOrSending) return
+
+    // Atualizar a cada 10 segundos enquanto houver mensagens pendentes
+    const interval = setInterval(() => {
+      loadData()
+    }, 10000)
+
+    return () => clearInterval(interval)
+  }, [mensagens, loadData])
 
   const resetForm = () => {
     setTipoMensagem("texto")
@@ -275,7 +311,7 @@ export default function MessagesPage() {
     } else if (mensagem.categoria_id) {
       setTipoDestinatario("categoria")
       setCategoriaSelecionada(mensagem.categoria_id)
-      const gruposDaCategoria = grupos.filter(g => g.id_categoria === mensagem.categoria_id)
+      const gruposDaCategoria = grupos.filter(g => g.categorias?.includes(mensagem.categoria_id!))
       setGruposSelecionados(new Set(gruposDaCategoria.map(g => g.id)))
     }
 
@@ -422,7 +458,7 @@ export default function MessagesPage() {
       if (mensagem.grupos_ids && mensagem.grupos_ids.length > 0) {
         gruposParaEnviar = grupos.filter(g => mensagem.grupos_ids!.includes(g.id))
       } else if (mensagem.categoria_id) {
-        gruposParaEnviar = grupos.filter(g => g.id_categoria === mensagem.categoria_id)
+        gruposParaEnviar = grupos.filter(g => g.categorias?.includes(mensagem.categoria_id!))
       }
 
       if (gruposParaEnviar.length === 0) {
@@ -529,7 +565,7 @@ export default function MessagesPage() {
   const getGruposCount = (mensagem: MensagemProgramada) => {
     if (mensagem.grupos_ids) return mensagem.grupos_ids.length
     if (mensagem.categoria_id) {
-      return grupos.filter(g => g.id_categoria === mensagem.categoria_id).length
+      return grupos.filter(g => g.categorias?.includes(mensagem.categoria_id!)).length
     }
     return 0
   }
@@ -1016,7 +1052,7 @@ export default function MessagesPage() {
                     onClick={() => {
                       setTipoDestinatario("categoria")
                       setCategoriaSelecionada(cat.id)
-                      const gruposDaCategoria = grupos.filter(g => g.id_categoria === cat.id)
+                      const gruposDaCategoria = grupos.filter(g => g.categorias?.includes(cat.id))
                       setGruposSelecionados(new Set(gruposDaCategoria.map(g => g.id)))
                     }}
                     className={cn(
@@ -1024,7 +1060,7 @@ export default function MessagesPage() {
                     )}
                   >
                     <Tag className="h-3 w-3 mr-1" />
-                    {cat.nome} ({grupos.filter(g => g.id_categoria === cat.id).length})
+                    {cat.nome} ({grupos.filter(g => g.categorias?.includes(cat.id)).length})
                   </Button>
                 ))}
               </div>

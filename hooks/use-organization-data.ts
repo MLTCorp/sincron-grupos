@@ -156,17 +156,14 @@ export function useOrganizationData(): UseOrganizationDataReturn {
         .is("config_transcricao.id_grupo", null)
         .order("ordem", { ascending: true })
 
-      // Buscar contagem de grupos
-      const { data: gruposData } = await supabase
-        .from("grupos")
+      // Buscar contagem de grupos por categoria via tabela N:N
+      const { data: gruposCategorias } = await supabase
+        .from("grupos_categorias")
         .select("id_categoria")
-        .eq("id_organizacao", organizacaoId)
 
       const contagem: Record<number, number> = {}
-      gruposData?.forEach((g) => {
-        if (g.id_categoria) {
-          contagem[g.id_categoria] = (contagem[g.id_categoria] || 0) + 1
-        }
+      gruposCategorias?.forEach((gc) => {
+        contagem[gc.id_categoria] = (contagem[gc.id_categoria] || 0) + 1
       })
 
       const categoriasEnriquecidas = data?.map((cat: any) => ({

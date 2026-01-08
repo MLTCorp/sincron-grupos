@@ -555,4 +555,79 @@ Content-Type: application/json
 
 ---
 
+## Sincron Grupos Integration (Project-Specific)
+
+### Automatic Webhook Configuration
+
+In this project (Sincron Grupos), webhooks are configured **automatically** when an instance connects. The flow is:
+
+1. **User connects instance** (scans QR Code)
+2. **Polling detects status = "conectado"** (every 30 seconds in instances page)
+3. **If `webhook_url` is still `null`** → automatically calls `POST /api/uazapi/instances/{token}/webhook`
+4. **Webhook configured in UAZAPI** + **`webhook_url` saved in database**
+
+### Critical Files
+
+| File | Purpose |
+|------|---------|
+| `app/(dashboard)/instances/page.tsx` | Triggers webhook config on connect (line ~155) |
+| `app/api/uazapi/instances/[token]/webhook/route.ts` | Configures webhook + saves to DB |
+| `.env.local` | Contains `WEBHOOK_N8N_URL` variable |
+
+### Environment Variable Required
+
+```bash
+WEBHOOK_N8N_URL=https://workflows.sincronia.digital/webhook/sincron-tracker/
+```
+
+This URL receives all WhatsApp events and routes them to N8N for processing triggers.
+
+### Webhook Configuration Details
+
+When configured, the webhook uses:
+```json
+{
+  "enabled": true,
+  "url": "${WEBHOOK_N8N_URL}",
+  "events": ["messages", "connection", "groups"],
+  "excludeMessages": ["wasSentByApi"],
+  "addUrlEvents": true
+}
+```
+
+### Database Schema
+
+The `instancias_whatsapp` table stores:
+- `api_key` - Instance token from UAZAPI
+- `webhook_url` - Configured webhook URL (null if not configured)
+- `status` - Connection status (conectado/desconectado)
+
+### Troubleshooting
+
+If triggers are not firing:
+1. Check `webhook_url` is not NULL in `instancias_whatsapp` table
+2. Verify `WEBHOOK_N8N_URL` is set in environment
+3. Ensure N8N workflow is active at the webhook URL
+4. Check `execucoes_gatilhos` table for execution logs
+
+### Pattern: Instance Connection Flow
+
+```
+User creates instance in UI
+       ↓
+Saves to instancias_whatsapp (webhook_url = null)
+       ↓
+User scans QR Code → connects
+       ↓
+checkInstanceStatus() detects status = "conectado"
+       ↓
+If webhook_url is null → fetch('/api/uazapi/instances/{token}/webhook')
+       ↓
+Webhook configured in UAZAPI + webhook_url saved in DB
+       ↓
+Messages now flow: WhatsApp → UAZAPI → N8N → Process triggers
+```
+
+---
+
 **Remember**: Always use `excludeMessages: ["wasSentByApi"]` in webhooks to prevent infinite loops. Test in development before production.

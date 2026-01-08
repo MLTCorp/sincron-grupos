@@ -44,10 +44,13 @@ export async function updateSession(request: NextRequest) {
   // Rotas de convite (publicas)
   const isInviteRoute = request.nextUrl.pathname.startsWith('/invite/')
 
+  // Rotas de API MCP - têm autenticação própria via headers internos ou API key
+  const isMcpApiRoute = request.nextUrl.pathname.startsWith('/api/mcp/')
+
   // Onboarding requer autenticação mas é tratado separadamente
   const isOnboardingRoute = request.nextUrl.pathname === '/onboarding'
 
-  if (!user && !isPublicRoute && !isInviteRoute) {
+  if (!user && !isPublicRoute && !isInviteRoute && !isMcpApiRoute) {
     // Redirecionar para login se não autenticado
     const url = request.nextUrl.clone()
     url.pathname = '/login'

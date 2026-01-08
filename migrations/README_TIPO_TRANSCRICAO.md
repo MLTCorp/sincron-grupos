@@ -85,3 +85,8 @@ DROP COLUMN IF EXISTS tipo_transcricao;
 
 
 
+
+
+
+
+

@@ -67,3 +67,8 @@ AND column_name = 'tipo_transcricao';
 
 
 
+
+
+
+
+

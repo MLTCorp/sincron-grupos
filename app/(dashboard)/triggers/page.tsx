@@ -6,6 +6,12 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
@@ -111,6 +117,12 @@ interface Categoria {
   cor: string
 }
 
+interface ExecucaoStats {
+  id_gatilho: number
+  total: number
+  ultima_execucao: string | null
+}
+
 const TIPO_EVENTO_LABELS: Record<string, { label: string; icon: React.ElementType; bgColor: string }> = {
   mensagem_recebida: { label: "Qualquer mensagem", icon: MessageSquare, bgColor: "bg-primary/10" },
   mensagem_texto: { label: "Palavra-chave", icon: FileText, bgColor: "bg-primary/10" },
@@ -135,6 +147,7 @@ const ITEMS_PER_PAGE = 10
 export default function TriggersPage() {
   const [gatilhos, setGatilhos] = useState<Gatilho[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [execucoesStats, setExecucoesStats] = useState<ExecucaoStats[]>([])
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState<number | null>(null)
   const [searchFilter, setSearchFilter] = useState("")
@@ -148,10 +161,30 @@ export default function TriggersPage() {
   const stats = useMemo(() => {
     const ativos = gatilhos.filter(g => g.ativo).length
     const pausados = gatilhos.filter(g => !g.ativo).length
-    const execucoes = gatilhos.reduce((acc, g) => acc + Math.floor(Math.random() * 500), 0) // Placeholder
+    const execucoes = execucoesStats.reduce((acc, e) => acc + e.total, 0)
     const gruposComGatilhos = new Set(gatilhos.map(g => g.id_grupo || g.id_categoria)).size
     return { ativos, pausados, execucoes, gruposComGatilhos }
-  }, [gatilhos])
+  }, [gatilhos, execucoesStats])
+
+  // Helper para obter stats de um gatilho específico
+  const getGatilhoStats = useCallback((gatilhoId: number) => {
+    return execucoesStats.find(e => e.id_gatilho === gatilhoId) || { total: 0, ultima_execucao: null }
+  }, [execucoesStats])
+
+  // Formatar data da última execução
+  const formatUltimaExecucao = (dataStr: string | null) => {
+    if (!dataStr) return "Nunca executado"
+    const data = new Date(dataStr)
+    const agora = new Date()
+    const diffMs = agora.getTime() - data.getTime()
+    const diffHoras = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffDias = Math.floor(diffHoras / 24)
+
+    if (diffHoras < 1) return "Há poucos minutos"
+    if (diffHoras < 24) return `Há ${diffHoras}h`
+    if (diffDias < 7) return `Há ${diffDias} dia${diffDias > 1 ? 's' : ''}`
+    return data.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+  }
 
   // Filtrar gatilhos
   const filteredGatilhos = useMemo(() => {
@@ -217,6 +250,32 @@ export default function TriggersPage() {
         .eq("ativo", true)
 
       setCategorias(cats || [])
+
+      // Carregar estatísticas de execuções por gatilho
+      if (data && data.length > 0) {
+        const gatilhoIds = data.map(g => g.id)
+        const { data: execucoes } = await supabase
+          .from("execucoes_gatilhos")
+          .select("id_gatilho, dt_execucao")
+          .in("id_gatilho", gatilhoIds)
+          .order("dt_execucao", { ascending: false })
+
+        // Agrupar por gatilho: contar total e pegar última execução
+        const statsMap = new Map<number, ExecucaoStats>()
+        execucoes?.forEach(e => {
+          const existing = statsMap.get(e.id_gatilho)
+          if (existing) {
+            existing.total++
+          } else {
+            statsMap.set(e.id_gatilho, {
+              id_gatilho: e.id_gatilho,
+              total: 1,
+              ultima_execucao: e.dt_execucao
+            })
+          }
+        })
+        setExecucoesStats(Array.from(statsMap.values()))
+      }
     } catch (err) {
       console.error("Erro ao carregar gatilhos:", err)
       toast.error("Erro ao carregar gatilhos")
@@ -482,17 +541,27 @@ export default function TriggersPage() {
                         )}
                       </TableCell>
                       <TableCell className="py-2">
-                        {gatilho.ativo ? (
-                          <Badge variant="secondary" className="bg-accent/10 text-accent text-[10px] px-1.5 py-0">
-                            <span className="w-1 h-1 rounded-full bg-accent mr-1" />
-                            Ativo
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="bg-secondary/10 text-secondary text-[10px] px-1.5 py-0">
-                            <span className="w-1 h-1 rounded-full bg-secondary mr-1" />
-                            Pausado
-                          </Badge>
-                        )}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              {gatilho.ativo ? (
+                                <Badge variant="secondary" className="bg-accent/10 text-accent text-[10px] px-1.5 py-0 cursor-help">
+                                  <span className="w-1 h-1 rounded-full bg-accent mr-1" />
+                                  Ativo
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="bg-secondary/10 text-secondary text-[10px] px-1.5 py-0 cursor-help">
+                                  <span className="w-1 h-1 rounded-full bg-secondary mr-1" />
+                                  Pausado
+                                </Badge>
+                              )}
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs">
+                              <p className="font-medium">{formatUltimaExecucao(getGatilhoStats(gatilho.id).ultima_execucao)}</p>
+                              <p className="text-muted-foreground">{getGatilhoStats(gatilho.id).total} execuções</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell className="text-right py-2">
                         <DropdownMenu>

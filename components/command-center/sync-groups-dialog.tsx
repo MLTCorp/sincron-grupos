@@ -152,17 +152,15 @@ export function SyncGroupsDialog({
 
       if (!usuarioSistema) return
 
-      // Inserir os grupos
+      // Inserir os grupos (sem id_categoria, usamos apenas grupos_categorias N:N)
       const gruposParaSalvar = Array.from(selectedGroups).map((groupId) => {
         const group = whatsappGroups.find((g) => g.id === groupId)!
-        const cats = selectedCategories[groupId] || []
         return {
           id_organizacao: usuarioSistema.id_organizacao,
           id_instancia: instanceId,
           chat_id_whatsapp: groupId,
           nome: group.name,
           foto_url: group.picture || null,
-          id_categoria: cats.length > 0 ? cats[0] : null,
           ativo: true,
         }
       })

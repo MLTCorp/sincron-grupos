@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { createClient, SupabaseClient } from "@supabase/supabase-js"
 
-// Criar cliente Supabase com service role para bypass de RLS
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Lazy initialization to avoid build-time errors
+let _supabaseAdmin: SupabaseClient | null = null
+
+function getSupabaseAdmin(): SupabaseClient {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  }
+  return _supabaseAdmin
+}
 
 const UAZAPI_BASE_URL = process.env.UAZAPI_BASE_URL || "https://mltcorp.uazapi.com"
 
@@ -41,7 +48,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Buscar mensagens pendentes cujo horario de agendamento ja passou
-    const { data: mensagens, error: fetchError } = await supabaseAdmin
+    const { data: mensagens, error: fetchError } = await getSupabaseAdmin()
       .from("mensagens_programadas")
       .select(`
         id,
@@ -70,7 +77,7 @@ export async function GET(request: NextRequest) {
     for (const mensagem of mensagens) {
       try {
         // Buscar instancia conectada da organizacao
-        const { data: instancia } = await supabaseAdmin
+        const { data: instancia } = await getSupabaseAdmin()
           .from("instancias_whatsapp")
           .select("api_key")
           .eq("id_organizacao", mensagem.id_organizacao)
@@ -78,7 +85,7 @@ export async function GET(request: NextRequest) {
           .single()
 
         if (!instancia?.api_key) {
-          await supabaseAdmin
+          await getSupabaseAdmin()
             .from("mensagens_programadas")
             .update({
               status: "erro",
@@ -92,13 +99,13 @@ export async function GET(request: NextRequest) {
         }
 
         // Buscar grupos
-        const { data: grupos } = await supabaseAdmin
+        const { data: grupos } = await getSupabaseAdmin()
           .from("grupos")
           .select("id, nome, chat_id_whatsapp")
           .in("id", mensagem.grupos_ids || [])
 
         if (!grupos || grupos.length === 0) {
-          await supabaseAdmin
+          await getSupabaseAdmin()
             .from("mensagens_programadas")
             .update({
               status: "erro",
@@ -112,7 +119,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Marcar como enviando
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from("mensagens_programadas")
           .update({ status: "enviando" })
           .eq("id", mensagem.id)
@@ -139,7 +146,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Atualizar status final
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from("mensagens_programadas")
           .update({
             status: erros.length === 0 ? "concluido" : "erro",
@@ -156,7 +163,7 @@ export async function GET(request: NextRequest) {
       } catch (err) {
         console.error(`Erro processando mensagem ${mensagem.id}:`, err)
 
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from("mensagens_programadas")
           .update({
             status: "erro",

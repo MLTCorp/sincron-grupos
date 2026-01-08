@@ -38,6 +38,7 @@ import {
   Megaphone,
   Rss,
   Brain,
+  Bot,
   Settings,
   UserPlus,
   AudioLines,
@@ -70,6 +71,7 @@ const menuItems: MenuGroup[] = [
     title: "Principal",
     items: [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { title: "Assistente", href: "/agent", icon: Bot },
       { title: "Instancias", href: "/instances", icon: Smartphone },
       { title: "Grupos", href: "/groups", icon: Users },
       { title: "Categorias", href: "/categories", icon: Tags },

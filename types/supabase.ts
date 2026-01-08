@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_chats: {
+        Row: {
+          created_at: string | null
+          id: string
+          id_organizacao: number | null
+          messages: Json | null
+          title: string | null
+          tool_calls: Json | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          id_organizacao?: number | null
+          messages?: Json | null
+          title?: string | null
+          tool_calls?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          id_organizacao?: number | null
+          messages?: Json | null
+          title?: string | null
+          tool_calls?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_chats_id_organizacao_fkey"
+            columns: ["id_organizacao"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_chats_id_organizacao_fkey"
+            columns: ["id_organizacao"]
+            isOneToOne: false
+            referencedRelation: "v_mensagens_completas"
+            referencedColumns: ["organizacao_id"]
+          },
+        ]
+      }
       agentes_ia: {
         Row: {
           ativo: boolean
@@ -67,6 +115,69 @@ export type Database = {
           },
           {
             foreignKeyName: "agentes_ia_id_organizacao_fkey"
+            columns: ["id_organizacao"]
+            isOneToOne: false
+            referencedRelation: "v_mensagens_completas"
+            referencedColumns: ["organizacao_id"]
+          },
+        ]
+      }
+      api_keys: {
+        Row: {
+          created_at: string | null
+          id: string
+          id_organizacao: number
+          is_active: boolean | null
+          key_hash: string
+          key_prefix: string
+          key_suffix: string
+          last_used_at: string | null
+          name: string | null
+          revoked_at: string | null
+          updated_at: string | null
+          usage_count: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          id_organizacao: number
+          is_active?: boolean | null
+          key_hash: string
+          key_prefix: string
+          key_suffix: string
+          last_used_at?: string | null
+          name?: string | null
+          revoked_at?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          id_organizacao?: number
+          is_active?: boolean | null
+          key_hash?: string
+          key_prefix?: string
+          key_suffix?: string
+          last_used_at?: string | null
+          name?: string | null
+          revoked_at?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_id_organizacao_fkey"
+            columns: ["id_organizacao"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_keys_id_organizacao_fkey"
             columns: ["id_organizacao"]
             isOneToOne: false
             referencedRelation: "v_mensagens_completas"
@@ -288,6 +399,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feedbacks: {
+        Row: {
+          audio_url: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          pagina_atual: string
+          resolvido_em: string | null
+          resposta_admin: string | null
+          screenshot_url: string | null
+          status: string
+          texto: string
+          tipo: string
+          transcricao_audio: string | null
+          user_id: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          pagina_atual: string
+          resolvido_em?: string | null
+          resposta_admin?: string | null
+          screenshot_url?: string | null
+          status?: string
+          texto: string
+          tipo: string
+          transcricao_audio?: string | null
+          user_id: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          pagina_atual?: string
+          resolvido_em?: string | null
+          resposta_admin?: string | null
+          screenshot_url?: string | null
+          status?: string
+          texto?: string
+          tipo?: string
+          transcricao_audio?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       gatilhos: {
         Row: {
@@ -1217,6 +1376,7 @@ export type Database = {
       }
     }
     Functions: {
+      processar_mensagens_agendadas: { Args: never; Returns: undefined }
       usuario_tem_acesso_grupo: {
         Args: { p_id_grupo: number; p_id_usuario_sistema: number }
         Returns: boolean

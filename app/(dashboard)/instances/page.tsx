@@ -151,6 +151,22 @@ export default function InstancesPage() {
               dt_update: new Date().toISOString(),
             })
             .eq("id", instancia.id)
+
+          // Configurar webhook automaticamente quando conectar (se ainda não configurado)
+          if (newStatus === "conectado" && !instancia.webhook_url) {
+            try {
+              const webhookResponse = await fetch(`/api/uazapi/instances/${instancia.api_key}/webhook`, {
+                method: 'POST'
+              })
+              if (webhookResponse.ok) {
+                console.log(`Webhook configurado automaticamente para instância ${instancia.nome_instancia}`)
+              } else {
+                console.error(`Erro ao configurar webhook para instância ${instancia.nome_instancia}`)
+              }
+            } catch (webhookErr) {
+              console.error('Erro ao configurar webhook:', webhookErr)
+            }
+          }
         }
 
         return {

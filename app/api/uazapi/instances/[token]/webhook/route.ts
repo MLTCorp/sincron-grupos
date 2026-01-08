@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import https from 'https'
+import { createClient } from '@/lib/supabase/server'
 
 const BASE_URL = process.env.UAZAPI_BASE_URL || 'https://api.uazapi.com'
 const WEBHOOK_URL = process.env.WEBHOOK_N8N_URL
@@ -76,6 +77,26 @@ export async function POST(
 
     const data = await response.json()
     console.log('Webhook configurado com sucesso:', data)
+
+    // Atualizar webhook_url no banco de dados
+    try {
+      const supabase = await createClient()
+      const { error: dbError } = await supabase
+        .from('instancias_whatsapp')
+        .update({
+          webhook_url: WEBHOOK_URL,
+          dt_update: new Date().toISOString()
+        })
+        .eq('api_key', token)
+
+      if (dbError) {
+        console.error('Erro ao salvar webhook_url no banco:', dbError)
+      } else {
+        console.log('webhook_url salvo no banco para token:', token)
+      }
+    } catch (dbErr) {
+      console.error('Erro ao atualizar banco:', dbErr)
+    }
 
     return NextResponse.json(data)
   } catch (error) {

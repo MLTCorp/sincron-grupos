@@ -3,6 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,6 +22,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Badge } from "@/components/ui/badge"
 import {
   ArrowLeft,
   Send,
@@ -34,6 +48,11 @@ import {
   Upload,
   Eye,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  X,
+  Search,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
@@ -104,6 +123,13 @@ export default function NewMessagePage() {
   // Mobile preview
   const [previewOpen, setPreviewOpen] = useState(false)
 
+  // Search groups
+  const [searchGroups, setSearchGroups] = useState("")
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 20
+
   // Load data
   const loadData = useCallback(async () => {
     try {
@@ -142,13 +168,14 @@ export default function NewMessagePage() {
         setCategorias(categoriasData)
       }
 
-      // Fetch groups with categories
+      // Fetch groups with categories (including fallback to id_categoria)
       const { data: gruposData } = await supabase
         .from("grupos")
         .select(`
           id,
           nome,
           chat_id_whatsapp,
+          id_categoria,
           grupos_categorias(id_categoria)
         `)
         .eq("id_organizacao", usuarioSistema.id_organizacao)
@@ -156,12 +183,19 @@ export default function NewMessagePage() {
         .order("nome")
 
       if (gruposData) {
-        const gruposProcessados = gruposData.map(g => ({
-          id: g.id,
-          nome: g.nome,
-          chat_id_whatsapp: g.chat_id_whatsapp,
-          categorias: (g.grupos_categorias as { id_categoria: number }[])?.map(gc => gc.id_categoria) || []
-        }))
+        const gruposProcessados = gruposData.map(g => {
+          const categoriasFromJoin = (g.grupos_categorias as { id_categoria: number }[])?.map(gc => gc.id_categoria) || []
+          // Fallback: if no categories in N:N table, use id_categoria from grupos table
+          const categorias = categoriasFromJoin.length > 0
+            ? categoriasFromJoin
+            : (g.id_categoria ? [g.id_categoria] : [])
+          return {
+            id: g.id,
+            nome: g.nome,
+            chat_id_whatsapp: g.chat_id_whatsapp,
+            categorias
+          }
+        })
         setGrupos(gruposProcessados)
       }
     } catch (err) {
@@ -176,10 +210,24 @@ export default function NewMessagePage() {
     loadData()
   }, [loadData])
 
-  // Filter groups by active categories
-  const filteredGroups = activeCategories.size === 0
-    ? grupos
-    : grupos.filter(g => g.categorias?.some(c => activeCategories.has(c)))
+  // Filter groups by active categories and search
+  const filteredGroups = grupos.filter(g => {
+    const matchesCategory = activeCategories.size === 0 || g.categorias?.some(c => activeCategories.has(c))
+    const matchesSearch = !searchGroups || g.nome.toLowerCase().includes(searchGroups.toLowerCase())
+    return matchesCategory && matchesSearch
+  })
+
+  // Pagination
+  const totalPages = Math.ceil(filteredGroups.length / ITEMS_PER_PAGE)
+  const paginatedGroups = filteredGroups.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchGroups, activeCategories])
 
   // Toggle category filter
   const toggleCategoryFilter = (categoryId: number) => {
@@ -518,34 +566,31 @@ export default function NewMessagePage() {
 
       </div>
 
-      {/* Main Content Grid - Message + Preview side by side */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left Column - Message Editor */}
-        <div className="flex-1 min-w-0 space-y-6">
-          {/* Message Card */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Mensagem</CardTitle>
-          </CardHeader>
+      {/* Message Card with integrated Preview */}
+      <Card>
+        <CardContent className="pt-6">
+          {/* Header: Title + Type Toggle */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <h2 className="text-lg font-semibold">Mensagem</h2>
+            <div className="inline-flex items-center gap-1 bg-muted p-1 rounded-lg overflow-x-auto">
+              {TIPOS_MENSAGEM.map(({ value, label, icon: Icon }) => (
+                <Button
+                  key={value}
+                  variant={messageType === value ? "default" : "ghost"}
+                  size="sm"
+                  className={cn("gap-1.5 h-9 px-3 text-xs whitespace-nowrap", messageType !== value && "text-muted-foreground")}
+                  onClick={() => setMessageType(value)}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </div>
 
-            <CardContent className="space-y-4">
-              {/* Message Type Selector - Scrollable on mobile */}
-              <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-                <div className="inline-flex items-center gap-1 bg-muted p-1 rounded-lg min-w-max">
-                  {TIPOS_MENSAGEM.map(({ value, label, icon: Icon }) => (
-                    <Button
-                      key={value}
-                      variant={messageType === value ? "default" : "ghost"}
-                      size="sm"
-                      className={cn("gap-1.5 h-8 px-3 text-xs whitespace-nowrap", messageType !== value && "text-muted-foreground")}
-                      onClick={() => setMessageType(value)}
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                      {label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Left side - Message Editor */}
+            <div className="flex-1 min-w-0 space-y-4">
 
               {/* Media URL Input (for non-text types) */}
               {messageType !== "texto" && (
@@ -639,7 +684,7 @@ export default function NewMessagePage() {
                           setCaption(e.target.value)
                         }
                       }}
-                      className="min-h-[120px] resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-none"
+                      className="min-h-[100px] lg:min-h-[80px] resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-none"
                       maxLength={4096}
                     />
 
@@ -672,114 +717,112 @@ export default function NewMessagePage() {
                   </div>
                 </>
               )}
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Mobile Preview - Collapsible */}
-          <div className="lg:hidden">
-            <Collapsible open={previewOpen} onOpenChange={setPreviewOpen}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between h-10">
-                  <span className="flex items-center gap-2">
-                    <Eye className="h-4 w-4" />
-                    Ver Preview
-                  </span>
-                  <ChevronDown className={cn("h-4 w-4 transition-transform", previewOpen && "rotate-180")} />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-3">
-                <div className="flex justify-center p-4 bg-muted/30 rounded-lg">
-                  <div
-                    className="relative max-w-[220px] p-3 rounded-lg shadow-sm"
-                    style={{ backgroundColor: "#DCF8C6" }}
-                  >
-                    <div
-                      className="text-gray-800 break-words whitespace-pre-wrap"
-                      style={{ fontSize: "13px", lineHeight: "1.4" }}
-                      dangerouslySetInnerHTML={{ __html: formattedPreview }}
-                    />
-                    <div className="flex items-center justify-end gap-0.5 mt-1">
-                      <span className="text-[10px] text-gray-500">{getDisplayTime()}</span>
-                      <div className="flex -space-x-1">
-                        <Check className="h-3 w-3 text-blue-500" />
-                        <Check className="h-3 w-3 text-blue-500" />
-                      </div>
-                    </div>
-                    <div
-                      className="absolute -right-[6px] bottom-3 w-0 h-0"
-                      style={{
-                        borderLeft: "8px solid #DCF8C6",
-                        borderTop: "4px solid transparent",
-                        borderBottom: "4px solid transparent",
-                      }}
-                    />
+            {/* Right side - Preview (Desktop) */}
+            <div className="hidden lg:flex lg:items-start lg:justify-center lg:w-[300px] lg:flex-shrink-0 lg:pt-2">
+              {/* Preview bubble */}
+              <div
+                className="relative max-w-[250px] p-3 rounded-lg shadow-lg dark:shadow-none border-2 border-gray-400/50 dark:border-transparent"
+                style={{ backgroundColor: "#DCF8C6" }}
+              >
+                <div
+                  className="text-gray-800 break-words whitespace-pre-wrap"
+                  style={{ fontSize: "13px", lineHeight: "1.4" }}
+                  dangerouslySetInnerHTML={{ __html: formattedPreview }}
+                />
+                <div className="flex items-center justify-end gap-0.5 mt-1">
+                  <span className="text-[10px] text-gray-500">{getDisplayTime()}</span>
+                  <div className="flex -space-x-1">
+                    <Check className="h-3 w-3 text-blue-500" />
+                    <Check className="h-3 w-3 text-blue-500" />
                   </div>
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-        </div>
-
-        {/* Right Column - Preview Bubble (simple, no background) - Desktop only */}
-        <div className="hidden lg:flex lg:items-start">
-          <div className="sticky top-20">
-            {/* Preview bubble */}
-            <div
-              className="relative max-w-[220px] p-3 rounded-lg shadow-sm"
-              style={{ backgroundColor: "#DCF8C6" }}
-            >
-              <div
-                className="text-gray-800 break-words whitespace-pre-wrap"
-                style={{ fontSize: "13px", lineHeight: "1.4" }}
-                dangerouslySetInnerHTML={{ __html: formattedPreview }}
-              />
-              <div className="flex items-center justify-end gap-0.5 mt-1">
-                <span className="text-[10px] text-gray-500">{getDisplayTime()}</span>
-                <div className="flex -space-x-1">
-                  <Check className="h-3 w-3 text-blue-500" />
-                  <Check className="h-3 w-3 text-blue-500" />
-                </div>
+                {/* Bubble tail */}
+                <div
+                  className="absolute -right-[6px] bottom-3 w-0 h-0"
+                  style={{
+                    borderLeft: "8px solid #DCF8C6",
+                    borderTop: "4px solid transparent",
+                    borderBottom: "4px solid transparent",
+                  }}
+                />
               </div>
-              {/* Bubble tail */}
-              <div
-                className="absolute -right-[6px] bottom-3 w-0 h-0"
-                style={{
-                  borderLeft: "8px solid #DCF8C6",
-                  borderTop: "4px solid transparent",
-                  borderBottom: "4px solid transparent",
-                }}
-              />
+            </div>
+
+            {/* Mobile Preview - Collapsible */}
+            <div className="lg:hidden">
+              <Collapsible open={previewOpen} onOpenChange={setPreviewOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between h-10">
+                    <span className="flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
+                      Ver Preview
+                    </span>
+                    <ChevronDown className={cn("h-4 w-4 transition-transform", previewOpen && "rotate-180")} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-3">
+                  <div className="flex justify-center py-4">
+                    <div
+                      className="relative max-w-[250px] p-3 rounded-lg shadow-lg dark:shadow-none border-2 border-gray-400/50 dark:border-transparent"
+                      style={{ backgroundColor: "#DCF8C6" }}
+                    >
+                      <div
+                        className="text-gray-800 break-words whitespace-pre-wrap"
+                        style={{ fontSize: "13px", lineHeight: "1.4" }}
+                        dangerouslySetInnerHTML={{ __html: formattedPreview }}
+                      />
+                      <div className="flex items-center justify-end gap-0.5 mt-1">
+                        <span className="text-[10px] text-gray-500">{getDisplayTime()}</span>
+                        <div className="flex -space-x-1">
+                          <Check className="h-3 w-3 text-blue-500" />
+                          <Check className="h-3 w-3 text-blue-500" />
+                        </div>
+                      </div>
+                      <div
+                        className="absolute -right-[6px] bottom-3 w-0 h-0"
+                        style={{
+                          borderLeft: "8px solid #DCF8C6",
+                          borderTop: "4px solid transparent",
+                          borderBottom: "4px solid transparent",
+                        }}
+                      />
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Destinatários - Full width below */}
+      {/* Destinatários */}
       <Card className="mt-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Destinatarios</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Destination Type Toggle - Touch-friendly */}
-          <div className="inline-flex bg-muted p-1 rounded-lg gap-1 w-full sm:w-auto">
-            <Button
-              variant={destinationType === "private" ? "default" : "ghost"}
-              size="sm"
-              className="gap-2 flex-1 sm:flex-none h-10 touch-manipulation"
-              onClick={() => setDestinationType("private")}
-            >
-              <Phone className="h-4 w-4" />
-              Numero Privado
-            </Button>
-            <Button
-              variant={destinationType === "groups" ? "default" : "ghost"}
-              size="sm"
-              className="gap-2 flex-1 sm:flex-none h-10 touch-manipulation"
-              onClick={() => setDestinationType("groups")}
-            >
-              <Users className="h-4 w-4" />
-              Grupos
-            </Button>
+        <CardContent className="pt-6">
+          {/* Header: Title + Toggle */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <h2 className="text-lg font-semibold">Destinatarios</h2>
+            <div className="inline-flex bg-muted p-1 rounded-lg gap-1">
+              <Button
+                variant={destinationType === "private" ? "default" : "ghost"}
+                size="sm"
+                className="gap-2 h-9 px-3 touch-manipulation"
+                onClick={() => setDestinationType("private")}
+              >
+                <Phone className="h-4 w-4" />
+                <span className="hidden sm:inline">Numero</span> Privado
+              </Button>
+              <Button
+                variant={destinationType === "groups" ? "default" : "ghost"}
+                size="sm"
+                className="gap-2 h-9 px-3 touch-manipulation"
+                onClick={() => setDestinationType("groups")}
+              >
+                <Users className="h-4 w-4" />
+                Grupos
+              </Button>
+            </div>
           </div>
 
           {/* Private Number Input */}
@@ -800,97 +843,193 @@ export default function NewMessagePage() {
             </div>
           )}
 
-          {/* Groups Selection */}
+          {/* Groups Selection - Table with integrated search */}
           {destinationType === "groups" && (
-            <div className="space-y-4">
-              {/* Category Filters - Touch-friendly */}
-              {categorias.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setActiveCategories(new Set())}
-                    className={cn(
-                      "px-3 py-2 rounded-full text-xs font-medium transition-all border touch-manipulation min-h-[36px]",
-                      activeCategories.size === 0
-                        ? "bg-foreground text-background border-foreground"
-                        : "bg-transparent hover:bg-muted border-border"
-                    )}
-                  >
-                    Todas
-                  </button>
-                  {categorias.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => toggleCategoryFilter(cat.id)}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-all border touch-manipulation min-h-[36px]"
-                      )}
-                      style={{
-                        backgroundColor: activeCategories.has(cat.id) ? cat.cor + "20" : "transparent",
-                        borderColor: cat.cor,
-                        color: cat.cor,
-                      }}
-                    >
-                      <div
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: cat.cor }}
-                      />
-                      {cat.nome}
-                    </button>
-                  ))}
+            <div className="space-y-3">
+              {/* Search + Filter Row */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar grupos..."
+                    value={searchGroups}
+                    onChange={(e) => setSearchGroups(e.target.value)}
+                    className="pl-9 h-10"
+                  />
+                </div>
+                {categorias.length > 0 && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="relative h-10 w-10 p-0 sm:w-auto sm:px-3 sm:gap-2 shrink-0">
+                        <Filter className="h-4 w-4" />
+                        <span className="hidden sm:inline">Categorias</span>
+                        {activeCategories.size > 0 && (
+                          <>
+                            {/* Mobile: dot indicator */}
+                            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary sm:hidden" />
+                            {/* Desktop: count badge */}
+                            <span className="hidden sm:inline-flex px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-xs">
+                              {activeCategories.size}
+                            </span>
+                          </>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-2" align="end">
+                      <div className="space-y-1">
+                        <div
+                          className={cn(
+                            "flex items-center gap-2.5 p-2 rounded-md cursor-pointer transition-colors text-sm",
+                            activeCategories.size === 0 ? "bg-muted" : "hover:bg-muted"
+                          )}
+                          onClick={() => setActiveCategories(new Set())}
+                        >
+                          <Checkbox checked={activeCategories.size === 0} className="h-4 w-4" />
+                          <span className="font-medium">Todas</span>
+                        </div>
+                        <div className="h-px bg-border my-1" />
+                        {categorias.map((cat) => (
+                          <div
+                            key={cat.id}
+                            className={cn(
+                              "flex items-center gap-2.5 p-2 rounded-md cursor-pointer transition-colors text-sm",
+                              activeCategories.has(cat.id) ? "bg-muted" : "hover:bg-muted"
+                            )}
+                            onClick={() => toggleCategoryFilter(cat.id)}
+                          >
+                            <Checkbox checked={activeCategories.has(cat.id)} className="h-4 w-4" />
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.cor }} />
+                            <span className="truncate">{cat.nome}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
+
+              {/* Active filters badges */}
+              {activeCategories.size > 0 && (
+                <div className="flex gap-1.5 flex-wrap">
+                  {Array.from(activeCategories).map(catId => {
+                    const cat = categorias.find(c => c.id === catId)
+                    return cat ? (
+                      <Badge
+                        key={catId}
+                        variant="secondary"
+                        className="gap-1 pr-1 cursor-pointer hover:bg-secondary/80 text-xs"
+                        onClick={() => toggleCategoryFilter(catId)}
+                      >
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.cor }} />
+                        {cat.nome}
+                        <X className="h-3 w-3" />
+                      </Badge>
+                    ) : null
+                  })}
                 </div>
               )}
 
-              {/* Select All */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
-                  {selectedGroups.size} de {filteredGroups.length} grupos selecionados
-                </span>
-                <Button variant="link" size="sm" onClick={selectAllGroups}>
-                  {selectedGroups.size === filteredGroups.length ? "Desmarcar todos" : "Selecionar todos"}
-                </Button>
+              {/* Table */}
+              <div className="border rounded-lg overflow-hidden">
+                <ScrollArea className="h-[280px] sm:h-[340px]">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-background z-10">
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={filteredGroups.length > 0 && selectedGroups.size === filteredGroups.length}
+                            onCheckedChange={selectAllGroups}
+                            className="h-4 w-4"
+                          />
+                        </TableHead>
+                        <TableHead>Grupo</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedGroups.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={2} className="h-24 text-center text-muted-foreground">
+                            Nenhum grupo encontrado
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedGroups.map((grupo) => {
+                          // Get category colors for gradient border
+                          const catColors = grupo.categorias
+                            ?.map(catId => categorias.find(c => c.id === catId)?.cor)
+                            .filter(Boolean) || []
+                          const borderStyle = catColors.length > 1
+                            ? { background: `linear-gradient(to bottom, ${catColors.join(", ")})` }
+                            : catColors.length === 1
+                            ? { background: catColors[0] }
+                            : undefined
+
+                          return (
+                            <TableRow
+                              key={grupo.id}
+                              className="cursor-pointer touch-manipulation"
+                              data-state={selectedGroups.has(grupo.id) ? "selected" : undefined}
+                              onClick={() => toggleGroup(grupo.id)}
+                            >
+                              <TableCell>
+                                <Checkbox
+                                  checked={selectedGroups.has(grupo.id)}
+                                  onCheckedChange={() => toggleGroup(grupo.id)}
+                                  className="h-4 w-4"
+                                />
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-2">
+                                  {/* Category color bar */}
+                                  {borderStyle && (
+                                    <div
+                                      className="w-1 h-5 rounded-full shrink-0"
+                                      style={borderStyle}
+                                    />
+                                  )}
+                                  <span className="truncate">{grupo.nome}</span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
               </div>
 
-              {/* Groups List - Responsive height */}
-              <ScrollArea className="h-[200px] sm:h-[250px] border rounded-lg">
-                <div className="p-2 space-y-1">
-                  {filteredGroups.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Nenhum grupo encontrado
-                    </p>
-                  ) : (
-                    filteredGroups.map((grupo) => (
-                      <div
-                        key={grupo.id}
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded cursor-pointer hover:bg-muted transition-colors touch-manipulation min-h-[48px]",
-                          selectedGroups.has(grupo.id) && "bg-muted"
-                        )}
-                        onClick={() => toggleGroup(grupo.id)}
-                      >
-                        <Checkbox
-                          checked={selectedGroups.has(grupo.id)}
-                          onCheckedChange={() => toggleGroup(grupo.id)}
-                          className="h-5 w-5"
-                        />
-                        <span className="text-sm flex-1 truncate">{grupo.nome}</span>
-                        <div className="flex gap-1.5">
-                          {grupo.categorias?.map(catId => {
-                            const cat = categorias.find(c => c.id === catId)
-                            return cat ? (
-                              <div
-                                key={catId}
-                                className="w-2.5 h-2.5 rounded-full"
-                                style={{ backgroundColor: cat.cor }}
-                                title={cat.nome}
-                              />
-                            ) : null
-                          })}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
+              {/* Pagination + Selection count */}
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {selectedGroups.size} de {filteredGroups.length} selecionados
+                </p>
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs text-muted-foreground min-w-[60px] text-center">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </CardContent>

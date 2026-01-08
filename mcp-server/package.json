@@ -1,0 +1,22 @@
+{
+  "name": "sincron-grupos-mcp",
+  "version": "1.0.0",
+  "description": "MCP Server para Sincron Grupos - Gerenciamento de grupos WhatsApp",
+  "main": "dist/index.js",
+  "bin": {
+    "sincron-grupos-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
