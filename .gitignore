@@ -43,3 +43,8 @@ next-env.d.ts
 # claude/mcp local configs with secrets
 .mcp.json
 .claude/settings.local.json
+
+# claude code worktrees and auto-claude
+.auto-claude/
+.worktrees/
+nul
