@@ -1,0 +1,82 @@
+{
+  "complexity": "simple",
+  "workflow_type": "investigation",
+  "confidence": 0.85,
+  "reasoning": "User reports merge conflicts but no active merge or conflict markers were found in the repository. Git status shows branch is up to date with origin/main. This is an investigation task to identify the actual issue - either conflicts were already resolved, haven't been triggered yet, or exist in a different branch/worktree.",
+
+  "analysis": {
+    "scope": {
+      "estimated_files": 1,
+      "estimated_services": 1,
+      "is_cross_cutting": false,
+      "notes": "Git operations task, not code modification. Scope depends on number of conflicted files (currently none detected)."
+    },
+    "integrations": {
+      "external_services": [],
+      "new_dependencies": [],
+      "research_needed": false,
+      "notes": "No external integrations. Standard git conflict resolution workflow."
+    },
+    "infrastructure": {
+      "docker_changes": false,
+      "database_changes": false,
+      "config_changes": false,
+      "notes": "No infrastructure changes required. Git operations only."
+    },
+    "knowledge": {
+      "patterns_exist": true,
+      "research_required": false,
+      "unfamiliar_tech": [],
+      "notes": "Standard git merge conflict resolution. Well-documented process."
+    },
+    "risk": {
+      "level": "low",
+      "concerns": ["Choosing wrong side of conflict could lose code changes", "Need to verify functionality after resolution"],
+      "notes": "Risk is low if conflicts are resolved carefully. Can always abort merge if needed."
+    }
+  },
+
+  "current_state_findings": {
+    "active_merge": false,
+    "conflict_markers_found": false,
+    "branch_status": "up to date with origin/main",
+    "untracked_files": [".auto-claude/", ".claude_settings.json", ".worktrees/", "nul"],
+    "possible_explanations": [
+      "Conflicts were already resolved",
+      "User hasn't started the merge yet",
+      "Conflicts exist in a different worktree (.worktrees/ directory present)",
+      "User is referring to a different branch"
+    ]
+  },
+
+  "recommended_phases": [
+    "discovery",
+    "quick_spec",
+    "validation"
+  ],
+
+  "flags": {
+    "needs_research": false,
+    "needs_self_critique": false,
+    "needs_infrastructure_setup": false
+  },
+
+  "validation_recommendations": {
+    "risk_level": "low",
+    "skip_validation": false,
+    "minimal_mode": true,
+    "test_types_required": [],
+    "security_scan_required": false,
+    "staging_deployment_required": false,
+    "reasoning": "Merge conflict resolution requires manual verification that the correct changes were kept. No automated tests needed - user should verify the resolved code compiles/runs correctly."
+  },
+
+  "next_steps_recommendation": [
+    "Clarify with user which files they believe have conflicts",
+    "Check if .worktrees/ directory contains active worktree with conflicts",
+    "If user is about to merge, guide them through the merge process",
+    "If conflicts exist elsewhere, locate and resolve them"
+  ],
+
+  "created_at": "2025-01-14T12:00:00.000Z"
+}

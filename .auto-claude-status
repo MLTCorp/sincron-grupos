@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "006-tenho-alguns-arquivos-com-merge-conflict-o-que-pod",
+  "state": "building",
+  "subtasks": {
+    "completed": 0,
+    "total": 1,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Commit Changes",
+    "id": 1,
+    "total": 1
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 1,
+    "started_at": "2026-01-14T21:09:36.004313"
+  },
+  "last_update": "2026-01-14T21:09:36.023581"
+}

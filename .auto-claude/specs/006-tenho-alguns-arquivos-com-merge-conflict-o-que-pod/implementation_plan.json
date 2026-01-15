@@ -1,0 +1,40 @@
+{
+  "feature": "commit-untracked-files",
+  "description": "No merge conflicts exist - only untracked files need to be staged and committed",
+  "created_at": "2026-01-15T00:02:50.829Z",
+  "updated_at": "2026-01-15T00:03:30.000Z",
+  "status": "ready",
+  "planStatus": "complete",
+  "spec_name": "commit-untracked-files",
+  "workflow_type": "simple",
+  "total_phases": 1,
+  "recommended_workers": 1,
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Commit Changes",
+      "description": "Stage and commit untracked files (no conflicts exist)",
+      "depends_on": [],
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Stage and commit untracked files (.auto-claude/, .claude_settings.json)",
+          "service": "main",
+          "status": "pending",
+          "files_to_create": [],
+          "files_to_modify": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "manual",
+            "run": "git status shows clean working tree"
+          }
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "complexity": "simple",
+    "estimated_sessions": 1,
+    "note": "No merge conflicts found - only untracked files need committing"
+  }
+}
